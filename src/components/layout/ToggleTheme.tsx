@@ -11,23 +11,37 @@ interface ToggleThemeProps {
   className?: string;
 }
 
-export default function ToggleTheme({ size = "md", iconSize = 22, className = "" }: ToggleThemeProps) {
-  const { setTheme } = useTheme();
-  const [isDarkTheme, setIsDarkTheme] = useState(false);
+export default function ToggleTheme({ 
+  size = "md", 
+  iconSize = 22, 
+  className = "" 
+}: ToggleThemeProps) {
+  const [mounted, setMounted] = useState(false);
+  const { theme, setTheme } = useTheme();
 
+  // เมื่อ component mount แล้วค่อยแสดงผล เพื่อป้องกัน hydration error
   useEffect(() => {
-    // Set initial theme from localStorage or default to light
-    const storedTheme = localStorage.getItem("theme");
-    const defaultTheme = storedTheme || "light";
-    setTheme(defaultTheme);
-    setIsDarkTheme(defaultTheme === "dark");
-  }, [setTheme]);
+    setMounted(true);
+  }, []);
+
+  // ก่อน mount แสดง skeleton ที่เหมือนกันทั้ง server และ client
+  if (!mounted) {
+    return (
+      <Button
+        radius="full"
+        color="default"
+        size={size}
+        isIconOnly
+        className={`bg-transparent ${className}`}
+        disabled
+      >
+        <div style={{ width: iconSize, height: iconSize }} />
+      </Button>
+    );
+  }
 
   const handleThemeToggle = () => {
-    const newTheme = isDarkTheme ? "light" : "dark";
-    setIsDarkTheme(!isDarkTheme);
-    setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
+    setTheme(theme === "dark" ? "light" : "dark");
   };
 
   return (
@@ -39,10 +53,10 @@ export default function ToggleTheme({ size = "md", iconSize = 22, className = ""
       className={`bg-transparent ${className}`}
       onPress={handleThemeToggle}
     >
-      {isDarkTheme ? (
-        <BsFillMoonStarsFill size={iconSize} className="text-zinc-400 dark:text-zinc-400" />
+      {theme === "dark" ? (
+        <BsFillMoonStarsFill size={iconSize} className="text-zinc-400" />
       ) : (
-        <BsFillSunFill size={iconSize} className="text-zinc-400 dark:text-zinc-400" />
+        <BsFillSunFill size={iconSize} className="text-zinc-400" />
       )}
     </Button>
   );

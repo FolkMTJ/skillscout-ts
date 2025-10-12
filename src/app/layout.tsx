@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
 import { Noto_Sans_Thai } from "next/font/google";
 import "@/styles/globals.css";
+import { Providers } from "./provider";
 
 const notoSansTH = Noto_Sans_Thai({
   variable: "--font-noto-sans-thai",
@@ -13,11 +13,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${notoSansTH.variable} antialiased`}
       >
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );
