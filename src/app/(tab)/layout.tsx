@@ -1,4 +1,3 @@
-import { NavBar } from "@/components";
 import Footer from "@/components/layout/Footer";
 import type { Metadata } from "next";
 import React from "react";
@@ -15,7 +14,6 @@ export default function RootLayout({
 }>) {
   return (
     <div>
-        <NavBar/>
         {children}
         <Footer/>
     </div>
