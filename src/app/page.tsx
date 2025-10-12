@@ -1,8 +1,29 @@
 "use client";
 
 import React from "react";
-import { Button, Input, Chip } from "@heroui/react";
-import { FaSearch, FaFire, FaStar, FaUsers, FaAward, FaTrophy } from "react-icons/fa";
+import { Button, Input } from "@heroui/react";
+import { 
+  FaSearch, 
+  FaFire, 
+  FaStar, 
+  FaUsers, 
+  FaTrophy,
+  FaRocket,
+  FaSmile,
+  FaChartLine
+} from "react-icons/fa";
+import { 
+  IoMdLaptop, 
+  IoMdGlobe, 
+  IoMdFootball 
+} from "react-icons/io";
+import { 
+  MdScience, 
+  MdBrush, 
+  MdBusinessCenter,
+  MdGroups,
+  MdMoreHoriz
+} from "react-icons/md";
 import CampCarousel from "@/components/(card)/CampCarousel";
 import CampCard, { CampData } from "@/components/(card)/CampCard";
 import Footer from "@/components/layout/Footer";
@@ -124,122 +145,132 @@ const trendingCamps: CampData[] = [
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 overflow-x-hidden">
+    <div className="min-h-screen bg-white dark:bg-[#0a0a0a] overflow-x-hidden">
       {/* Banner Section */}
-      <section className="relative min-h-[700px] flex items-center justify-center overflow-hidden">
-        {/* Background with overlay */}
+      <section className="relative min-h-[750px] flex items-center justify-center overflow-hidden">
+        {/* Animated Background Pattern */}
+        <div className="absolute inset-0 bg-[#2C2C2C]">
+          {/* Grid Pattern */}
+          <div className="absolute inset-0 opacity-10" style={{
+            backgroundImage: `linear-gradient(#F2B33D 1px, transparent 1px), linear-gradient(90deg, #F2B33D 1px, transparent 1px)`,
+            backgroundSize: '50px 50px'
+          }} />
+          
+          {/* Animated Yellow Gradients */}
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#F2B33D]/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#FFD700]/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+
+        {/* Content Image Overlay */}
         <div 
-          className="absolute inset-0 bg-cover bg-center"
+          className="absolute inset-0 bg-cover bg-center opacity-20"
           style={{
             backgroundImage: "url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1920&h=1080&fit=crop')",
           }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-primary-900/90 via-black/80 to-black/90" />
-          
-          {/* Animated gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-primary-500/20 via-transparent to-purple-500/20 animate-pulse" />
-        </div>
+        />
         
-        <div className="relative z-10 text-center px-4 max-w-5xl mx-auto py-20">
+        <div className="relative z-10 text-center px-4 max-w-6xl mx-auto py-20">
           {/* Badge */}
-          <Chip
-            variant="flat"
-            className="mb-6 bg-white/10 backdrop-blur-md border border-white/20"
-            classNames={{
-              content: "text-white font-semibold"
-            }}
-            startContent={<FaTrophy className="text-yellow-400" />}
-          >
-            แพลตฟอร์มค้นหาค่ายอันดับ 1 ของไทย
-          </Chip>
+          <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#F2B33D]/20 backdrop-blur-md border-2 border-[#F2B33D] mb-8 hover:scale-105 transition-transform">
+            <FaTrophy className="text-[#F2B33D]" size={20} />
+            <span className="font-bold text-white">แพลตฟอร์มค้นหาค่ายอันดับ 1 ของไทย</span>
+          </div>
 
-          <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
+          <h1 className="text-5xl md:text-8xl font-black text-white mb-6 leading-tight tracking-tight">
             ค้นพบค่ายที่
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-purple-400"> ใช่ </span>
-            สำหรับคุณ
+            <span className="block text-[#F2B33D] drop-shadow-[0_0_30px_rgba(242,179,61,0.5)]">
+              ใช่สำหรับคุณ
+            </span>
           </h1>
           
-          <p className="text-xl md:text-2xl text-zinc-200 mb-10 leading-relaxed max-w-3xl mx-auto">
+          <p className="text-xl md:text-2xl text-zinc-300 mb-12 leading-relaxed max-w-3xl mx-auto font-medium">
             พัฒนาทักษะ สร้างประสบการณ์ เปิดโลกใหม่<br className="hidden md:block" />
-            พร้อมเพื่อนใหม่และโอกาสใหม่ๆ ที่รอคุณอยู่
+            <span className="text-[#F2B33D]">พร้อมเพื่อนใหม่และโอกาสใหม่ๆ</span> ที่รอคุณอยู่
           </p>
           
           {/* Search Bar */}
-          <div className="flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto mb-12">
-            <Input
-              size="lg"
-              placeholder="ค้นหาค่ายที่คุณสนใจ..."
-              classNames={{
-                base: "flex-1",
-                inputWrapper: "bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-white/20 hover:border-primary-500 h-14 shadow-xl",
-                input: "text-base"
-              }}
-              startContent={<FaSearch className="text-zinc-400" />}
-            />
+          <div className="flex flex-col sm:flex-row gap-3 max-w-3xl mx-auto mb-16">
+            <div className="flex-1">
+              <Input
+                size="lg"
+                placeholder="ค้นหาค่ายที่คุณสนใจ เช่น Python, AI, ภาษา..."
+                classNames={{
+                  base: "w-full",
+                  inputWrapper: "bg-white dark:bg-white h-16 shadow-2xl border-2 border-transparent hover:border-[#F2B33D] transition-all",
+                  input: "text-base text-[#2C2C2C] placeholder:text-zinc-400"
+                }}
+                startContent={<FaSearch className="text-[#F2B33D]" size={20} />}
+              />
+            </div>
             <Button
               size="lg"
-              color="primary"
-              className="h-14 px-10 font-semibold shadow-xl hover:shadow-2xl hover:scale-105 transition-all"
-              endContent={<FaSearch />}
+              className="h-16 px-12 font-bold text-lg shadow-2xl hover:shadow-[#F2B33D]/50 hover:scale-105 transition-all bg-gradient-to-r from-[#F2B33D] to-[#FFD700] text-[#2C2C2C] border-2 border-[#2C2C2C]"
+              endContent={<FaRocket size={20} />}
             >
               ค้นหา
             </Button>
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 hover:bg-white/20 transition-all duration-300 hover:scale-105">
-              <FaAward className="text-primary-400 text-3xl mb-3 mx-auto" />
-              <p className="text-4xl font-bold text-white mb-1">150+</p>
-              <p className="text-zinc-300 text-sm">ค่ายทั้งหมด</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
+            <div className="bg-white/10 backdrop-blur-md border-2 border-[#F2B33D]/30 rounded-2xl p-6 hover:bg-[#F2B33D]/20 hover:border-[#F2B33D] hover:scale-105 transition-all duration-300 group">
+              <FaTrophy className="text-[#F2B33D] text-4xl mb-3 mx-auto group-hover:scale-110 transition-transform" />
+              <p className="text-5xl font-black text-white mb-1">150+</p>
+              <p className="text-zinc-300 font-semibold">ค่ายทั้งหมด</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 hover:bg-white/20 transition-all duration-300 hover:scale-105">
-              <FaUsers className="text-purple-400 text-3xl mb-3 mx-auto" />
-              <p className="text-4xl font-bold text-white mb-1">5,000+</p>
-              <p className="text-zinc-300 text-sm">ผู้เข้าร่วม</p>
+            <div className="bg-white/10 backdrop-blur-md border-2 border-[#F2B33D]/30 rounded-2xl p-6 hover:bg-[#F2B33D]/20 hover:border-[#F2B33D] hover:scale-105 transition-all duration-300 group">
+              <FaUsers className="text-[#F2B33D] text-4xl mb-3 mx-auto group-hover:scale-110 transition-transform" />
+              <p className="text-5xl font-black text-white mb-1">5K+</p>
+              <p className="text-zinc-300 font-semibold">ผู้เข้าร่วม</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 hover:bg-white/20 transition-all duration-300 hover:scale-105">
-              <FaStar className="text-yellow-400 text-3xl mb-3 mx-auto" />
-              <p className="text-4xl font-bold text-white mb-1">4.8★</p>
-              <p className="text-zinc-300 text-sm">คะแนนเฉลี่ย</p>
+            <div className="bg-white/10 backdrop-blur-md border-2 border-[#F2B33D]/30 rounded-2xl p-6 hover:bg-[#F2B33D]/20 hover:border-[#F2B33D] hover:scale-105 transition-all duration-300 group">
+              <FaStar className="text-[#F2B33D] text-4xl mb-3 mx-auto group-hover:scale-110 transition-transform" />
+              <p className="text-5xl font-black text-white mb-1">4.8★</p>
+              <p className="text-zinc-300 font-semibold">คะแนนเฉลี่ย</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 hover:bg-white/20 transition-all duration-300 hover:scale-105">
-              <FaTrophy className="text-orange-400 text-3xl mb-3 mx-auto" />
-              <p className="text-4xl font-bold text-white mb-1">95%</p>
-              <p className="text-zinc-300 text-sm">ความพึงพอใจ</p>
+            <div className="bg-white/10 backdrop-blur-md border-2 border-[#F2B33D]/30 rounded-2xl p-6 hover:bg-[#F2B33D]/20 hover:border-[#F2B33D] hover:scale-105 transition-all duration-300 group">
+              <FaSmile className="text-[#F2B33D] text-4xl mb-3 mx-auto group-hover:scale-110 transition-transform" />
+              <p className="text-5xl font-black text-white mb-1">95%</p>
+              <p className="text-zinc-300 font-semibold">ความพึงพอใจ</p>
             </div>
           </div>
         </div>
 
-        {/* Decorative Elements */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-zinc-50 dark:from-zinc-950 to-transparent" />
+        {/* Bottom Fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white dark:from-[#0a0a0a] to-transparent" />
       </section>
 
       {/* Urgent Registration Section */}
       <section className="max-w-[1536px] mx-auto px-6 py-20">
-        <CampCarousel
-          camps={urgentCamps}
-          title="🔥 กำลังจะปิดรับเร็วๆ นี้"
-          subtitle="รีบสมัครก่อนหมดเขต! ที่นั่งเหลือน้อย"
-        />
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-2 h-12 bg-gradient-to-b from-[#F2B33D] to-[#FFD700] rounded-full" />
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <FaFire className="text-red-500 animate-pulse" size={24} />
+              <h2 className="text-4xl font-black text-[#2C2C2C] dark:text-white">
+                กำลังจะปิดรับเร็วๆ นี้
+              </h2>
+            </div>
+            <p className="text-zinc-600 dark:text-zinc-400 text-lg font-medium">
+              รีบสมัครก่อนหมดเขต! ที่นั่งเหลือน้อย
+            </p>
+          </div>
+        </div>
+        <CampCarousel camps={urgentCamps} title="" />
       </section>
 
       {/* Trending Section */}
-      <section className="bg-white dark:bg-black py-20">
+      <section className="bg-gradient-to-br from-zinc-50 to-white dark:from-[#1a1a1a] dark:to-[#0a0a0a] py-20 border-y-2 border-[#F2B33D]/20">
         <div className="max-w-[1536px] mx-auto px-6">
           <div className="text-center mb-12">
-            <Chip
-              variant="flat"
-              color="warning"
-              className="mb-4"
-              startContent={<FaStar />}
-            >
-              ยอดนิยม
-            </Chip>
-            <h2 className="text-4xl md:text-5xl font-bold text-zinc-900 dark:text-zinc-50 mb-4">
-              กำลังมาแรง
+            <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#F2B33D]/20 backdrop-blur-md border-2 border-[#F2B33D] mb-4">
+              <FaStar className="text-[#F2B33D]" />
+              <span className="font-bold text-[#2C2C2C] dark:text-white">ยอดนิยม</span>
+            </div>
+            <h2 className="text-5xl md:text-6xl font-black text-[#2C2C2C] dark:text-white mb-4">
+              กำลัง<span className="text-[#F2B33D]">มาแรง</span>
             </h2>
-            <p className="text-zinc-600 dark:text-zinc-400 text-lg max-w-2xl mx-auto">
+            <p className="text-zinc-600 dark:text-zinc-400 text-xl max-w-2xl mx-auto font-medium">
               ค่ายยอดนิยมที่ได้รับความสนใจสูงสุดในเดือนนี้
             </p>
           </div>
@@ -255,32 +286,38 @@ export default function HomePage() {
       {/* Categories Section */}
       <section className="max-w-[1536px] mx-auto px-6 py-20">
         <div className="text-center mb-12">
-          <h2 className="text-4xl md:text-5xl font-bold text-zinc-900 dark:text-zinc-50 mb-4">
-            สำรวจตามหมวดหมู่
+          <h2 className="text-5xl md:text-6xl font-black text-[#2C2C2C] dark:text-white mb-4">
+            สำรวจตาม<span className="text-[#F2B33D]">หมวดหมู่</span>
           </h2>
-          <p className="text-zinc-600 dark:text-zinc-400 text-lg">
-            เลือกหมวดหมู่ที่คุณสนใจ
+          <p className="text-zinc-600 dark:text-zinc-400 text-xl font-medium">
+            เลือกหมวดหมู่ที่คุณสนใจและเริ่มต้นการเรียนรู้
           </p>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {[
-            { name: "เทคโนโลยี", icon: "💻", color: "primary" },
-            { name: "ภาษา", icon: "🌍", color: "success" },
-            { name: "วิทยาศาสตร์", icon: "🔬", color: "secondary" },
-            { name: "ศิลปะ", icon: "🎨", color: "warning" },
-            { name: "ธุรกิจ", icon: "💼", color: "danger" },
-            { name: "กีฬา", icon: "⚽", color: "primary" },
-            { name: "ภาวะผู้นำ", icon: "👥", color: "success" },
-            { name: "อื่นๆ", icon: "✨", color: "secondary" },
+            { name: "เทคโนโลยี", icon: <IoMdLaptop size={40} />, gradient: "from-blue-500 to-cyan-500" },
+            { name: "ภาษา", icon: <IoMdGlobe size={40} />, gradient: "from-green-500 to-emerald-500" },
+            { name: "วิทยาศาสตร์", icon: <MdScience size={40} />, gradient: "from-purple-500 to-pink-500" },
+            { name: "ศิลปะ", icon: <MdBrush size={40} />, gradient: "from-orange-500 to-red-500" },
+            { name: "ธุรกิจ", icon: <MdBusinessCenter size={40} />, gradient: "from-yellow-500 to-orange-500" },
+            { name: "กีฬา", icon: <IoMdFootball size={40} />, gradient: "from-indigo-500 to-blue-500" },
+            { name: "ภาวะผู้นำ", icon: <MdGroups size={40} />, gradient: "from-teal-500 to-green-500" },
+            { name: "อื่นๆ", icon: <MdMoreHoriz size={40} />, gradient: "from-gray-500 to-slate-500" },
           ].map((category) => (
             <Button
               key={category.name}
               variant="flat"
-              className="h-24 flex flex-col gap-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-primary-500 dark:hover:border-primary-500 hover:scale-105 transition-all"
+              className="h-32 flex flex-col gap-3 bg-white dark:bg-[#2C2C2C] border-2 border-zinc-200 dark:border-zinc-800 hover:border-[#F2B33D] hover:shadow-lg hover:shadow-[#F2B33D]/20 hover:scale-105 transition-all duration-300 group"
             >
-              <span className="text-3xl">{category.icon}</span>
-              <span className="font-semibold">{category.name}</span>
+              <div className={`p-3 rounded-xl bg-gradient-to-br ${category.gradient} group-hover:scale-110 transition-transform`}>
+                <span className="text-white">
+                  {category.icon}
+                </span>
+              </div>
+              <span className="font-bold text-lg text-[#2C2C2C] dark:text-white group-hover:text-[#F2B33D] transition-colors">
+                {category.name}
+              </span>
             </Button>
           ))}
         </div>
@@ -288,31 +325,81 @@ export default function HomePage() {
 
       {/* CTA Section */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-600 via-primary-500 to-purple-600 dark:from-primary-700 dark:via-primary-600 dark:to-purple-700" />
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnoiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIuNSIgb3BhY2l0eT0iLjEiLz48L2c+PC9zdmc+')] opacity-30" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#2C2C2C] via-[#1a1a1a] to-[#2C2C2C]">
+          {/* Animated Background */}
+          <div className="absolute inset-0 opacity-20">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#F2B33D] rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#FFD700] rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1.5s' }} />
+          </div>
+          
+          {/* Grid Pattern */}
+          <div className="absolute inset-0 opacity-5" style={{
+            backgroundImage: `linear-gradient(#F2B33D 2px, transparent 2px), linear-gradient(90deg, #F2B33D 2px, transparent 2px)`,
+            backgroundSize: '60px 60px'
+          }} />
+        </div>
         
         <div className="relative max-w-[1536px] mx-auto px-6 py-24 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            พร้อมที่จะเริ่มต้นแล้วหรือยัง?
+          <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#F2B33D]/20 backdrop-blur-md border-2 border-[#F2B33D] mb-6">
+            <FaRocket className="text-[#F2B33D]" />
+            <span className="font-bold text-white">เริ่มต้นวันนี้</span>
+          </div>
+          
+          <h2 className="text-4xl md:text-6xl font-black text-white mb-6">
+            พร้อมที่จะ<span className="text-[#F2B33D]">เริ่มต้น</span>แล้วหรือยัง?
           </h2>
-          <p className="text-xl text-white/90 mb-10 max-w-2xl mx-auto leading-relaxed">
-            สมัครสมาชิกวันนี้ เพื่อรับข่าวสารค่ายใหม่ๆ โปรโมชั่นพิเศษ และส่วนลดสุดคุ้ม
+          <p className="text-xl text-zinc-300 mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
+            สมัครสมาชิกวันนี้ เพื่อรับข่าวสารค่ายใหม่ๆ<br />
+            <span className="text-[#F2B33D]">โปรโมชั่นพิเศษ</span> และ<span className="text-[#F2B33D]">ส่วนลดสุดคุ้ม</span>
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Button
               size="lg"
-              className="bg-white text-primary-600 font-semibold px-10 rounded-full shadow-2xl hover:scale-105 transition-all"
+              className="h-16 px-12 font-bold text-lg shadow-2xl hover:scale-105 transition-all bg-gradient-to-r from-[#F2B33D] to-[#FFD700] text-[#2C2C2C] border-2 border-white"
             >
               สมัครสมาชิกฟรี
             </Button>
             <Button
               size="lg"
               variant="bordered"
-              className="border-2 border-white text-white font-semibold px-10 rounded-full hover:bg-white/10 transition-all"
+              className="h-16 px-12 font-bold text-lg border-2 border-[#F2B33D] text-[#F2B33D] hover:bg-[#F2B33D]/10 transition-all"
             >
               เรียนรู้เพิ่มเติม
             </Button>
+          </div>
+
+          {/* Bottom Stats */}
+          <div className="flex justify-center items-center gap-8 mt-16 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-[#F2B33D] flex items-center justify-center">
+                <FaChartLine className="text-[#2C2C2C]" size={20} />
+              </div>
+              <div className="text-left">
+                <p className="text-sm text-zinc-400">การเติบโต</p>
+                <p className="text-xl font-bold text-white">+250%</p>
+              </div>
+            </div>
+            <div className="w-px h-12 bg-zinc-700" />
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-[#F2B33D] flex items-center justify-center">
+                <FaUsers className="text-[#2C2C2C]" size={20} />
+              </div>
+              <div className="text-left">
+                <p className="text-sm text-zinc-400">สมาชิกใหม่</p>
+                <p className="text-xl font-bold text-white">1,200+</p>
+              </div>
+            </div>
+            <div className="w-px h-12 bg-zinc-700" />
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-[#F2B33D] flex items-center justify-center">
+                <FaTrophy className="text-[#2C2C2C]" size={20} />
+              </div>
+              <div className="text-left">
+                <p className="text-sm text-zinc-400">รางวัลที่ได้รับ</p>
+                <p className="text-xl font-bold text-white">15+</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>

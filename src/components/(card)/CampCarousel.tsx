@@ -53,7 +53,7 @@ export default function CampCarousel({ camps, title, subtitle }: CampCarouselPro
       {/* Header */}
       <div className="flex items-end justify-between mb-8">
         <div>
-          <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 dark:text-zinc-50 mb-2">
+          <h2 className="text-3xl md:text-4xl font-bold text-[#2C2C2C] dark:text-white mb-2">
             {title}
           </h2>
           {subtitle && (
@@ -69,7 +69,7 @@ export default function CampCarousel({ camps, title, subtitle }: CampCarouselPro
             variant="flat"
             onPress={() => scroll("left")}
             isDisabled={!canScrollLeft}
-            className="rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-primary-500 dark:hover:border-primary-500 disabled:opacity-30 transition-all"
+            className="rounded-full bg-white dark:bg-[#2C2C2C] border-2 border-zinc-200 dark:border-zinc-700 hover:border-[#F2B33D] dark:hover:border-[#F2B33D] disabled:opacity-30 transition-all"
           >
             <FaChevronLeft className="text-zinc-700 dark:text-zinc-300" />
           </Button>
@@ -79,7 +79,7 @@ export default function CampCarousel({ camps, title, subtitle }: CampCarouselPro
             variant="flat"
             onPress={() => scroll("right")}
             isDisabled={!canScrollRight}
-            className="rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-primary-500 dark:hover:border-primary-500 disabled:opacity-30 transition-all"
+            className="rounded-full bg-white dark:bg-[#2C2C2C] border-2 border-zinc-200 dark:border-zinc-700 hover:border-[#F2B33D] dark:hover:border-[#F2B33D] disabled:opacity-30 transition-all"
           >
             <FaChevronRight className="text-zinc-700 dark:text-zinc-300" />
           </Button>
@@ -108,8 +108,8 @@ export default function CampCarousel({ camps, title, subtitle }: CampCarouselPro
         </div>
 
         {/* Gradient Overlays for visual effect */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-zinc-50 dark:from-zinc-950 to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-zinc-50 dark:from-zinc-950 to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-zinc-50 dark:from-[#1a1a1a] to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-zinc-50 dark:from-[#1a1a1a] to-transparent" />
       </div>
 
       {/* Mobile Navigation Indicators */}
@@ -120,9 +120,9 @@ export default function CampCarousel({ camps, title, subtitle }: CampCarouselPro
           variant="flat"
           onPress={() => scroll("left")}
           isDisabled={!canScrollLeft}
-          className="rounded-full"
+          className="rounded-full border-2 border-[#F2B33D]"
         >
-          <FaChevronLeft size={14} />
+          <FaChevronLeft size={14} className="text-[#F2B33D]" />
         </Button>
         <Button
           isIconOnly
@@ -130,9 +130,9 @@ export default function CampCarousel({ camps, title, subtitle }: CampCarouselPro
           variant="flat"
           onPress={() => scroll("right")}
           isDisabled={!canScrollRight}
-          className="rounded-full"
+          className="rounded-full border-2 border-[#F2B33D]"
         >
-          <FaChevronRight size={14} />
+          <FaChevronRight size={14} className="text-[#F2B33D]" />
         </Button>
       </div>
 
