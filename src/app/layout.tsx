@@ -2,6 +2,7 @@ import { Noto_Sans_Thai } from "next/font/google";
 import "@/styles/globals.css";
 import { Providers } from "./provider";
 import { NavBar } from "@/components";
+import { ThemeProvider } from "next-themes";
 
 const notoSansTH = Noto_Sans_Thai({
   variable: "--font-noto-sans-thai",
@@ -18,10 +19,12 @@ export default function RootLayout({
       <body
         className={`${notoSansTH.variable} antialiased` }
       >
-        <Providers>
-          <NavBar/>
-          {children}
-        </Providers>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <Providers>
+            <NavBar/>
+            {children}
+          </Providers>
+        </ThemeProvider>
       </body>
     </html>
   );

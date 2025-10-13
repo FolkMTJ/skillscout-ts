@@ -1,0 +1,9 @@
+{
+  // For Tailwind CSS errors
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  // For cSpell (spell checker) errors
+  "cSpell.enabled": true,
+  "cSpell.language": "en,th"
+}

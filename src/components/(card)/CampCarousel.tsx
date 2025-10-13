@@ -57,11 +57,11 @@ export default function CampCarousel({ camps }: CampCarouselProps) {
                     <div>
                         <div className="flex items-center gap-2 mb-2">
                             <FaFire className="text-red-500 animate-pulse" size={24} />
-                            <h2 className="text-4xl font-black text-gray-800">
+                            <h2 className="text-4xl font-black text-gray-800 dark:text-white">
                                 กำลังจะปิดรับเร็วๆ นี้
                             </h2>
                         </div>
-                        <p className="text-gray-600 text-lg font-medium">
+                        <p className="text-gray-600 text-lg font-medium dark:text-gray-300">
                             รีบสมัครก่อนหมดเขต! ที่นั่งเหลือน้อย
                         </p>
                     </div>
@@ -77,7 +77,7 @@ export default function CampCarousel({ camps }: CampCarouselProps) {
                         isDisabled={!canScrollLeft}
                         className="rounded-full bg-white dark:bg-[#2C2C2C] border-2 border-zinc-200 dark:border-zinc-700 hover:border-[#F2B33D] dark:hover:border-[#F2B33D] disabled:opacity-30 transition-all"
                     >
-                        <FaChevronLeft className="text-zinc-700 dark:text-zinc-300" />
+                        <FaChevronLeft className="text-zinc-700 dark:text-gray-300" />
                     </Button>
                     <Button
                         isIconOnly

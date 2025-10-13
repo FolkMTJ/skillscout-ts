@@ -37,12 +37,12 @@ export default function HeroSection() {
                 style={{ objectFit: 'contain' }}
               />
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center -mt-4">
-                <h2 className="text-5xl md:text-6xl font-extrabold tracking-wider text-amber-500">
+                {/* <h2 className="text-5xl md:text-6xl font-extrabold tracking-wider text-amber-500">
                   SKILL SCOUT
                 </h2>
                 <p className="mt-2 text-lg text-gray-600 dark:text-gray-400">
                   ก้าวแรกสู่ความสำเร็จในแบบของคุณ
-                </p>
+                </p> */}
               </div>
             </div>
           </div>

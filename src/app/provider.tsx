@@ -8,8 +8,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <HeroUIProvider>
             <NextThemeProvider 
             attribute="class" 
-            defaultTheme="light"
-            forcedTheme="light"
+            defaultTheme="system"
+            enableSystem
             themes={["light", "dark"
                 
             ]}>

@@ -1,0 +1,13 @@
+{
+  "version": "0.2",
+  "language": "en,th",
+  "words": [
+    "allcamps",
+    "heroui",
+    "promptpay",
+    "skillscout"
+  ],
+  "ignorePaths": [
+    "node_modules/**"
+  ]
+}
