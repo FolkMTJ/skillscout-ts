@@ -16,7 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${notoSansTH.variable} antialiased`}
+        className={`${notoSansTH.variable} antialiased` }
       >
         <Providers>
           <NavBar/>

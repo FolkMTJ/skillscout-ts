@@ -23,3 +23,22 @@ body {
   color: var(--foreground);
   font-family: var(--font-noto-sans-thai), Arial, Helvetica, sans-serif;
 }
+@keyframes pan-grid {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 112px 56px; /* Adjust based on backgroundSize for seamless loop */
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

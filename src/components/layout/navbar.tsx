@@ -37,7 +37,7 @@ export default function Component(props: NavbarProps) {
             isBordered
             classNames={{
                 base: cn("border-default-100", {
-                    "bg-default-200/50 dark:bg-default-100/50": isMenuOpen,
+                    "bg-default-200 dark:bg-default-100/50": isMenuOpen,
                 }),
                 wrapper: "w-full justify-center bg-transparent",
                 item: "hidden md:flex",
@@ -69,7 +69,7 @@ export default function Component(props: NavbarProps) {
                     </Link>
                 </NavbarItem>
                 <NavbarItem>
-                    <Link className="text-default-500" href="#" size="sm">
+                    <Link className="text-default-500" href="allcamps" size="sm">
                         ค่ายทั้งหมด
                     </Link>
                 </NavbarItem>
