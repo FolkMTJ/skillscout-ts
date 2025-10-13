@@ -3,12 +3,17 @@ import "@/styles/globals.css";
 import { Providers } from "./provider";
 import { NavBar } from "@/components";
 import { ThemeProvider } from "next-themes";
+import type { Metadata } from "next";
 
 const notoSansTH = Noto_Sans_Thai({
   variable: "--font-noto-sans-thai",
   subsets: ["latin"],
 });
 
+export const metadata: Metadata = {
+  title: "SkillScout",
+  description: "A platform to discover the best camps for your skills.",
+};
 export default function RootLayout({
   children,
 }: Readonly<{

@@ -1,49 +1,77 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { Button } from "@heroui/react";
+// Added new icons for the features list
+import { FaArrowRight, FaCheckCircle, FaLightbulb, FaCompass } from "react-icons/fa";
 
 export default function HeroSection() {
   return (
-    <section className="w-full bg-[#f6e8c8] dark:bg-gray-800 py-16 md:py-24">
-      <div className="container mx-auto px-6">
+    <section className="relative w-full bg-[#fefbf2] dark:bg-gray-900 overflow-hidden">
+      <div
+        className="absolute inset-0 opacity-40 dark:opacity-20"
+        style={{
+          backgroundImage: 'radial-gradient(#e5e7eb 1px, transparent 1px)',
+          backgroundSize: '16px 16px'
+        }}
+      />
+
+      <div className="container mx-auto px-6 py-24 md:py-32 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          
+
           {/* ## Left Column: Text Content ## */}
           <div className="text-center md:text-left">
-            <h1 className="text-4xl md:text-5xl font-bold text-[#b4842d] dark:text-amber-300 leading-tight">
-              ค้นหาเส้นทางไอทีที่ใช่ในตัวคุณ
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-amber-900 dark:text-amber-300 leading-tight">
+              ค้นหาเส้นทางไอที
+              <br />
+              <span className="text-orange-500">ที่ใช่ในตัวคุณ</span>
             </h1>
-            <p className="mt-2 text-2xl font-semibold text-[#c89b4a] dark:text-amber-400">
-              แบบทดสอบความถนัดในอาชีพสายไอที
+            <p className="mt-4 text-lg text-gray-700 dark:text-gray-400 max-w-lg mx-auto md:mx-0">
+              คุณสงสัยไหมว่าอาชีพในวงการไอทีแบบไหนที่เหมาะกับคุณ? แบบทดสอบของเราออกแบบมาเพื่อช่วยคุณค้นหาคำตอบ
             </p>
-            <p className="mt-6 text-lg text-gray-700 dark:text-gray-300">
-              คุณสงสัยไหมว่าอาชีพในวงการไอทีแบบไหนที่เหมาะกับคุณ?
-            </p>
-            <Link href="/quiz">
-              <button className="mt-8 px-10 py-4 bg-white text-amber-600 font-bold text-lg rounded-full shadow-lg hover:bg-amber-50 hover:scale-105 transform transition-all duration-300 ease-in-out">
-                ทำแบบทดสอบ
-              </button>
-            </Link>
+
+            {/* --- NEW: Key Features List --- */}
+            <div className="mt-8 space-y-3 inline-block text-left">
+              <div className="flex items-center gap-3">
+                <FaCheckCircle className="text-green-500" />
+                <span className="text-gray-700 dark:text-gray-300 font-medium">ค้นพบจุดแข็งและความถนัดของคุณ</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <FaCompass className="text-blue-500" />
+                <span className="text-gray-700 dark:text-gray-300 font-medium">สำรวจเส้นทางอาชีพที่เป็นไปได้</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <FaLightbulb className="text-yellow-500" />
+                <span className="text-gray-700 dark:text-gray-300 font-medium">รับคำแนะนำค่ายที่เหมาะกับคุณโดยเฉพาะ</span>
+              </div>
+            </div>
+            <div>
+              <Link href="/quiz">
+                <Button
+                  size="lg"
+                  className="mt-10 h-14 px-10 font-bold text-lg shadow-lg hover:shadow-amber-500/30 bg-amber-500 text-white hover:scale-105 transform transition-all duration-300 ease-in-out"
+                  endContent={<FaArrowRight />}
+                >
+                  ทำแบบทดสอบ
+                </Button>
+              </Link>
+            </div>
+
           </div>
 
-          {/* ## Right Column: Logo and Graphic ## */}
-          <div className="flex flex-col items-center justify-center">
-            {/* You can replace this Image with your actual logo component or SVG */}
-            <div className="relative w-full max-w-md">
+          {/* ## Right Column: Overflowing Logo ## */}
+          <div className="relative flex items-center justify-center h-80 md:h-full">
+            <div className="absolute w-[400px] h-[400px] lg:w-[500px] lg:h-[500px] bg-gradient-to-br from-amber-100 to-yellow-50 dark:from-gray-800 dark:to-zinc-800 rounded-full" />
+            <div className="relative w-full h-full hover:scale-105 transition-transform duration-500 ease-in-out md:-mr-32">
               <Image
-                src="/skillscoutLogo.png" // Path to your logo in the 'public' folder
+                src="/skillscoutLogo-black.png"
                 alt="Skill Scout Graphic"
-                width={500}
-                height={300}
+                fill
+                priority
                 style={{ objectFit: 'contain' }}
+                sizes="(max-width: 768px) 80vw, 40vw"
               />
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-center -mt-4">
-                {/* <h2 className="text-5xl md:text-6xl font-extrabold tracking-wider text-amber-500">
-                  SKILL SCOUT
-                </h2>
-                <p className="mt-2 text-lg text-gray-600 dark:text-gray-400">
-                  ก้าวแรกสู่ความสำเร็จในแบบของคุณ
-                </p> */}
-              </div>
             </div>
           </div>
 
