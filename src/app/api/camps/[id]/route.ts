@@ -8,19 +8,21 @@ interface RouteParams {
   };
 }
 
-// GET /api/camps/[id] - Get camp by ID or slug
+// GET /api/camps/[id] - Get camp by ID or slug (with view increment)
 export async function GET(
   request: NextRequest,
   { params }: RouteParams
 ) {
   try {
     const { id } = params;
+    const { searchParams } = new URL(request.url);
+    const incrementView = searchParams.get('incrementView') === 'true';
 
     // Try to find by ID first, then by slug
-    let camp = await CampModel.findById(id);
+    let camp = await CampModel.findById(id, incrementView);
     
     if (!camp) {
-      camp = await CampModel.findBySlug(id);
+      camp = await CampModel.findBySlug(id, incrementView);
     }
 
     if (!camp) {

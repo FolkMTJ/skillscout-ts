@@ -90,6 +90,7 @@ export interface Camp {
     phone?: string;
     line?: string;
   };
+  views?: number; // NEW: Track views for trending camps
 }
 
 export interface Registration {

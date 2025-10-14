@@ -61,9 +61,10 @@ export interface Camp {
   fee?: number;
   tags?: string[];
   status?: CampStatus;
+  views?: number; // NEW: Track views for trending
 }
 
-// Internal MongoDB document type - NO extends MongoDocument
+// Internal MongoDB document type
 interface CampDoc {
   _id?: ObjectId;
   name: string;
@@ -87,11 +88,9 @@ interface CampDoc {
   slug: string;
   createdAt?: Date;
   updatedAt?: Date;
-  // Organizer fields
   organizerId?: string;
   organizerName?: string;
   organizerEmail?: string;
-  // Additional fields
   startDate?: Date;
   endDate?: Date;
   registrationDeadline?: Date;
@@ -100,6 +99,7 @@ interface CampDoc {
   fee?: number;
   tags?: string[];
   status?: CampStatus;
+  views?: number; // NEW: Track views for trending
 }
 
 // Type for creating new camp (without _id)
@@ -130,9 +130,9 @@ export class CampModel {
     return {
       ...rest,
       _id: idString,
-      id: idString, // Legacy support
-      daysLeft, // Calculated field
-      // Ensure all optional fields are included
+      id: idString,
+      daysLeft,
+      views: doc.views || 0, // Ensure views is always a number
       organizerId: doc.organizerId,
       organizerName: doc.organizerName,
       organizerEmail: doc.organizerEmail,
@@ -150,7 +150,6 @@ export class CampModel {
   // Helper: Generate slug from name
   private static generateSlug(name: string): string {
     if (!name || name.trim() === '') {
-      // Generate random slug if name is empty
       return `camp-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     }
     
@@ -159,7 +158,6 @@ export class CampModel {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
     
-    // If slug is empty after processing, generate random one
     if (!slug || slug === '' || slug === '-') {
       return `camp-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     }
@@ -170,11 +168,7 @@ export class CampModel {
   // Create
   static async create(campData: Partial<CampDoc>): Promise<Camp> {
     try {
-      console.log('=== CampModel.create START ===');
-      console.log('Input campData:', JSON.stringify(campData, null, 2));
-      
       const collection = await getCollection<CampDoc>(this.collectionName);
-      console.log('Collection obtained successfully');
       
       const now = new Date();
       const campDoc: CampDoc = {
@@ -197,13 +191,12 @@ export class CampModel {
         ratingBreakdown: campData.ratingBreakdown || { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 },
         reviews: campData.reviews || [],
         featured: campData.featured || false,
+        views: 0, // Initialize views to 0
         createdAt: now,
         updatedAt: now,
-        // Save organizer info
         organizerId: campData.organizerId,
         organizerName: campData.organizerName,
         organizerEmail: campData.organizerEmail,
-        // Additional fields
         startDate: campData.startDate,
         endDate: campData.endDate,
         registrationDeadline: campData.registrationDeadline,
@@ -213,15 +206,10 @@ export class CampModel {
         tags: campData.tags || [],
         status: campData.status,
       };
-
-      console.log('CampDoc prepared, attempting insertOne...');
       
       const insertResult = await collection.insertOne(campDoc);
-      console.log('Insert successful, ID:', insertResult.insertedId.toString());
-      
       const insertedId = insertResult.insertedId.toString();
       
-      // Calculate daysLeft
       let daysLeft: number | undefined;
       if (campDoc.deadline) {
         try {
@@ -258,6 +246,7 @@ export class CampModel {
         ratingBreakdown: campDoc.ratingBreakdown,
         featured: campDoc.featured,
         slug: campDoc.slug,
+        views: campDoc.views,
         createdAt: campDoc.createdAt,
         updatedAt: campDoc.updatedAt,
         organizerId: campDoc.organizerId,
@@ -273,36 +262,58 @@ export class CampModel {
         status: campDoc.status,
       };
       
-      console.log('=== CampModel.create END ===');
       return campResult;
     } catch (error) {
-      console.error('=== CampModel.create ERROR ===');
-      console.error('Error:', error);
-      console.error('Error type:', typeof error);
-      console.error('Error name:', error instanceof Error ? error.name : 'N/A');
-      console.error('Error message:', error instanceof Error ? error.message : 'Unknown');
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
+      console.error('Error creating camp:', error);
       throw error;
     }
   }
 
-  // Find by ID
-  static async findById(id: string): Promise<Camp | null> {
+  // Increment view count
+  static async incrementViews(id: string): Promise<boolean> {
+    try {
+      const collection = await getCollection<CampDoc>(this.collectionName);
+      const filter: Filter<CampDoc> = { _id: new ObjectId(id) } as Filter<CampDoc>;
+      
+      const update: UpdateFilter<CampDoc> = {
+        $inc: { views: 1 } as any,
+        $set: { updatedAt: new Date() } as Partial<CampDoc>,
+      };
+      
+      const result = await collection.updateOne(filter, update);
+      return result.modifiedCount > 0;
+    } catch (error) {
+      console.error('Error incrementing views:', error);
+      return false;
+    }
+  }
+
+  // Find by ID (with optional view increment)
+  static async findById(id: string, incrementView: boolean = false): Promise<Camp | null> {
     const collection = await getCollection<CampDoc>(this.collectionName);
     const filter: Filter<CampDoc> = { _id: new ObjectId(id) } as Filter<CampDoc>;
-    const camp = await collection.findOne(filter);
     
+    if (incrementView) {
+      await this.incrementViews(id);
+    }
+    
+    const camp = await collection.findOne(filter);
     if (!camp) return null;
     return this.toPublic(camp);
   }
 
-  // Find by slug
-  static async findBySlug(slug: string): Promise<Camp | null> {
+  // Find by slug (with optional view increment)
+  static async findBySlug(slug: string, incrementView: boolean = false): Promise<Camp | null> {
     const collection = await getCollection<CampDoc>(this.collectionName);
     const filter: Filter<CampDoc> = { slug } as Filter<CampDoc>;
     const camp = await collection.findOne(filter);
     
     if (!camp) return null;
+    
+    if (incrementView && camp._id) {
+      await this.incrementViews(camp._id.toString());
+    }
+    
     return this.toPublic(camp);
   }
 
@@ -448,31 +459,15 @@ export class CampModel {
     return camps.map(doc => this.toPublic(doc));
   }
 
-  // Get trending camps
+  // Get trending camps (sorted by views)
   static async getTrending(limit: number = 6): Promise<Camp[]> {
     const collection = await getCollection<CampDoc>(this.collectionName);
     
-    const camps = await collection.aggregate<CampDoc>([
-      {
-        $addFields: {
-          reviewCount: { $size: '$reviews' },
-        },
-      },
-      {
-        $match: {
-          reviewCount: { $gt: 0 },
-        },
-      },
-      {
-        $sort: {
-          avgRating: -1,
-          reviewCount: -1,
-        },
-      },
-      {
-        $limit: limit,
-      },
-    ]).toArray();
+    const camps = await collection
+      .find({})
+      .sort({ views: -1, avgRating: -1 })
+      .limit(limit)
+      .toArray();
     
     return camps.map(doc => this.toPublic(doc));
   }

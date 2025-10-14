@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { Button, Input } from "@heroui/react";
+import React, { useEffect, useState } from "react";
+import { Button, Input, Spinner } from "@heroui/react";
 import {
   FaSearch,
   FaStar,
@@ -16,12 +16,97 @@ import CampCarousel from "@/components/(card)/CampCarousel";
 import CampCard from "@/components/(card)/CampCard";
 import Footer from "@/components/layout/Footer";
 
-import { urgentCamps, trendingCamps } from "@/data/mockCamps";
 import { categories } from "@/data/categories";
 
 import HeroSection from '@/components/HeroSection';
+import { Camp } from "@/types/camp";
+
+// Helper function to convert Camp to CampData format for CampCard
+function campToCampData(camp: Camp) {
+  // Calculate days left from deadline
+  let daysLeft = 0;
+  if (camp.deadline) {
+    try {
+      const deadlineDate = new Date(camp.deadline);
+      const today = new Date();
+      const diffTime = deadlineDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      daysLeft = diffDays > 0 ? diffDays : 0;
+    } catch {
+      daysLeft = 0;
+    }
+  }
+
+  return {
+    id: camp._id,
+    name: camp.name,
+    image: camp.image,
+    date: camp.date,
+    location: camp.location,
+    price: camp.price,
+    deadline: camp.deadline,
+    daysLeft: daysLeft,
+    description: camp.description,
+    category: camp.category
+  };
+}
 
 export default function HomePage() {
+  const [urgentCamps, setUrgentCamps] = useState<any[]>([]);
+  const [trendingCamps, setTrendingCamps] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchCamps() {
+      try {
+        setLoading(true);
+        
+        // Fetch all camps
+        const response = await fetch('/api/camps');
+        if (!response.ok) throw new Error('Failed to fetch camps');
+        
+        const camps: Camp[] = await response.json();
+        
+        // Filter out full camps (where enrolled >= capacity)
+        const availableCamps = camps.filter(camp => {
+          const capacity = camp.capacity || camp.participantCount || 0;
+          const enrolled = camp.enrolled || 0;
+          return enrolled < capacity;
+        });
+
+        // Sort by deadline (closest first) for urgent camps
+        const urgent = [...availableCamps]
+          .filter(camp => camp.deadline) // Only camps with deadline
+          .sort((a, b) => {
+            const dateA = new Date(a.deadline).getTime();
+            const dateB = new Date(b.deadline).getTime();
+            return dateA - dateB;
+          })
+          .slice(0, 6)
+          .map(campToCampData);
+
+        // For trending, sort by views (highest first)
+        const trending = [...availableCamps]
+          .sort((a, b) => {
+            const viewsA = a.views || 0;
+            const viewsB = b.views || 0;
+            return viewsB - viewsA;
+          })
+          .slice(0, 4)
+          .map(campToCampData);
+
+        setUrgentCamps(urgent);
+        setTrendingCamps(trending);
+      } catch (error) {
+        console.error('Error fetching camps:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchCamps();
+  }, []);
+
   return (
     <div className="min-h-screen bg-2C2C2C dark:bg-zinc-900 overflow-x-hidden">
       {/* Banner Section - กระทัดรัดมากขึ้น */}
@@ -94,10 +179,22 @@ export default function HomePage() {
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-amber-50 to-transparent dark:from-zinc-900" />
       </section>
 
+      {/* Loading State */}
+      {loading && (
+        <section className="max-w-[1536px] mx-auto px-6 py-16">
+          <div className="flex flex-col items-center justify-center">
+            <Spinner size="lg" color="warning" className="mb-4" />
+            <p className="text-gray-600 dark:text-gray-400 font-semibold">กำลังโหลดค่าย...</p>
+          </div>
+        </section>
+      )}
+
       {/* Urgent Registration Section */}
-      <section className="max-w-[1536px] mx-auto px-6 py-8">
-        <CampCarousel camps={urgentCamps} title="กำลังจะปิดรับเร็วๆนี้!" />
-      </section>
+      {!loading && urgentCamps.length > 0 && (
+        <section className="max-w-[1536px] mx-auto px-6 py-8">
+          <CampCarousel camps={urgentCamps} title="กำลังจะปิดรับเร็วๆนี้!" />
+        </section>
+      )}
 
       {/* Hero Section */}
       <section className="py-6">
@@ -105,27 +202,40 @@ export default function HomePage() {
       </section>
 
       {/* Trending Section - 2 การ์ดต่อแถว */}
-      <section className="bg-gradient-to-br from-zinc-50 to-white dark:from-[#1a1a1a] dark:to-[#0a0a0a] py-8 border-y border-[#F2B33D]/10 dark:border-amber-500/10">
-        <div className="max-w-[1536px] mx-auto px-6">
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#F2B33D]/10 backdrop-blur-md border border-[#F2B33D]/30 dark:bg-amber-500/10 dark:border-amber-500/20 mb-2 hover:scale-105 transition-transform">
-              <FaStar className="text-[#F2B33D] dark:text-amber-400" size={12} />
-              <span className="font-bold text-[#2C2C2C] dark:text-white text-xs">ยอดนิยม</span>
+      {!loading && trendingCamps.length > 0 && (
+        <section className="bg-gradient-to-br from-zinc-50 to-white dark:from-[#1a1a1a] dark:to-[#0a0a0a] py-8 border-y border-[#F2B33D]/10 dark:border-amber-500/10">
+          <div className="max-w-[1536px] mx-auto px-6">
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#F2B33D]/10 backdrop-blur-md border border-[#F2B33D]/30 dark:bg-amber-500/10 dark:border-amber-500/20 mb-2 hover:scale-105 transition-transform">
+                <FaStar className="text-[#F2B33D] dark:text-amber-400" size={12} />
+                <span className="font-bold text-[#2C2C2C] dark:text-white text-xs">ยอดนิยม</span>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-black text-[#2C2C2C] dark:text-white mb-1.5">
+                ค่ายที่กำลัง<span className="text-[#F2B33D] dark:text-amber-400">มาแรง!</span>
+              </h2>
+              <p className="text-zinc-600 dark:text-zinc-400 text-sm max-w-xl mx-auto">
+                ค่ายยอดนิยมที่ได้รับความสนใจสูงสุดในเดือนนี้
+              </p>
             </div>
-            <h2 className="text-2xl md:text-3xl font-black text-[#2C2C2C] dark:text-white mb-1.5">
-              ค่ายที่กำลัง<span className="text-[#F2B33D] dark:text-amber-400">มาแรง!</span>
-            </h2>
-            <p className="text-zinc-600 dark:text-zinc-400 text-sm max-w-xl mx-auto">
-              ค่ายยอดนิยมที่ได้รับความสนใจสูงสุดในเดือนนี้
-            </p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {trendingCamps.map((camp) => (
+                <CampCard key={camp.id} camp={camp} variant="detailed" />
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {trendingCamps.map((camp) => (
-              <CampCard key={camp.id} camp={camp} variant="detailed" />
-            ))}
+        </section>
+      )}
+
+      {/* Empty State */}
+      {!loading && urgentCamps.length === 0 && trendingCamps.length === 0 && (
+        <section className="max-w-[1536px] mx-auto px-6 py-16">
+          <div className="text-center">
+            <div className="text-6xl mb-4">🏕️</div>
+            <h3 className="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-2">ยังไม่มีค่ายในขณะนี้</h3>
+            <p className="text-gray-600 dark:text-gray-400">กรุณารอสักครู่ หรือลองรีเฟรชหน้าใหม่</p>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Categories Section - กระทัดรัดขึ้น */}
       <section className="max-w-[1536px] mx-auto px-6 py-8">

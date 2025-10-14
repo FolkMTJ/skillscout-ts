@@ -3,18 +3,23 @@ import { getCollection } from '@/lib/mongodb';
 import { Registration, RegistrationStatus } from '@/types/camp';
 import { ObjectId, Filter, UpdateFilter } from 'mongodb';
 
-// Internal MongoDB document type - NO extends MongoDocument
+// Internal MongoDB document type
 interface RegistrationDoc {
   _id?: ObjectId;
   campId: string;
   userId: string;
   userName: string;
   userEmail: string;
+  userPhone?: string;
   status: RegistrationStatus;
   appliedAt: Date;
   reviewedAt?: Date;
   reviewedBy?: string;
   notes?: string;
+  answers?: {
+    question: string;
+    answer: string;
+  }[];
 }
 
 // Type for creating new registration (without _id)
@@ -32,20 +37,22 @@ export class RegistrationModel {
     };
   }
 
-  static async create(regData: Omit<Registration, '_id' | 'appliedAt' | 'status'>): Promise<Registration> {
+  static async create(regData: Partial<Registration>): Promise<Registration> {
     const collection = await getCollection<RegistrationDoc>(this.collectionName);
     
     const now = new Date();
     const registrationDoc: RegistrationInput = {
-      campId: regData.campId,
-      userId: regData.userId,
-      userName: regData.userName,
-      userEmail: regData.userEmail,
+      campId: regData.campId!,
+      userId: regData.userId!,
+      userName: regData.userName!,
+      userEmail: regData.userEmail!,
+      userPhone: regData.userPhone,
       status: RegistrationStatus.PENDING,
       appliedAt: now,
       reviewedAt: regData.reviewedAt,
       reviewedBy: regData.reviewedBy,
       notes: regData.notes,
+      answers: regData.answers || [],
     };
 
     const result = await collection.insertOne(registrationDoc);
@@ -56,11 +63,13 @@ export class RegistrationModel {
       userId: registrationDoc.userId,
       userName: registrationDoc.userName,
       userEmail: registrationDoc.userEmail,
+      userPhone: registrationDoc.userPhone,
       status: registrationDoc.status,
       appliedAt: registrationDoc.appliedAt,
       reviewedAt: registrationDoc.reviewedAt,
       reviewedBy: registrationDoc.reviewedBy,
       notes: registrationDoc.notes,
+      answers: registrationDoc.answers,
     };
   }
 
