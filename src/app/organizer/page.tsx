@@ -27,7 +27,70 @@ export default function OrganizerDashboard() {
     capacity: '',
     fee: '0',
     tags: [] as string[],
+    image: '',
+    galleryImages: [] as string[],
+    activityFormat: 'On-site',
+    qualificationLevel: '',
+    qualificationDetails: '',
+    additionalInfo: [] as string[],
+    organizers: [] as Array<{ name: string; imageUrl: string }>,
   });
+
+  const [tagInput, setTagInput] = useState('');
+  const [additionalInfoInput, setAdditionalInfoInput] = useState('');
+  const [organizerName, setOrganizerName] = useState('');
+  const [organizerImage, setOrganizerImage] = useState('');
+
+  // Helper functions for managing arrays
+  const addTag = () => {
+    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+      setFormData({ ...formData, tags: [...formData.tags, tagInput.trim()] });
+      setTagInput('');
+    }
+  };
+
+  const removeTag = (tag: string) => {
+    setFormData({ ...formData, tags: formData.tags.filter(t => t !== tag) });
+  };
+
+  const addAdditionalInfo = () => {
+    if (additionalInfoInput.trim()) {
+      setFormData({ ...formData, additionalInfo: [...formData.additionalInfo, additionalInfoInput.trim()] });
+      setAdditionalInfoInput('');
+    }
+  };
+
+  const removeAdditionalInfo = (index: number) => {
+    setFormData({ ...formData, additionalInfo: formData.additionalInfo.filter((_, i) => i !== index) });
+  };
+
+  const addOrganizer = () => {
+    if (organizerName.trim()) {
+      setFormData({
+        ...formData,
+        organizers: [...formData.organizers, {
+          name: organizerName.trim(),
+          imageUrl: organizerImage.trim() || '/api/placeholder/100/100'
+        }]
+      });
+      setOrganizerName('');
+      setOrganizerImage('');
+    }
+  };
+
+  const removeOrganizer = (index: number) => {
+    setFormData({ ...formData, organizers: formData.organizers.filter((_, i) => i !== index) });
+  };
+
+  const addGalleryImage = (url: string) => {
+    if (url.trim() && !formData.galleryImages.includes(url.trim())) {
+      setFormData({ ...formData, galleryImages: [...formData.galleryImages, url.trim()] });
+    }
+  };
+
+  const removeGalleryImage = (index: number) => {
+    setFormData({ ...formData, galleryImages: formData.galleryImages.filter((_, i) => i !== index) });
+  };
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.id) {
@@ -94,6 +157,13 @@ export default function OrganizerDashboard() {
       toast.error('กรุณาเข้าสู่ระบบก่อน');
       return;
     }
+
+    // Validate form data
+    if (!formData.name || !formData.description || !formData.location || 
+        !formData.startDate || !formData.endDate || !formData.registrationDeadline) {
+      toast.error('กรุณากรอกข้อมูลให้ครบถ้วน');
+      return;
+    }
     
     try {
       // สร้าง slug จากชื่อค่าย
@@ -102,17 +172,22 @@ export default function OrganizerDashboard() {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
 
+      // สร้าง Date objects
+      const startDate = new Date(formData.startDate);
+      const endDate = new Date(formData.endDate);
+      const registrationDeadline = new Date(formData.registrationDeadline);
+
       const campPayload = {
         name: formData.name,
         category: formData.tags[0] || 'General', // ใช้ tag แรกเป็น category
-        date: `${new Date(formData.startDate).toLocaleDateString('th-TH', { day: '2-digit', month: 'short' })} - ${new Date(formData.endDate).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' })}`,
+        date: `${startDate.toLocaleDateString('th-TH', { day: '2-digit', month: 'short' })} - ${endDate.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' })}`,
         location: formData.location,
-        price: `฿${parseInt(formData.fee).toLocaleString()}`,
+        price: `฿${parseInt(formData.fee || '0').toLocaleString()}`,
         image: '/api/placeholder/800/600', // ใส่ URL รูปภาพ default
         galleryImages: [],
         description: formData.description,
-        deadline: new Date(formData.registrationDeadline).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }),
-        participantCount: parseInt(formData.capacity),
+        deadline: registrationDeadline.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }),
+        participantCount: parseInt(formData.capacity || '0'),
         activityFormat: 'On-site',
         qualifications: {
           level: 'ทุกระดับ',
@@ -128,20 +203,22 @@ export default function OrganizerDashboard() {
         ratingBreakdown: { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 },
         featured: false,
         slug,
-        // ข้อมูล organizer (ไม่ได้อยู่ใน Camp schema แต่เก็บใน types)
+        // ข้อมูล organizer
         organizerId: session.user.id,
         organizerName: session.user.name,
         organizerEmail: session.user.email,
         // ข้อมูลเพิ่มเติมจาก form
-        startDate: new Date(formData.startDate),
-        endDate: new Date(formData.endDate),
-        registrationDeadline: new Date(formData.registrationDeadline),
-        capacity: parseInt(formData.capacity),
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        registrationDeadline: registrationDeadline.toISOString(),
+        capacity: parseInt(formData.capacity || '0'),
         enrolled: 0,
-        fee: parseInt(formData.fee),
+        fee: parseInt(formData.fee || '0'),
         tags: formData.tags,
         status: 'active' as const,
       };
+
+      console.log('Sending camp payload:', campPayload);
 
       const response = await fetch('/api/camps', {
         method: 'POST',
@@ -153,7 +230,7 @@ export default function OrganizerDashboard() {
         const errorData = await response.json();
         console.error('Create camp error:', errorData);
         console.error('Response status:', response.status);
-        throw new Error(errorData.error || 'Failed to create camp');
+        throw new Error(errorData.message || errorData.error || 'Failed to create camp');
       }
 
       toast.success('สร้างค่ายสำเร็จ!');
@@ -171,13 +248,47 @@ export default function OrganizerDashboard() {
     if (!editingCamp) return;
 
     try {
+      // สร้าง slug ใหม่จากชื่อค่าย (ถ้ามีการเปลี่ยนชื่อ)
+      const slug = formData.name !== editingCamp.name
+        ? formData.name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)/g, '')
+        : editingCamp.slug;
+
+      const updatePayload = {
+        name: formData.name,
+        description: formData.description,
+        location: formData.location,
+        startDate: new Date(formData.startDate),
+        endDate: new Date(formData.endDate),
+        registrationDeadline: new Date(formData.registrationDeadline),
+        capacity: parseInt(formData.capacity),
+        fee: parseInt(formData.fee),
+        tags: formData.tags,
+        slug,
+        // อัพเดทฟิลด์อื่นๆ ที่เกี่ยวข้อง
+        date: `${new Date(formData.startDate).toLocaleDateString('th-TH', { day: '2-digit', month: 'short' })} - ${new Date(formData.endDate).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' })}`,
+        deadline: new Date(formData.registrationDeadline).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }),
+        participantCount: parseInt(formData.capacity),
+        price: `฿${parseInt(formData.fee).toLocaleString()}`,
+        qualifications: {
+          level: editingCamp.qualifications?.level || 'ทุกระดับ',
+          fields: formData.tags,
+        },
+      };
+
       const response = await fetch(`/api/camps/${editingCamp._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(updatePayload),
       });
 
-      if (!response.ok) throw new Error('Failed to update camp');
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Update camp error:', errorData);
+        throw new Error(errorData.error || 'Failed to update camp');
+      }
 
       toast.success('อัพเดทค่ายสำเร็จ!');
       setEditingCamp(null);
@@ -185,7 +296,7 @@ export default function OrganizerDashboard() {
       fetchData();
     } catch (error) {
       console.error('Error updating camp:', error);
-      toast.error('เกิดข้อผิดพลาดในการอัพเดทค่าย');
+      toast.error(error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการอัพเดทค่าย');
     }
   };
 

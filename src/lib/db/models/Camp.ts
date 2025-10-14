@@ -21,8 +21,11 @@ export interface Review {
   date: string;
 }
 
+export type CampStatus = 'draft' | 'active' | 'closed' | 'cancelled';
+
 export interface Camp {
   _id: string;
+  id?: string; // Legacy support - same as _id
   name: string;
   category: string;
   date: string;
@@ -32,6 +35,7 @@ export interface Camp {
   galleryImages: string[];
   description: string;
   deadline: string;
+  daysLeft?: number; // Legacy support - calculated field
   participantCount: number;
   activityFormat: string;
   qualifications: Qualifications;
@@ -44,6 +48,19 @@ export interface Camp {
   slug: string;
   createdAt?: Date;
   updatedAt?: Date;
+  // Organizer fields
+  organizerId?: string;
+  organizerName?: string;
+  organizerEmail?: string;
+  // Additional fields
+  startDate?: Date;
+  endDate?: Date;
+  registrationDeadline?: Date;
+  capacity?: number;
+  enrolled?: number;
+  fee?: number;
+  tags?: string[];
+  status?: CampStatus;
 }
 
 // Internal MongoDB document type - NO extends MongoDocument
@@ -82,11 +99,11 @@ interface CampDoc {
   enrolled?: number;
   fee?: number;
   tags?: string[];
-  status?: string;
+  status?: CampStatus;
 }
 
 // Type for creating new camp (without _id)
-type CampInput = Omit<CampDoc, '_id'>;
+export type CampInput = Omit<CampDoc, '_id'>;
 
 export class CampModel {
   private static collectionName = 'camps';
@@ -94,9 +111,27 @@ export class CampModel {
   // Helper: Convert MongoDB doc to public Camp
   private static toPublic(doc: CampDoc): Camp {
     const { _id, ...rest } = doc;
+    const idString = _id?.toString() || '';
+    
+    // Calculate daysLeft from deadline
+    let daysLeft: number | undefined;
+    if (doc.deadline) {
+      try {
+        const deadlineDate = new Date(doc.deadline);
+        const today = new Date();
+        const diffTime = deadlineDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        daysLeft = diffDays > 0 ? diffDays : 0;
+      } catch {
+        daysLeft = undefined;
+      }
+    }
+    
     return {
       ...rest,
-      _id: _id?.toString() || '',
+      _id: idString,
+      id: idString, // Legacy support
+      daysLeft, // Calculated field
       // Ensure all optional fields are included
       organizerId: doc.organizerId,
       organizerName: doc.organizerName,
@@ -108,7 +143,7 @@ export class CampModel {
       enrolled: doc.enrolled,
       fee: doc.fee,
       tags: doc.tags,
-      status: doc.status as CampStatus | undefined,
+      status: doc.status,
     };
   }
 
@@ -133,84 +168,122 @@ export class CampModel {
   }
 
   // Create
-  static async create(campData: any): Promise<Camp> {
-    const collection = await getCollection<CampDoc>(this.collectionName);
-    
-    const now = new Date();
-    const campDoc: any = {
-      name: campData.name,
-      category: campData.category,
-      date: campData.date,
-      location: campData.location,
-      price: campData.price,
-      image: campData.image,
-      galleryImages: campData.galleryImages || [],
-      description: campData.description,
-      deadline: campData.deadline,
-      participantCount: campData.participantCount,
-      activityFormat: campData.activityFormat,
-      qualifications: campData.qualifications,
-      additionalInfo: campData.additionalInfo || [],
-      organizers: campData.organizers || [],
-      slug: campData.slug || this.generateSlug(campData.name),
-      avgRating: campData.avgRating || 0,
-      ratingBreakdown: campData.ratingBreakdown || { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 },
-      reviews: campData.reviews || [],
-      featured: campData.featured || false,
-      createdAt: now,
-      updatedAt: now,
-      // Save organizer info
-      organizerId: campData.organizerId,
-      organizerName: campData.organizerName,
-      organizerEmail: campData.organizerEmail,
-      // Additional fields
-      startDate: campData.startDate,
-      endDate: campData.endDate,
-      registrationDeadline: campData.registrationDeadline,
-      capacity: campData.capacity,
-      enrolled: campData.enrolled || 0,
-      fee: campData.fee,
-      tags: campData.tags || [],
-      status: campData.status,
-    };
+  static async create(campData: Partial<CampDoc>): Promise<Camp> {
+    try {
+      console.log('=== CampModel.create START ===');
+      console.log('Input campData:', JSON.stringify(campData, null, 2));
+      
+      const collection = await getCollection<CampDoc>(this.collectionName);
+      console.log('Collection obtained successfully');
+      
+      const now = new Date();
+      const campDoc: CampDoc = {
+        name: campData.name || '',
+        category: campData.category || '',
+        date: campData.date || '',
+        location: campData.location || '',
+        price: campData.price || '',
+        image: campData.image || '',
+        galleryImages: campData.galleryImages || [],
+        description: campData.description || '',
+        deadline: campData.deadline || '',
+        participantCount: campData.participantCount || 0,
+        activityFormat: campData.activityFormat || '',
+        qualifications: campData.qualifications || { level: '' },
+        additionalInfo: campData.additionalInfo || [],
+        organizers: campData.organizers || [],
+        slug: campData.slug || this.generateSlug(campData.name || ''),
+        avgRating: campData.avgRating || 0,
+        ratingBreakdown: campData.ratingBreakdown || { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 },
+        reviews: campData.reviews || [],
+        featured: campData.featured || false,
+        createdAt: now,
+        updatedAt: now,
+        // Save organizer info
+        organizerId: campData.organizerId,
+        organizerName: campData.organizerName,
+        organizerEmail: campData.organizerEmail,
+        // Additional fields
+        startDate: campData.startDate,
+        endDate: campData.endDate,
+        registrationDeadline: campData.registrationDeadline,
+        capacity: campData.capacity,
+        enrolled: campData.enrolled || 0,
+        fee: campData.fee,
+        tags: campData.tags || [],
+        status: campData.status,
+      };
 
-    const result = await collection.insertOne(campDoc);
-    
-    return {
-      _id: result.insertedId.toString(),
-      name: campDoc.name,
-      category: campDoc.category,
-      date: campDoc.date,
-      location: campDoc.location,
-      price: campDoc.price,
-      image: campDoc.image,
-      galleryImages: campDoc.galleryImages,
-      description: campDoc.description,
-      deadline: campDoc.deadline,
-      participantCount: campDoc.participantCount,
-      activityFormat: campDoc.activityFormat,
-      qualifications: campDoc.qualifications,
-      additionalInfo: campDoc.additionalInfo,
-      organizers: campDoc.organizers,
-      reviews: campDoc.reviews,
-      avgRating: campDoc.avgRating,
-      ratingBreakdown: campDoc.ratingBreakdown,
-      featured: campDoc.featured,
-      slug: campDoc.slug,
-      createdAt: campDoc.createdAt,
-      updatedAt: campDoc.updatedAt,
-      organizerId: campDoc.organizerId,
-      organizerName: campDoc.organizerName,
-      organizerEmail: campDoc.organizerEmail,
-      startDate: campDoc.startDate,
-      endDate: campDoc.endDate,
-      registrationDeadline: campDoc.registrationDeadline,
-      capacity: campDoc.capacity,
-      enrolled: campDoc.enrolled,
-      fee: campDoc.fee,
-      tags: campDoc.tags,
-      status: campDoc.status,
-    };
+      console.log('CampDoc prepared, attempting insertOne...');
+      
+      const insertResult = await collection.insertOne(campDoc);
+      console.log('Insert successful, ID:', insertResult.insertedId.toString());
+      
+      const insertedId = insertResult.insertedId.toString();
+      
+      // Calculate daysLeft
+      let daysLeft: number | undefined;
+      if (campDoc.deadline) {
+        try {
+          const deadlineDate = new Date(campDoc.deadline);
+          const today = new Date();
+          const diffTime = deadlineDate.getTime() - today.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          daysLeft = diffDays > 0 ? diffDays : 0;
+        } catch {
+          daysLeft = undefined;
+        }
+      }
+      
+      const campResult: Camp = {
+        _id: insertedId,
+        id: insertedId,
+        daysLeft,
+        name: campDoc.name,
+        category: campDoc.category,
+        date: campDoc.date,
+        location: campDoc.location,
+        price: campDoc.price,
+        image: campDoc.image,
+        galleryImages: campDoc.galleryImages,
+        description: campDoc.description,
+        deadline: campDoc.deadline,
+        participantCount: campDoc.participantCount,
+        activityFormat: campDoc.activityFormat,
+        qualifications: campDoc.qualifications,
+        additionalInfo: campDoc.additionalInfo,
+        organizers: campDoc.organizers,
+        reviews: campDoc.reviews,
+        avgRating: campDoc.avgRating,
+        ratingBreakdown: campDoc.ratingBreakdown,
+        featured: campDoc.featured,
+        slug: campDoc.slug,
+        createdAt: campDoc.createdAt,
+        updatedAt: campDoc.updatedAt,
+        organizerId: campDoc.organizerId,
+        organizerName: campDoc.organizerName,
+        organizerEmail: campDoc.organizerEmail,
+        startDate: campDoc.startDate,
+        endDate: campDoc.endDate,
+        registrationDeadline: campDoc.registrationDeadline,
+        capacity: campDoc.capacity,
+        enrolled: campDoc.enrolled,
+        fee: campDoc.fee,
+        tags: campDoc.tags,
+        status: campDoc.status,
+      };
+      
+      console.log('=== CampModel.create END ===');
+      return campResult;
+    } catch (error) {
+      console.error('=== CampModel.create ERROR ===');
+      console.error('Error:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error name:', error instanceof Error ? error.name : 'N/A');
+      console.error('Error message:', error instanceof Error ? error.message : 'Unknown');
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
+      throw error;
+    }
   }
 
   // Find by ID
@@ -220,7 +293,7 @@ export class CampModel {
     const camp = await collection.findOne(filter);
     
     if (!camp) return null;
-    return this.toPublic(camp as CampDoc);
+    return this.toPublic(camp);
   }
 
   // Find by slug
@@ -230,7 +303,7 @@ export class CampModel {
     const camp = await collection.findOne(filter);
     
     if (!camp) return null;
-    return this.toPublic(camp as CampDoc);
+    return this.toPublic(camp);
   }
 
   // Find all
@@ -243,7 +316,7 @@ export class CampModel {
       .sort({ createdAt: -1 })
       .toArray();
     
-    return camps.map(doc => this.toPublic(doc as CampDoc));
+    return camps.map(doc => this.toPublic(doc));
   }
 
   // Find by category
@@ -256,7 +329,7 @@ export class CampModel {
       .sort({ createdAt: -1 })
       .toArray();
     
-    return camps.map(doc => this.toPublic(doc as CampDoc));
+    return camps.map(doc => this.toPublic(doc));
   }
 
   // Search
@@ -271,7 +344,7 @@ export class CampModel {
     } as Filter<CampDoc>;
     
     const camps = await collection.find(filter).toArray();
-    return camps.map(doc => this.toPublic(doc as CampDoc));
+    return camps.map(doc => this.toPublic(doc));
   }
 
   // Update
@@ -372,14 +445,14 @@ export class CampModel {
       .limit(limit)
       .toArray();
     
-    return camps.map(doc => this.toPublic(doc as CampDoc));
+    return camps.map(doc => this.toPublic(doc));
   }
 
   // Get trending camps
   static async getTrending(limit: number = 6): Promise<Camp[]> {
     const collection = await getCollection<CampDoc>(this.collectionName);
     
-    const camps = await collection.aggregate([
+    const camps = await collection.aggregate<CampDoc>([
       {
         $addFields: {
           reviewCount: { $size: '$reviews' },
@@ -401,7 +474,7 @@ export class CampModel {
       },
     ]).toArray();
     
-    return camps.map(doc => this.toPublic(doc as CampDoc));
+    return camps.map(doc => this.toPublic(doc));
   }
 
   // Count documents
@@ -430,7 +503,7 @@ export class CampModel {
     const pages = Math.ceil(total / limit);
 
     return {
-      camps: camps.map(doc => this.toPublic(doc as CampDoc)),
+      camps: camps.map(doc => this.toPublic(doc)),
       total,
       pages,
     };

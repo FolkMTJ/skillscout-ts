@@ -37,10 +37,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
+    console.log('=== CREATE CAMP REQUEST ===');
     console.log('Received camp data:', JSON.stringify(body, null, 2));
 
     // Validate required fields for our new structure
     if (!body.name || !body.description || !body.location) {
+      console.error('Validation failed: Missing required fields');
       return NextResponse.json(
         { error: 'Missing required fields: name, description, location' },
         { status: 400 }
@@ -67,12 +69,12 @@ export async function POST(request: NextRequest) {
       avgRating: 0,
       ratingBreakdown: { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 },
       featured: body.featured || false,
-      slug: body.slug || body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      slug: body.slug || body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
       // Organizer info
       organizerId: body.organizerId,
       organizerName: body.organizerName,
       organizerEmail: body.organizerEmail,
-      // Additional fields
+      // Additional fields - convert ISO strings to Date objects
       startDate: body.startDate ? new Date(body.startDate) : undefined,
       endDate: body.endDate ? new Date(body.endDate) : undefined,
       registrationDeadline: body.registrationDeadline ? new Date(body.registrationDeadline) : undefined,
@@ -83,19 +85,29 @@ export async function POST(request: NextRequest) {
       status: body.status || 'active',
     };
 
-    const camp = await CampModel.create(campData as any);
+    console.log('Mapped camp data:', JSON.stringify(campData, null, 2));
+    console.log('Calling CampModel.create...');
 
-    console.log('Camp created successfully:', camp);
+    const camp = await CampModel.create(campData);
+
+    console.log('Camp created successfully:', camp._id);
+    console.log('===========================');
 
     return NextResponse.json(camp, { status: 201 });
   } catch (error) {
+    console.error('=== CREATE CAMP ERROR ===');
     console.error('Error creating camp:', error);
-    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Error type:', typeof error);
+    console.error('Error name:', error instanceof Error ? error.name : 'N/A');
+    console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
+    console.error('========================');
+    
     return NextResponse.json(
       { 
         error: 'Failed to create camp',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error',
+        type: error instanceof Error ? error.name : typeof error
       },
       { status: 500 }
     );

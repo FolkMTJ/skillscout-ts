@@ -40,6 +40,38 @@ export async function GET(
   }
 }
 
+// PATCH /api/camps/[id] - Partial update camp
+export async function PATCH(
+  request: NextRequest,
+  { params }: RouteParams
+) {
+  try {
+    const { id } = params;
+    const body = await request.json();
+
+    // Note: You can add authentication/authorization here
+    // Example: Check if user has permission to update this camp
+
+    const success = await CampModel.update(id, body);
+
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Camp not found or no changes made' },
+        { status: 404 }
+      );
+    }
+
+    const updatedCamp = await CampModel.findById(id);
+    return NextResponse.json(updatedCamp);
+  } catch (error) {
+    console.error('Error updating camp:', error);
+    return NextResponse.json(
+      { error: 'Failed to update camp' },
+      { status: 500 }
+    );
+  }
+}
+
 // PUT /api/camps/[id] - Update camp
 export async function PUT(
   request: NextRequest,
