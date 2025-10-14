@@ -9,7 +9,7 @@ import { Camp, Registration, RegistrationStatus } from '@/types/camp';
 import toast from 'react-hot-toast';
 
 export default function OrganizerDashboard() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [camps, setCamps] = useState<Camp[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,26 +30,55 @@ export default function OrganizerDashboard() {
   });
 
   useEffect(() => {
-    fetchData();
-  });
+    if (status === 'authenticated' && session?.user?.id) {
+      fetchData();
+    }
+  }, [status, session?.user?.id]); // ✅ เพิ่ม dependency array
 
   const fetchData = async () => {
+    if (!session?.user?.id) return;
+
     try {
       setLoading(true);
       
       // Fetch camps
       const campsRes = await fetch('/api/camps');
+      
+      if (!campsRes.ok) {
+        throw new Error('Failed to fetch camps');
+      }
+
       const campsData = await campsRes.json();
-      const myCamps = campsData.camps.filter((c: Camp) => c.organizerId === session?.user?.id);
+      
+      console.log('=== DEBUG INFO ===');
+      console.log('All Camps:', campsData);
+      console.log('Session User ID:', session.user.id);
+      console.log('Session User:', session.user);
+      
+      // ✅ ตรวจสอบ structure ก่อนใช้
+      const allCamps = Array.isArray(campsData) ? campsData : (campsData.camps || []);
+      console.log('All Camps Array:', allCamps);
+      console.log('First Camp:', allCamps[0]);
+      
+      const myCamps = allCamps.filter((c: Camp) => {
+        console.log(`Camp "${c.name}" organizerId: ${c.organizerId}, Match: ${c.organizerId === session.user.id}`);
+        return c.organizerId === session.user.id;
+      });
+      console.log('My Camps:', myCamps);
+      console.log('===================');
       setCamps(myCamps);
 
       // Fetch registrations for my camps
-      const regPromises = myCamps.map((camp: Camp) =>
-        fetch(`/api/registrations?campId=${camp._id}`).then(r => r.json())
-      );
-      const regResults = await Promise.all(regPromises);
-      const allRegs = regResults.flatMap(r => r.registrations);
-      setRegistrations(allRegs);
+      if (myCamps.length > 0) {
+        const regPromises = myCamps.map((camp: Camp) =>
+          fetch(`/api/registrations?campId=${camp._id}`)
+            .then(r => r.json())
+            .catch(() => ({ registrations: [] }))
+        );
+        const regResults = await Promise.all(regPromises);
+        const allRegs = regResults.flatMap(r => r.registrations || []);
+        setRegistrations(allRegs);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
@@ -61,14 +90,71 @@ export default function OrganizerDashboard() {
   const handleCreateCamp = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!session?.user?.id) {
+      toast.error('กรุณาเข้าสู่ระบบก่อน');
+      return;
+    }
+    
     try {
+      // สร้าง slug จากชื่อค่าย
+      const slug = formData.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+
+      const campPayload = {
+        name: formData.name,
+        category: formData.tags[0] || 'General', // ใช้ tag แรกเป็น category
+        date: `${new Date(formData.startDate).toLocaleDateString('th-TH', { day: '2-digit', month: 'short' })} - ${new Date(formData.endDate).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' })}`,
+        location: formData.location,
+        price: `฿${parseInt(formData.fee).toLocaleString()}`,
+        image: '/api/placeholder/800/600', // ใส่ URL รูปภาพ default
+        galleryImages: [],
+        description: formData.description,
+        deadline: new Date(formData.registrationDeadline).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }),
+        participantCount: parseInt(formData.capacity),
+        activityFormat: 'On-site',
+        qualifications: {
+          level: 'ทุกระดับ',
+          fields: formData.tags,
+        },
+        additionalInfo: [],
+        organizers: [{
+          name: session.user.name || 'Organizer',
+          imageUrl: session.user.image || '/api/placeholder/100/100',
+        }],
+        reviews: [],
+        avgRating: 0,
+        ratingBreakdown: { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 },
+        featured: false,
+        slug,
+        // ข้อมูล organizer (ไม่ได้อยู่ใน Camp schema แต่เก็บใน types)
+        organizerId: session.user.id,
+        organizerName: session.user.name,
+        organizerEmail: session.user.email,
+        // ข้อมูลเพิ่มเติมจาก form
+        startDate: new Date(formData.startDate),
+        endDate: new Date(formData.endDate),
+        registrationDeadline: new Date(formData.registrationDeadline),
+        capacity: parseInt(formData.capacity),
+        enrolled: 0,
+        fee: parseInt(formData.fee),
+        tags: formData.tags,
+        status: 'active' as const,
+      };
+
       const response = await fetch('/api/camps', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(campPayload),
       });
 
-      if (!response.ok) throw new Error('Failed to create camp');
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Create camp error:', errorData);
+        console.error('Response status:', response.status);
+        throw new Error(errorData.error || 'Failed to create camp');
+      }
 
       toast.success('สร้างค่ายสำเร็จ!');
       setShowCreateForm(false);
@@ -76,7 +162,7 @@ export default function OrganizerDashboard() {
       fetchData();
     } catch (error) {
       console.error('Error creating camp:', error);
-      toast.error('เกิดข้อผิดพลาดในการสร้างค่าย');
+      toast.error(error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการสร้างค่าย');
     }
   };
 
@@ -126,7 +212,10 @@ export default function OrganizerDashboard() {
       const response = await fetch(`/api/registrations/${regId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: RegistrationStatus.APPROVED }),
+        body: JSON.stringify({ 
+          status: RegistrationStatus.APPROVED,
+          reviewedBy: session?.user?.id 
+        }),
       });
 
       if (!response.ok) throw new Error('Failed to approve registration');
@@ -144,7 +233,10 @@ export default function OrganizerDashboard() {
       const response = await fetch(`/api/registrations/${regId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: RegistrationStatus.REJECTED }),
+        body: JSON.stringify({ 
+          status: RegistrationStatus.REJECTED,
+          reviewedBy: session?.user?.id  
+        }),
       });
 
       if (!response.ok) throw new Error('Failed to reject registration');
@@ -162,13 +254,13 @@ export default function OrganizerDashboard() {
     setFormData({
       name: camp.name,
       description: camp.description,
-      startDate: new Date(camp.startDate).toISOString().split('T')[0],
-      endDate: new Date(camp.endDate).toISOString().split('T')[0],
-      registrationDeadline: new Date(camp.registrationDeadline).toISOString().split('T')[0],
+      startDate: camp.startDate ? new Date(camp.startDate).toISOString().split('T')[0] : '',
+      endDate: camp.endDate ? new Date(camp.endDate).toISOString().split('T')[0] : '',
+      registrationDeadline: camp.registrationDeadline ? new Date(camp.registrationDeadline).toISOString().split('T')[0] : '',
       location: camp.location,
-      capacity: camp.capacity.toString(),
-      fee: camp.fee.toString(),
-      tags: camp.tags,
+      capacity: camp.capacity?.toString() || camp.participantCount.toString(),
+      fee: camp.fee?.toString() || '0',
+      tags: camp.tags || camp.qualifications?.fields || [],
     });
     setShowCreateForm(true);
   };
@@ -189,12 +281,8 @@ export default function OrganizerDashboard() {
     setShowCreateForm(false);
   };
 
-  // Statistics
-  const totalEnrolled = camps.reduce((sum, c) => sum + c.enrolled, 0);
-  const pendingRegs = registrations.filter(r => r.status === RegistrationStatus.PENDING).length;
-  const approvedRegs = registrations.filter(r => r.status === RegistrationStatus.APPROVED).length;
-
-  if (loading) {
+  // Check authentication
+  if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -204,6 +292,25 @@ export default function OrganizerDashboard() {
       </div>
     );
   }
+
+  if (status === 'unauthenticated') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">กรุณาเข้าสู่ระบบ</h2>
+          <p className="text-gray-600 mb-6">คุณต้องเข้าสู่ระบบเพื่อเข้าถึงหน้านี้</p>
+          <Button color="primary" href="/login">
+            เข้าสู่ระบบ
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  // Statistics
+  const totalEnrolled = camps.reduce((sum, c) => sum + (c.enrolled || 0), 0);
+  const pendingRegs = registrations.filter(r => r.status === RegistrationStatus.PENDING).length;
+  const approvedRegs = registrations.filter(r => r.status === RegistrationStatus.APPROVED).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
@@ -460,10 +567,10 @@ export default function OrganizerDashboard() {
                           📍 {camp.location}
                         </Chip>
                         <Chip size="sm" variant="flat" color="secondary">
-                          📅 {new Date(camp.startDate).toLocaleDateString('th-TH')}
+                          📅 {camp.startDate ? new Date(camp.startDate).toLocaleDateString('th-TH') : camp.date}
                         </Chip>
                         <Chip size="sm" variant="flat" color="success">
-                          👥 {camp.enrolled}/{camp.capacity}
+                          👥 {camp.enrolled || 0}/{camp.capacity || camp.participantCount}
                         </Chip>
                         {pending > 0 && (
                           <Chip size="sm" variant="flat" color="warning">
@@ -475,12 +582,12 @@ export default function OrganizerDashboard() {
                       <div className="bg-gray-200 rounded-full h-2 mb-2">
                         <div
                           className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all"
-                          style={{ width: `${(camp.enrolled / camp.capacity) * 100}%` }}
+                          style={{ width: `${((camp.enrolled || 0) / (camp.capacity || camp.participantCount)) * 100}%` }}
                         />
                       </div>
 
                       <p className="text-xs text-gray-500 text-right">
-                        {((camp.enrolled / camp.capacity) * 100).toFixed(0)}% เต็ม
+                        {(((camp.enrolled || 0) / (camp.capacity || camp.participantCount)) * 100).toFixed(0)}% เต็ม
                       </p>
                     </Card>
                   );

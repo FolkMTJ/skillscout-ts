@@ -46,7 +46,7 @@ export interface Camp {
   updatedAt?: Date;
 }
 
-// Internal MongoDB document type
+// Internal MongoDB document type - NO extends MongoDocument
 interface CampDoc {
   _id?: ObjectId;
   name: string;
@@ -70,7 +70,23 @@ interface CampDoc {
   slug: string;
   createdAt?: Date;
   updatedAt?: Date;
+  // Organizer fields
+  organizerId?: string;
+  organizerName?: string;
+  organizerEmail?: string;
+  // Additional fields
+  startDate?: Date;
+  endDate?: Date;
+  registrationDeadline?: Date;
+  capacity?: number;
+  enrolled?: number;
+  fee?: number;
+  tags?: string[];
+  status?: string;
 }
+
+// Type for creating new camp (without _id)
+type CampInput = Omit<CampDoc, '_id'>;
 
 export class CampModel {
   private static collectionName = 'camps';
@@ -81,105 +97,195 @@ export class CampModel {
     return {
       ...rest,
       _id: _id?.toString() || '',
+      // Ensure all optional fields are included
+      organizerId: doc.organizerId,
+      organizerName: doc.organizerName,
+      organizerEmail: doc.organizerEmail,
+      startDate: doc.startDate,
+      endDate: doc.endDate,
+      registrationDeadline: doc.registrationDeadline,
+      capacity: doc.capacity,
+      enrolled: doc.enrolled,
+      fee: doc.fee,
+      tags: doc.tags,
+      status: doc.status as CampStatus | undefined,
     };
   }
 
   // Helper: Generate slug from name
   private static generateSlug(name: string): string {
-    return name
+    if (!name || name.trim() === '') {
+      // Generate random slug if name is empty
+      return `camp-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    }
+    
+    const slug = name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
+    
+    // If slug is empty after processing, generate random one
+    if (!slug || slug === '' || slug === '-') {
+      return `camp-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    }
+    
+    return slug;
   }
 
   // Create
-  static async create(campData: Omit<Camp, '_id' | 'createdAt' | 'updatedAt' | 'avgRating' | 'ratingBreakdown'>): Promise<Camp> {
+  static async create(campData: any): Promise<Camp> {
     const collection = await getCollection<CampDoc>(this.collectionName);
     
     const now = new Date();
-    const camp: CampDoc = {
-      ...campData,
+    const campDoc: any = {
+      name: campData.name,
+      category: campData.category,
+      date: campData.date,
+      location: campData.location,
+      price: campData.price,
+      image: campData.image,
+      galleryImages: campData.galleryImages || [],
+      description: campData.description,
+      deadline: campData.deadline,
+      participantCount: campData.participantCount,
+      activityFormat: campData.activityFormat,
+      qualifications: campData.qualifications,
+      additionalInfo: campData.additionalInfo || [],
+      organizers: campData.organizers || [],
       slug: campData.slug || this.generateSlug(campData.name),
-      avgRating: 0,
-      ratingBreakdown: { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 },
-      reviews: [],
+      avgRating: campData.avgRating || 0,
+      ratingBreakdown: campData.ratingBreakdown || { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 },
+      reviews: campData.reviews || [],
+      featured: campData.featured || false,
       createdAt: now,
       updatedAt: now,
+      // Save organizer info
+      organizerId: campData.organizerId,
+      organizerName: campData.organizerName,
+      organizerEmail: campData.organizerEmail,
+      // Additional fields
+      startDate: campData.startDate,
+      endDate: campData.endDate,
+      registrationDeadline: campData.registrationDeadline,
+      capacity: campData.capacity,
+      enrolled: campData.enrolled || 0,
+      fee: campData.fee,
+      tags: campData.tags || [],
+      status: campData.status,
     };
 
-    const result = await collection.insertOne(camp);
-    return { ...camp, _id: result.insertedId.toString() };
+    const result = await collection.insertOne(campDoc);
+    
+    return {
+      _id: result.insertedId.toString(),
+      name: campDoc.name,
+      category: campDoc.category,
+      date: campDoc.date,
+      location: campDoc.location,
+      price: campDoc.price,
+      image: campDoc.image,
+      galleryImages: campDoc.galleryImages,
+      description: campDoc.description,
+      deadline: campDoc.deadline,
+      participantCount: campDoc.participantCount,
+      activityFormat: campDoc.activityFormat,
+      qualifications: campDoc.qualifications,
+      additionalInfo: campDoc.additionalInfo,
+      organizers: campDoc.organizers,
+      reviews: campDoc.reviews,
+      avgRating: campDoc.avgRating,
+      ratingBreakdown: campDoc.ratingBreakdown,
+      featured: campDoc.featured,
+      slug: campDoc.slug,
+      createdAt: campDoc.createdAt,
+      updatedAt: campDoc.updatedAt,
+      organizerId: campDoc.organizerId,
+      organizerName: campDoc.organizerName,
+      organizerEmail: campDoc.organizerEmail,
+      startDate: campDoc.startDate,
+      endDate: campDoc.endDate,
+      registrationDeadline: campDoc.registrationDeadline,
+      capacity: campDoc.capacity,
+      enrolled: campDoc.enrolled,
+      fee: campDoc.fee,
+      tags: campDoc.tags,
+      status: campDoc.status,
+    };
   }
 
   // Find by ID
   static async findById(id: string): Promise<Camp | null> {
-    const collection = await getCollection(this.collectionName);
-    const filter: Filter<CampDoc> = { _id: new ObjectId(id) };
-    const camp = await collection.findOne(filter) as CampDoc | null;
+    const collection = await getCollection<CampDoc>(this.collectionName);
+    const filter: Filter<CampDoc> = { _id: new ObjectId(id) } as Filter<CampDoc>;
+    const camp = await collection.findOne(filter);
     
     if (!camp) return null;
-    return this.toPublic(camp);
+    return this.toPublic(camp as CampDoc);
   }
 
   // Find by slug
   static async findBySlug(slug: string): Promise<Camp | null> {
-    const collection = await getCollection(this.collectionName);
-    const filter: Filter<CampDoc> = { slug };
-    const camp = await collection.findOne(filter) as CampDoc | null;
+    const collection = await getCollection<CampDoc>(this.collectionName);
+    const filter: Filter<CampDoc> = { slug } as Filter<CampDoc>;
+    const camp = await collection.findOne(filter);
     
     if (!camp) return null;
-    return this.toPublic(camp);
+    return this.toPublic(camp as CampDoc);
   }
 
   // Find all
   static async findAll(options?: { featured?: boolean }): Promise<Camp[]> {
-    const collection = await getCollection(this.collectionName);
-    const filter: Filter<CampDoc> = options?.featured ? { featured: true } : {};
+    const collection = await getCollection<CampDoc>(this.collectionName);
+    const filter: Filter<CampDoc> = (options?.featured ? { featured: true } : {}) as Filter<CampDoc>;
+    
     const camps = await collection
       .find(filter)
       .sort({ createdAt: -1 })
-      .toArray() as CampDoc[];
+      .toArray();
     
-    return camps.map(this.toPublic);
+    return camps.map(doc => this.toPublic(doc as CampDoc));
   }
 
   // Find by category
   static async findByCategory(category: string): Promise<Camp[]> {
-    const collection = await getCollection(this.collectionName);
-    const filter: Filter<CampDoc> = { category };
+    const collection = await getCollection<CampDoc>(this.collectionName);
+    const filter: Filter<CampDoc> = { category } as Filter<CampDoc>;
+    
     const camps = await collection
       .find(filter)
       .sort({ createdAt: -1 })
-      .toArray() as CampDoc[];
+      .toArray();
     
-    return camps.map(this.toPublic);
+    return camps.map(doc => this.toPublic(doc as CampDoc));
   }
 
   // Search
   static async search(query: string): Promise<Camp[]> {
-    const collection = await getCollection(this.collectionName);
+    const collection = await getCollection<CampDoc>(this.collectionName);
     const filter: Filter<CampDoc> = {
       $or: [
         { name: { $regex: query, $options: 'i' } },
         { description: { $regex: query, $options: 'i' } },
         { category: { $regex: query, $options: 'i' } },
       ],
-    };
-    const camps = await collection.find(filter).toArray() as CampDoc[];
+    } as Filter<CampDoc>;
     
-    return camps.map(this.toPublic);
+    const camps = await collection.find(filter).toArray();
+    return camps.map(doc => this.toPublic(doc as CampDoc));
   }
 
   // Update
   static async update(id: string, updates: Partial<Omit<Camp, '_id'>>): Promise<boolean> {
-    const collection = await getCollection(this.collectionName);
+    const collection = await getCollection<CampDoc>(this.collectionName);
     
-    const filter: Filter<CampDoc> = { _id: new ObjectId(id) };
+    const filter: Filter<CampDoc> = { _id: new ObjectId(id) } as Filter<CampDoc>;
+    const updateFields: Partial<CampDoc> = {
+      ...updates,
+      updatedAt: new Date(),
+    };
+    
     const update: UpdateFilter<CampDoc> = {
-      $set: {
-        ...updates,
-        updatedAt: new Date(),
-      },
+      $set: updateFields as Partial<CampDoc>,
     };
     
     const result = await collection.updateOne(filter, update);
@@ -188,12 +294,12 @@ export class CampModel {
 
   // Add review
   static async addReview(id: string, review: Review): Promise<boolean> {
-    const collection = await getCollection(this.collectionName);
+    const collection = await getCollection<CampDoc>(this.collectionName);
     
-    const filter: Filter<CampDoc> = { _id: new ObjectId(id) };
+    const filter: Filter<CampDoc> = { _id: new ObjectId(id) } as Filter<CampDoc>;
     
     // Get current camp
-    const camp = await collection.findOne(filter) as CampDoc | null;
+    const camp = await collection.findOne(filter);
     if (!camp) return false;
     
     // Calculate new rating
@@ -214,7 +320,7 @@ export class CampModel {
         avgRating,
         ratingBreakdown: breakdown,
         updatedAt: new Date(),
-      },
+      } as Partial<CampDoc>,
     };
     
     const result = await collection.updateOne(filter, update);
@@ -223,15 +329,15 @@ export class CampModel {
 
   // Delete
   static async delete(id: string): Promise<boolean> {
-    const collection = await getCollection(this.collectionName);
-    const filter: Filter<CampDoc> = { _id: new ObjectId(id) };
+    const collection = await getCollection<CampDoc>(this.collectionName);
+    const filter: Filter<CampDoc> = { _id: new ObjectId(id) } as Filter<CampDoc>;
     const result = await collection.deleteOne(filter);
     return result.deletedCount > 0;
   }
 
   // Get categories with count
   static async getCategories(): Promise<Array<{ name: string; count: number }>> {
-    const collection = await getCollection(this.collectionName);
+    const collection = await getCollection<CampDoc>(this.collectionName);
     
     const categories = await collection.aggregate([
       {
@@ -257,20 +363,21 @@ export class CampModel {
 
   // Get featured camps
   static async getFeatured(limit: number = 6): Promise<Camp[]> {
-    const collection = await getCollection(this.collectionName);
-    const filter: Filter<CampDoc> = { featured: true };
+    const collection = await getCollection<CampDoc>(this.collectionName);
+    const filter: Filter<CampDoc> = { featured: true } as Filter<CampDoc>;
+    
     const camps = await collection
       .find(filter)
       .sort({ avgRating: -1 })
       .limit(limit)
-      .toArray() as CampDoc[];
+      .toArray();
     
-    return camps.map(this.toPublic);
+    return camps.map(doc => this.toPublic(doc as CampDoc));
   }
 
   // Get trending camps
   static async getTrending(limit: number = 6): Promise<Camp[]> {
-    const collection = await getCollection(this.collectionName);
+    const collection = await getCollection<CampDoc>(this.collectionName);
     
     const camps = await collection.aggregate([
       {
@@ -292,8 +399,40 @@ export class CampModel {
       {
         $limit: limit,
       },
-    ]).toArray() as CampDoc[];
+    ]).toArray();
     
-    return camps.map(this.toPublic);
+    return camps.map(doc => this.toPublic(doc as CampDoc));
+  }
+
+  // Count documents
+  static async count(filter?: Filter<CampDoc>): Promise<number> {
+    const collection = await getCollection<CampDoc>(this.collectionName);
+    return collection.countDocuments((filter || {}) as Filter<CampDoc>);
+  }
+
+  // Get paginated results
+  static async findPaginated(
+    page: number = 1,
+    limit: number = 10,
+    filter?: Filter<CampDoc>
+  ): Promise<{ camps: Camp[]; total: number; pages: number }> {
+    const collection = await getCollection<CampDoc>(this.collectionName);
+    const skip = (page - 1) * limit;
+
+    const camps = await collection
+      .find((filter || {}) as Filter<CampDoc>)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray();
+
+    const total = await collection.countDocuments((filter || {}) as Filter<CampDoc>);
+    const pages = Math.ceil(total / limit);
+
+    return {
+      camps: camps.map(doc => this.toPublic(doc as CampDoc)),
+      total,
+      pages,
+    };
   }
 }

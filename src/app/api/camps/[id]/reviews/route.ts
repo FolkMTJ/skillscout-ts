@@ -8,7 +8,7 @@ interface RouteParams {
   };
 }
 
-// POST /api/camps/[id]/reviews - เพิ่มรีวิว
+// POST /api/camps/[id]/reviews
 export async function POST(
   request: NextRequest,
   { params }: RouteParams

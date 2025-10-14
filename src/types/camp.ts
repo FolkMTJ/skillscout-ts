@@ -34,32 +34,62 @@ export interface User {
   updatedAt: Date;
 }
 
+// Updated Camp interface to match our Camp Model
 export interface Camp {
   _id: string;
   name: string;
   description: string;
-  thumbnail?: string;
-  startDate: Date;
-  endDate: Date;
-  registrationDeadline: Date;
+  category: string;
+  date: string;
   location: string;
-  capacity: number;
-  enrolled: number;
-  organizerId: string;
-  organizerName: string;
-  organizerEmail: string;
-  status: CampStatus;
-  tags: string[];
-  requirements: string[];
+  price: string;
+  image: string;
+  galleryImages: string[];
+  deadline: string;
+  participantCount: number;
+  activityFormat: string;
+  qualifications: {
+    level: string;
+    fields?: string[];
+  };
+  additionalInfo: string[];
+  organizers?: {
+    name: string;
+    imageUrl: string;
+  }[];
+  reviews: {
+    id: string;
+    author: string;
+    rating: number;
+    comment: string;
+    date: string;
+  }[];
+  avgRating: number;
+  ratingBreakdown: Record<string, number>;
+  featured?: boolean;
+  slug: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  // Additional fields for organizer
+  organizerId?: string;
+  organizerName?: string;
+  organizerEmail?: string;
+  startDate?: Date;
+  endDate?: Date;
+  registrationDeadline?: Date;
+  capacity?: number;
+  enrolled?: number;
+  fee?: number;
+  tags?: string[];
+  status?: CampStatus;
+  thumbnail?: string;
+  requirements?: string[];
   syllabus?: string[];
-  fee: number;
-  contact: {
+  contact?: {
     email: string;
     phone?: string;
     line?: string;
   };
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 export interface Registration {

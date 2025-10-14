@@ -1,5 +1,5 @@
 // src/lib/mongodb.ts
-import { MongoClient, Db } from 'mongodb';
+import { MongoClient, Db, Document } from 'mongodb';
 
 if (!process.env.MONGODB_URI) {
   throw new Error('Please add your Mongo URI to .env.local');
@@ -33,7 +33,7 @@ if (process.env.NODE_ENV === 'development') {
 export default clientPromise;
 
 // Helper function to get database
-export async function getDatabase(dbName: string = 'skillscout'): Promise<Db> {
+export async function getDatabase(dbName: string = 'SkillScoutDB'): Promise<Db> {
   const client = await clientPromise;
   return client.db(dbName);
 }
@@ -41,7 +41,7 @@ export async function getDatabase(dbName: string = 'skillscout'): Promise<Db> {
 // Helper function to get a collection
 export async function getCollection<T extends Document = Document>(
   collectionName: string,
-  dbName: string = 'skillscout'
+  dbName: string = 'SkillScoutDB'
 ) {
   const db = await getDatabase(dbName);
   return db.collection<T>(collectionName);

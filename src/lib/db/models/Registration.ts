@@ -3,7 +3,7 @@ import { getCollection } from '@/lib/mongodb';
 import { Registration, RegistrationStatus } from '@/types/camp';
 import { ObjectId, Filter, UpdateFilter } from 'mongodb';
 
-// Internal MongoDB document type
+// Internal MongoDB document type - NO extends MongoDocument
 interface RegistrationDoc {
   _id?: ObjectId;
   campId: string;
@@ -16,6 +16,9 @@ interface RegistrationDoc {
   reviewedBy?: string;
   notes?: string;
 }
+
+// Type for creating new registration (without _id)
+type RegistrationInput = Omit<RegistrationDoc, '_id'>;
 
 export class RegistrationModel {
   private static collectionName = 'registrations';
@@ -32,50 +35,69 @@ export class RegistrationModel {
   static async create(regData: Omit<Registration, '_id' | 'appliedAt' | 'status'>): Promise<Registration> {
     const collection = await getCollection<RegistrationDoc>(this.collectionName);
     
-    const registration: RegistrationDoc = {
-      ...regData,
+    const now = new Date();
+    const registrationDoc: RegistrationInput = {
+      campId: regData.campId,
+      userId: regData.userId,
+      userName: regData.userName,
+      userEmail: regData.userEmail,
       status: RegistrationStatus.PENDING,
-      appliedAt: new Date(),
+      appliedAt: now,
+      reviewedAt: regData.reviewedAt,
+      reviewedBy: regData.reviewedBy,
+      notes: regData.notes,
     };
 
-    const result = await collection.insertOne(registration);
-    return { ...registration, _id: result.insertedId.toString() };
+    const result = await collection.insertOne(registrationDoc);
+    
+    return {
+      _id: result.insertedId.toString(),
+      campId: registrationDoc.campId,
+      userId: registrationDoc.userId,
+      userName: registrationDoc.userName,
+      userEmail: registrationDoc.userEmail,
+      status: registrationDoc.status,
+      appliedAt: registrationDoc.appliedAt,
+      reviewedAt: registrationDoc.reviewedAt,
+      reviewedBy: registrationDoc.reviewedBy,
+      notes: registrationDoc.notes,
+    };
   }
 
   static async findById(id: string): Promise<Registration | null> {
     const collection = await getCollection<RegistrationDoc>(this.collectionName);
-    const filter: Filter<RegistrationDoc> = { _id: new ObjectId(id) };
-    const reg = await collection.findOne(filter) as RegistrationDoc | null;
+    const filter: Filter<RegistrationDoc> = { _id: new ObjectId(id) } as Filter<RegistrationDoc>;
+    const reg = await collection.findOne(filter);
     
     if (!reg) return null;
-    return this.toPublic(reg);
+    return this.toPublic(reg as RegistrationDoc);
   }
 
   static async findByCamp(campId: string): Promise<Registration[]> {
     const collection = await getCollection<RegistrationDoc>(this.collectionName);
-    const filter: Filter<RegistrationDoc> = { campId };
-    const regs = await collection
+    const filter: Filter<RegistrationDoc> = { campId } as Filter<RegistrationDoc>;
+    const registrations = await collection
       .find(filter)
       .sort({ appliedAt: -1 })
-      .toArray() as RegistrationDoc[];
+      .toArray();
     
-    return regs.map(this.toPublic);
+    return registrations.map(doc => this.toPublic(doc as RegistrationDoc));
   }
 
   static async findByUser(userId: string): Promise<Registration[]> {
     const collection = await getCollection<RegistrationDoc>(this.collectionName);
-    const filter: Filter<RegistrationDoc> = { userId };
-    const regs = await collection
+    const filter: Filter<RegistrationDoc> = { userId } as Filter<RegistrationDoc>;
+    const registrations = await collection
       .find(filter)
       .sort({ appliedAt: -1 })
-      .toArray() as RegistrationDoc[];
+      .toArray();
     
-    return regs.map(this.toPublic);
+    return registrations.map(doc => this.toPublic(doc as RegistrationDoc));
   }
 
   static async checkDuplicate(userId: string, campId: string): Promise<boolean> {
     const collection = await getCollection<RegistrationDoc>(this.collectionName);
-    const filter: Filter<RegistrationDoc> = { userId, campId };
+    const filter: Filter<RegistrationDoc> = { userId, campId } as Filter<RegistrationDoc>;
     const count = await collection.countDocuments(filter);
     return count > 0;
   }
@@ -85,27 +107,62 @@ export class RegistrationModel {
     status: RegistrationStatus, 
     reviewedBy: string, 
     notes?: string
-  ): Promise<boolean> {
+  ): Promise<Registration | null> {
     const collection = await getCollection<RegistrationDoc>(this.collectionName);
+    const filter: Filter<RegistrationDoc> = { _id: new ObjectId(id) } as Filter<RegistrationDoc>;
     
-    const filter: Filter<RegistrationDoc> = { _id: new ObjectId(id) };
-    const update: UpdateFilter<RegistrationDoc> = { 
-      $set: { 
-        status, 
-        reviewedAt: new Date(),
-        reviewedBy,
-        ...(notes && { notes })
-      } 
+    const updateFields: Partial<RegistrationDoc> = {
+      status,
+      reviewedBy,
+      reviewedAt: new Date(),
+      ...(notes && { notes }),
     };
     
-    const result = await collection.updateOne(filter, update);
-    return result.modifiedCount > 0;
+    const updateDoc: UpdateFilter<RegistrationDoc> = {
+      $set: updateFields as Partial<RegistrationDoc>,
+    };
+
+    const result = await collection.findOneAndUpdate(filter, updateDoc, {
+      returnDocument: 'after',
+    });
+
+    if (!result) return null;
+    return this.toPublic(result as RegistrationDoc);
   }
 
   static async delete(id: string): Promise<boolean> {
     const collection = await getCollection<RegistrationDoc>(this.collectionName);
-    const filter: Filter<RegistrationDoc> = { _id: new ObjectId(id) };
+    const filter: Filter<RegistrationDoc> = { _id: new ObjectId(id) } as Filter<RegistrationDoc>;
     const result = await collection.deleteOne(filter);
     return result.deletedCount > 0;
+  }
+
+  static async countByCamp(campId: string, status?: RegistrationStatus): Promise<number> {
+    const collection = await getCollection<RegistrationDoc>(this.collectionName);
+    const filter: Filter<RegistrationDoc> = (status 
+      ? { campId, status } 
+      : { campId }) as Filter<RegistrationDoc>;
+    
+    return collection.countDocuments(filter);
+  }
+
+  static async findByStatus(status: RegistrationStatus): Promise<Registration[]> {
+    const collection = await getCollection<RegistrationDoc>(this.collectionName);
+    const filter: Filter<RegistrationDoc> = { status } as Filter<RegistrationDoc>;
+    const registrations = await collection
+      .find(filter)
+      .sort({ appliedAt: -1 })
+      .toArray();
+    
+    return registrations.map(doc => this.toPublic(doc as RegistrationDoc));
+  }
+
+  static async getPendingCount(): Promise<number> {
+    const collection = await getCollection<RegistrationDoc>(this.collectionName);
+    const filter: Filter<RegistrationDoc> = { 
+      status: RegistrationStatus.PENDING 
+    } as Filter<RegistrationDoc>;
+    
+    return collection.countDocuments(filter);
   }
 }

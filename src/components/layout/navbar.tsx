@@ -13,11 +13,18 @@ import {
     NavbarMenuToggle,
     Link,
     Button,
+    Dropdown,
+    DropdownTrigger,
+    DropdownMenu,
+    DropdownItem,
+    Avatar,
 } from "@heroui/react";
 import { cn } from "@heroui/react";
 import React, { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { usePathname } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
+import { LogOut, User, Settings, LayoutDashboard } from 'lucide-react';
 
 const menuItems = [
     "About", "Blog", "Customers", "Pricing", "Enterprise",
@@ -36,10 +43,15 @@ export default function Component(props: NavbarProps) {
     const [mounted, setMounted] = useState(false);
     const { theme } = useTheme();
     const pathname = usePathname();
+    const { data: session, status } = useSession();
 
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    const handleSignOut = async () => {
+        await signOut({ redirect: true, callbackUrl: '/' });
+    };
 
     return (
         <Navbar
@@ -57,17 +69,19 @@ export default function Component(props: NavbarProps) {
             <NavbarMenuToggle className="text-default-400 md:hidden" />
 
             <NavbarBrand>
-                <div className="text-background rounded-full flex items-center justify-center">
-                    {mounted && (
-                        <Image
-                            src={theme === 'dark' ? '/skillscoutLogo.png' : '/skillscoutLogo-black.png'}
-                            alt="Skillscout Logo"
-                            width={60}
-                            height={52}
-                            priority
-                        />
-                    )}
-                </div>
+                <Link href="/">
+                    <div className="text-background rounded-full flex items-center justify-center">
+                        {mounted && (
+                            <Image
+                                src={theme === 'dark' ? '/skillscoutLogo.png' : '/skillscoutLogo-black.png'}
+                                alt="Skillscout Logo"
+                                width={60}
+                                height={52}
+                                priority
+                            />
+                        )}
+                    </div>
+                </Link>
             </NavbarBrand>
 
             <NavbarContent
@@ -90,26 +104,80 @@ export default function Component(props: NavbarProps) {
             </NavbarContent>
 
             <NavbarContent justify="end">
-                {/* 👇 This is the fix. Only render on the client. */}
                 {mounted && <ToggleTheme />}
                 
                 <NavbarItem className="ml-2 flex! gap-2">
-                    <Button
-                        className="bg-default-100 text-default-700 sm:text-default-500 sm:bg-transparent"
-                        radius="full"
-                        variant="light"
-                    >
-                        เข้าสู่ระบบ
-                    </Button>
-                    <Button
-                        className="border-small border-yellow-500/20 bg-yellow-500/10 text-yellow-800 hidden sm:flex"
-                        color="primary"
-                        radius="full"
-                        style={{ boxShadow: "inset 0 0 4px #ffe70c70" }}
-                        variant="flat"
-                    >
-                        สมัครสมาชิก
-                    </Button>
+                    {status === 'loading' ? (
+                        <div className="w-8 h-8 rounded-full bg-default-200 animate-pulse" />
+                    ) : session ? (
+                        // Logged in
+                        <Dropdown placement="bottom-end">
+                            <DropdownTrigger>
+                                <Avatar
+                                    as="button"
+                                    className="transition-transform hover:scale-110"
+                                    color="primary"
+                                    name={session.user?.name || 'User'}
+                                    size="sm"
+                                    src={session.user?.image || undefined}
+                                    isBordered
+                                />
+                            </DropdownTrigger>
+                            <DropdownMenu aria-label="User Actions" variant="flat">
+                                <DropdownItem key="profile" className="h-14 gap-2" textValue="Profile">
+                                    <p className="font-semibold">สวัสดี</p>
+                                    <p className="font-semibold">{session.user?.name}</p>
+                                    <p className="text-sm text-default-500">{session.user?.email}</p>
+                                </DropdownItem>
+                                <DropdownItem
+                                    key="dashboard"
+                                    startContent={<LayoutDashboard className="w-4 h-4" />}
+                                    href={session.user?.role === 'organizer' ? '/organizer' : '/profile'}
+                                >
+                                    {session.user?.role === 'organizer' ? 'แดชบอร์ด' : 'โปรไฟล์'}
+                                </DropdownItem>
+                                <DropdownItem
+                                    key="settings"
+                                    startContent={<Settings className="w-4 h-4" />}
+                                    href="/settings"
+                                >
+                                    ตั้งค่า
+                                </DropdownItem>
+                                <DropdownItem
+                                    key="logout"
+                                    color="danger"
+                                    startContent={<LogOut className="w-4 h-4" />}
+                                    onClick={handleSignOut}
+                                >
+                                    ออกจากระบบ
+                                </DropdownItem>
+                            </DropdownMenu>
+                        </Dropdown>
+                    ) : (
+                        // Not logged in
+                        <>
+                            <Button
+                                as={Link}
+                                href="/login"
+                                className="bg-default-100 text-default-700 sm:text-default-500 sm:bg-transparent"
+                                radius="full"
+                                variant="light"
+                            >
+                                เข้าสู่ระบบ
+                            </Button>
+                            <Button
+                                as={Link}
+                                href="/register"
+                                className="border-small border-yellow-500/20 bg-yellow-500/10 text-yellow-800 hidden sm:flex"
+                                color="primary"
+                                radius="full"
+                                style={{ boxShadow: "inset 0 0 4px #ffe70c70" }}
+                                variant="flat"
+                            >
+                                สมัครสมาชิก
+                            </Button>
+                        </>
+                    )}
                 </NavbarItem>
             </NavbarContent>
 
@@ -122,13 +190,40 @@ export default function Component(props: NavbarProps) {
                     transition: { ease: "easeInOut", duration: 0.2 },
                 }}
             >
-                {menuItems.map((item, index) => (
-                    <NavbarMenuItem key={`${item}-${index}`}>
-                        <Link className="text-default-500 w-full" href="#" size="md">
-                            {item}
+                {navLinks.map((link) => (
+                    <NavbarMenuItem key={link.href}>
+                        <Link 
+                            className="text-default-500 w-full" 
+                            href={link.href} 
+                            size="md"
+                            color={pathname === link.href ? "primary" : "foreground"}
+                        >
+                            {link.name}
                         </Link>
                     </NavbarMenuItem>
                 ))}
+                
+                {session && (
+                    <>
+                        <NavbarMenuItem>
+                            <Link
+                                className="text-default-500 w-full"
+                                href={session.user?.role === 'organizer' ? '/organizer' : '/profile'}
+                                size="md"
+                            >
+                                {session.user?.role === 'organizer' ? 'แดชบอร์ด' : 'โปรไฟล์'}
+                            </Link>
+                        </NavbarMenuItem>
+                        <NavbarMenuItem>
+                            <button
+                                className="text-danger w-full text-left"
+                                onClick={handleSignOut}
+                            >
+                                ออกจากระบบ
+                            </button>
+                        </NavbarMenuItem>
+                    </>
+                )}
             </NavbarMenu>
         </Navbar>
     );

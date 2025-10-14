@@ -1,6 +1,7 @@
 import { Noto_Sans_Thai } from "next/font/google";
 import "@/styles/globals.css";
-import { Providers } from "./provider";
+import { Providers as UIProviders } from "./provider";
+import { Providers } from "@/components/Providers";
 import { NavBar } from "@/components";
 import { ThemeProvider } from "next-themes";
 import type { Metadata } from "next";
@@ -14,22 +15,23 @@ export const metadata: Metadata = {
   title: "SkillScout",
   description: "A platform to discover the best camps for your skills.",
 };
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${notoSansTH.variable} antialiased` }
-      >
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <Providers>
-            <NavBar/>
-            {children}
-          </Providers>
-        </ThemeProvider>
+    <html lang="th" suppressHydrationWarning>
+      <body className={`${notoSansTH.variable} antialiased`}>
+        <Providers>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <UIProviders>
+              <NavBar/>
+              {children}
+            </UIProviders>
+          </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );
