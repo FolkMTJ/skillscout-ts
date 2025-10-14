@@ -25,7 +25,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-2C2C2C dark:bg-zinc-900 overflow-x-hidden">
       {/* Banner Section */}
-      <section className="relative min-h-[750px] flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-[700px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-orange-400 via-amber-500 to-yellow-400 dark:from-gray-900 dark:via-orange-900/30 dark:to-gray-900">
           <div className="absolute top-10 left-10 w-72 h-72 bg-white/20 rounded-full blur-3xl animate-pulse" />
           <div className="absolute inset-0 opacity-10 dark:opacity-20" style={{
@@ -36,7 +36,7 @@ export default function HomePage() {
 
         <div
           className="absolute inset-0 bg-cover bg-center opacity-15 mix-blend-overlay"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1920&h=1080&fit=crop')" }}
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1461749280684-dccba630e2f6?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1169')" }}
         />
 
         <div className="relative z-10 text-center px-4 max-w-6xl mx-auto py-20">
@@ -66,7 +66,7 @@ export default function HomePage() {
                   inputWrapper: "bg-white h-16 shadow-2xl border-2 border-white hover:border-orange-300 transition-all",
                   input: "text-base text-gray-700 placeholder:text-gray-400"
                 }}
-                startContent={<FaSearch className="text-orange-500" size={20} />}
+                startContent={<FaSearch className="text-orange-500" size={10} />}
               />
             </div>
             <Button

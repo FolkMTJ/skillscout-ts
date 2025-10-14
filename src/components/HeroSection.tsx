@@ -9,29 +9,29 @@ import { FaArrowRight, FaCheckCircle, FaLightbulb, FaCompass } from "react-icons
 export default function HeroSection() {
   return (
     <section className="relative w-full bg-[#fefbf2] dark:bg-gray-900 overflow-hidden">
-      <div
-        className="absolute inset-0 opacity-40 dark:opacity-20"
+      <div 
+        className="absolute inset-0 opacity-40 dark:opacity-20" 
         style={{
           backgroundImage: 'radial-gradient(#e5e7eb 1px, transparent 1px)',
           backgroundSize: '16px 16px'
         }}
       />
-
+      
       <div className="container mx-auto px-6 py-24 md:py-32 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-
+          
           {/* ## Left Column: Text Content ## */}
           <div className="text-center md:text-left">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-amber-900 dark:text-amber-300 leading-tight">
               ค้นหาเส้นทางไอที
-              <br />
+              <br/>
               <span className="text-orange-500">ที่ใช่ในตัวคุณ</span>
             </h1>
             <p className="mt-4 text-lg text-gray-700 dark:text-gray-400 max-w-lg mx-auto md:mx-0">
               คุณสงสัยไหมว่าอาชีพในวงการไอทีแบบไหนที่เหมาะกับคุณ? แบบทดสอบของเราออกแบบมาเพื่อช่วยคุณค้นหาคำตอบ
             </p>
 
-            {/* --- NEW: Key Features List --- */}
+            {/* --- Key Features List --- */}
             <div className="mt-8 space-y-3 inline-block text-left">
               <div className="flex items-center gap-3">
                 <FaCheckCircle className="text-green-500" />
@@ -46,6 +46,7 @@ export default function HeroSection() {
                 <span className="text-gray-700 dark:text-gray-300 font-medium">รับคำแนะนำค่ายที่เหมาะกับคุณโดยเฉพาะ</span>
               </div>
             </div>
+            
             <div>
               <Link href="/quiz">
                 <Button
@@ -58,20 +59,28 @@ export default function HeroSection() {
               </Link>
             </div>
 
+
           </div>
 
-          {/* ## Right Column: Overflowing Logo ## */}
+          {/* ## Right Column: New Illustration ## */}
           <div className="relative flex items-center justify-center h-80 md:h-full">
-            <div className="absolute w-[400px] h-[400px] lg:w-[500px] lg:h-[500px] bg-gradient-to-br from-amber-100 to-yellow-50 dark:from-gray-800 dark:to-zinc-800 rounded-full" />
-            <div className="relative w-full h-full hover:scale-105 transition-transform duration-500 ease-in-out md:-mr-32">
-              <Image
-                src="/skillscoutLogo-black.png"
-                alt="Skill Scout Graphic"
-                fill
-                priority
-                style={{ objectFit: 'contain' }}
-                sizes="(max-width: 768px) 80vw, 40vw"
-              />
+            {/* Background Circle with subtle animation */}
+            <div className="absolute w-[400px] h-[400px] lg:w-[500px] lg:h-[500px] bg-gradient-to-br from-amber-100 to-yellow-50 dark:from-gray-800 dark:to-zinc-800 rounded-full animate-pulse-slow" />
+            
+            {/* The new illustration - will try to make one based on the description */}
+            <div className="relative w-full h-full p-4">
+                 
+                 {/* This is where the new illustrative image will go */}
+                 {/* I'll generate a suitable image for this spot */}
+                 <Image
+                  src="/new-hero-illustration.png" // Placeholder, will be replaced by generated image
+                  alt="Abstract illustration of a person exploring IT career paths"
+                  fill
+                  priority
+                  style={{ objectFit: 'contain' }}
+                  sizes="(max-width: 768px) 80vw, 40vw"
+                  className="animate-[float_6s_ease-in-out_infinite]"
+                />
             </div>
           </div>
 
