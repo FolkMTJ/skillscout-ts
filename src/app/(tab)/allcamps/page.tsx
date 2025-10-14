@@ -3,12 +3,12 @@
 import React, { useState } from "react";
 import { Button, Input, Select, SelectItem } from "@heroui/react";
 import { FaSearch, FaTrophy, FaClock, FaFire, FaChevronDown } from "react-icons/fa";
-import CampCard from "@/components/(card)/CampCard";
+import CampCard, { type CampData } from "@/components/(card)/CampCard";
 import PageHeader from "@/components/layout/PageHeader";
 import { urgentCamps, trendingCamps } from "@/data/mockCamps";
 
 // Mock data สำหรับค่ายทั้งหมด (ในการใช้งานจริงให้ดึงจาก API)
-const allCamps = [
+const allCamps : CampData[] = [
   ...urgentCamps,
   ...trendingCamps,
   // เพิ่มข้อมูลเพื่อให้ครบ 9 รายการ
@@ -152,7 +152,9 @@ export default function AllCampsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {urgentCamps.slice(0, 3).map((camp) => (
-              <CampCard key={camp.id} camp={camp} variant="compact" />
+              <div key={camp.id}>
+                <CampCard camp={camp} />
+              </div>
             ))}
           </div>
         </section>
@@ -169,7 +171,9 @@ export default function AllCampsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {trendingCamps.slice(0, 3).map((camp) => (
-              <CampCard key={camp.id} camp={camp} variant="compact" />
+              <div key={camp.id}>
+                <CampCard camp={camp} />
+              </div>
             ))}
           </div>
         </section>
@@ -186,7 +190,9 @@ export default function AllCampsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {(showMore ? allCamps : allCamps.slice(0, 9)).map((camp) => (
-              <CampCard key={camp.id} camp={camp} variant="compact" />
+              <div key={camp.id}>
+                <CampCard camp={camp} />
+              </div>
             ))}
           </div>
 
