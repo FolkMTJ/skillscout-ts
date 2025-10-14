@@ -1,11 +1,14 @@
 // src/app/organizer/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import { Card, Button, Input, Textarea, Chip } from '@heroui/react';
-import { Calendar, Users, CheckCircle, XCircle, Plus, Edit, Trash2, TrendingUp } from 'lucide-react';
+import { Card, Button, useDisclosure } from '@heroui/react';
+import { FiCalendar, FiUsers, FiCheckCircle, FiPlus, FiTrendingUp } from 'react-icons/fi';
 import { Camp, Registration, RegistrationStatus } from '@/types/camp';
+import { 
+  CampFormModal, CampDetailModal, CampCardWithImage, StatCard, RegistrationCard, EmptyState 
+} from '@/components/organizer';
 import toast from 'react-hot-toast';
 
 export default function OrganizerDashboard() {
@@ -13,201 +16,92 @@ export default function OrganizerDashboard() {
   const [camps, setCamps] = useState<Camp[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingCamp, setEditingCamp] = useState<Camp | null>(null);
+  const [viewingCamp, setViewingCamp] = useState<Camp | null>(null);
 
-  // Form state
+  const { isOpen: isFormModalOpen, onOpen: onFormModalOpen, onClose: onFormModalClose } = useDisclosure();
+  const { isOpen: isDetailModalOpen, onOpen: onDetailModalOpen, onClose: onDetailModalClose } = useDisclosure();
+
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    startDate: '',
-    endDate: '',
-    registrationDeadline: '',
-    location: '',
-    capacity: '',
-    fee: '0',
-    tags: [] as string[],
-    image: '',
-    galleryImages: [] as string[],
-    activityFormat: 'On-site',
-    qualificationLevel: '',
-    qualificationDetails: '',
-    additionalInfo: [] as string[],
-    organizers: [] as Array<{ name: string; imageUrl: string }>,
+    name: '', description: '', startDate: '', endDate: '', registrationDeadline: '',
+    location: '', capacity: '', fee: '0', tags: [] as string[], image: '', galleryImages: [] as string[],
+    activityFormat: 'On-site', qualificationLevel: 'ทุกระดับ', qualificationDetails: '',
+    additionalInfo: [] as string[], organizers: [] as Array<{ name: string; imageUrl: string }>,
+    hasCertificate: false, allowVocational: false,
   });
 
-  const [tagInput, setTagInput] = useState('');
-  const [additionalInfoInput, setAdditionalInfoInput] = useState('');
-  const [organizerName, setOrganizerName] = useState('');
-  const [organizerImage, setOrganizerImage] = useState('');
-
-  // Helper functions for managing arrays
-  const addTag = () => {
-    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
-      setFormData({ ...formData, tags: [...formData.tags, tagInput.trim()] });
-      setTagInput('');
-    }
-  };
-
-  const removeTag = (tag: string) => {
-    setFormData({ ...formData, tags: formData.tags.filter(t => t !== tag) });
-  };
-
-  const addAdditionalInfo = () => {
-    if (additionalInfoInput.trim()) {
-      setFormData({ ...formData, additionalInfo: [...formData.additionalInfo, additionalInfoInput.trim()] });
-      setAdditionalInfoInput('');
-    }
-  };
-
-  const removeAdditionalInfo = (index: number) => {
-    setFormData({ ...formData, additionalInfo: formData.additionalInfo.filter((_, i) => i !== index) });
-  };
-
-  const addOrganizer = () => {
-    if (organizerName.trim()) {
-      setFormData({
-        ...formData,
-        organizers: [...formData.organizers, {
-          name: organizerName.trim(),
-          imageUrl: organizerImage.trim() || '/api/placeholder/100/100'
-        }]
-      });
-      setOrganizerName('');
-      setOrganizerImage('');
-    }
-  };
-
-  const removeOrganizer = (index: number) => {
-    setFormData({ ...formData, organizers: formData.organizers.filter((_, i) => i !== index) });
-  };
-
-  const addGalleryImage = (url: string) => {
-    if (url.trim() && !formData.galleryImages.includes(url.trim())) {
-      setFormData({ ...formData, galleryImages: [...formData.galleryImages, url.trim()] });
-    }
-  };
-
-  const removeGalleryImage = (index: number) => {
-    setFormData({ ...formData, galleryImages: formData.galleryImages.filter((_, i) => i !== index) });
-  };
-
-  useEffect(() => {
-    if (status === 'authenticated' && session?.user?.id) {
-      fetchData();
-    }
-  }, [status, session?.user?.id]); // ✅ เพิ่ม dependency array
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!session?.user?.id) return;
-
     try {
       setLoading(true);
-      
-      // Fetch camps
       const campsRes = await fetch('/api/camps');
-      
-      if (!campsRes.ok) {
-        throw new Error('Failed to fetch camps');
-      }
-
+      if (!campsRes.ok) throw new Error('Failed to fetch camps');
       const campsData = await campsRes.json();
-      
-      console.log('=== DEBUG INFO ===');
-      console.log('All Camps:', campsData);
-      console.log('Session User ID:', session.user.id);
-      console.log('Session User:', session.user);
-      
-      // ✅ ตรวจสอบ structure ก่อนใช้
       const allCamps = Array.isArray(campsData) ? campsData : (campsData.camps || []);
-      console.log('All Camps Array:', allCamps);
-      console.log('First Camp:', allCamps[0]);
-      
-      const myCamps = allCamps.filter((c: Camp) => {
-        console.log(`Camp "${c.name}" organizerId: ${c.organizerId}, Match: ${c.organizerId === session.user.id}`);
-        return c.organizerId === session.user.id;
-      });
-      console.log('My Camps:', myCamps);
-      console.log('===================');
+      const myCamps = allCamps.filter((c: Camp) => c.organizerId === session.user.id);
       setCamps(myCamps);
 
-      // Fetch registrations for my camps
       if (myCamps.length > 0) {
         const regPromises = myCamps.map((camp: Camp) =>
-          fetch(`/api/registrations?campId=${camp._id}`)
-            .then(r => r.json())
-            .catch(() => ({ registrations: [] }))
+          fetch(`/api/registrations?campId=${camp._id}`).then(r => r.json()).catch(() => ({ registrations: [] }))
         );
         const regResults = await Promise.all(regPromises);
-        const allRegs = regResults.flatMap(r => r.registrations || []);
-        setRegistrations(allRegs);
+        setRegistrations(regResults.flatMap(r => r.registrations || []));
       }
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    } catch {
       toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
     } finally {
       setLoading(false);
     }
-  };
+  }, [session?.user?.id]);
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.id) fetchData();
+  }, [status, session?.user?.id, fetchData]);
 
   const handleCreateCamp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!session?.user?.id) {
-      toast.error('กรุณาเข้าสู่ระบบก่อน');
-      return;
-    }
-
-    // Validate form data
-    if (!formData.name || !formData.description || !formData.location || 
-        !formData.startDate || !formData.endDate || !formData.registrationDeadline) {
-      toast.error('กรุณากรอกข้อมูลให้ครบถ้วน');
-      return;
+    if (!session?.user?.id) return toast.error('กรุณาเข้าสู่ระบบก่อน');
+    if (!formData.name || !formData.description || !formData.location || !formData.startDate || !formData.endDate || !formData.registrationDeadline) {
+      return toast.error('กรุณากรอกข้อมูลให้ครบถ้วน');
     }
     
     try {
-      // สร้าง slug จากชื่อค่าย
-      const slug = formData.name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
-
-      // สร้าง Date objects
+      const slug = formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       const startDate = new Date(formData.startDate);
       const endDate = new Date(formData.endDate);
       const registrationDeadline = new Date(formData.registrationDeadline);
 
+      const qualificationInfo = [];
+      if (formData.qualificationDetails) qualificationInfo.push(formData.qualificationDetails);
+      if (formData.allowVocational) qualificationInfo.push('สายอาชีวะสามารถสมัครได้');
+
+      const additionalInfo = [...formData.additionalInfo];
+      if (formData.hasCertificate) additionalInfo.push('มีประกาศนียบัตร');
+
       const campPayload = {
         name: formData.name,
-        category: formData.tags[0] || 'General', // ใช้ tag แรกเป็น category
+        category: formData.tags[0] || 'General',
         date: `${startDate.toLocaleDateString('th-TH', { day: '2-digit', month: 'short' })} - ${endDate.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' })}`,
         location: formData.location,
         price: `฿${parseInt(formData.fee || '0').toLocaleString()}`,
-        image: '/api/placeholder/800/600', // ใส่ URL รูปภาพ default
-        galleryImages: [],
+        image: formData.image || '/api/placeholder/800/600',
+        galleryImages: formData.galleryImages,
         description: formData.description,
         deadline: registrationDeadline.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }),
         participantCount: parseInt(formData.capacity || '0'),
-        activityFormat: 'On-site',
-        qualifications: {
-          level: 'ทุกระดับ',
-          fields: formData.tags,
-        },
-        additionalInfo: [],
-        organizers: [{
-          name: session.user.name || 'Organizer',
-          imageUrl: session.user.image || '/api/placeholder/100/100',
-        }],
+        activityFormat: formData.activityFormat,
+        qualifications: { level: formData.qualificationLevel, fields: qualificationInfo },
+        additionalInfo,
+        organizers: formData.organizers.length > 0 ? formData.organizers : [{ name: session.user.name || 'Organizer', imageUrl: session.user.image || '/api/placeholder/100/100' }],
         reviews: [],
         avgRating: 0,
         ratingBreakdown: { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 },
         featured: false,
         slug,
-        // ข้อมูล organizer
         organizerId: session.user.id,
         organizerName: session.user.name,
         organizerEmail: session.user.email,
-        // ข้อมูลเพิ่มเติมจาก form
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         registrationDeadline: registrationDeadline.toISOString(),
@@ -218,8 +112,6 @@ export default function OrganizerDashboard() {
         status: 'active' as const,
       };
 
-      console.log('Sending camp payload:', campPayload);
-
       const response = await fetch('/api/camps', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -228,18 +120,15 @@ export default function OrganizerDashboard() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Create camp error:', errorData);
-        console.error('Response status:', response.status);
         throw new Error(errorData.message || errorData.error || 'Failed to create camp');
       }
 
-      toast.success('สร้างค่ายสำเร็จ!');
-      setShowCreateForm(false);
+      toast.success('✅ สร้างค่ายสำเร็จ!');
+      onFormModalClose();
       resetForm();
       fetchData();
-    } catch (error) {
-      console.error('Error creating camp:', error);
-      toast.error(error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการสร้างค่าย');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการสร้างค่าย');
     }
   };
 
@@ -248,34 +137,33 @@ export default function OrganizerDashboard() {
     if (!editingCamp) return;
 
     try {
-      // สร้าง slug ใหม่จากชื่อค่าย (ถ้ามีการเปลี่ยนชื่อ)
       const slug = formData.name !== editingCamp.name
-        ? formData.name
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/(^-|-$)/g, '')
+        ? formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
         : editingCamp.slug;
 
+      const startDate = new Date(formData.startDate);
+      const endDate = new Date(formData.endDate);
+      const registrationDeadline = new Date(formData.registrationDeadline);
+
+      const qualificationInfo = [];
+      if (formData.qualificationDetails) qualificationInfo.push(formData.qualificationDetails);
+      if (formData.allowVocational) qualificationInfo.push('สายอาชีวะสามารถสมัครได้');
+
+      const additionalInfo = [...formData.additionalInfo];
+      if (formData.hasCertificate) additionalInfo.push('มีประกาศนียบัตร');
+
       const updatePayload = {
-        name: formData.name,
-        description: formData.description,
-        location: formData.location,
-        startDate: new Date(formData.startDate),
-        endDate: new Date(formData.endDate),
-        registrationDeadline: new Date(formData.registrationDeadline),
-        capacity: parseInt(formData.capacity),
-        fee: parseInt(formData.fee),
-        tags: formData.tags,
-        slug,
-        // อัพเดทฟิลด์อื่นๆ ที่เกี่ยวข้อง
-        date: `${new Date(formData.startDate).toLocaleDateString('th-TH', { day: '2-digit', month: 'short' })} - ${new Date(formData.endDate).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' })}`,
-        deadline: new Date(formData.registrationDeadline).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }),
+        name: formData.name, description: formData.description, location: formData.location,
+        startDate: startDate.toISOString(), endDate: endDate.toISOString(),
+        registrationDeadline: registrationDeadline.toISOString(),
+        capacity: parseInt(formData.capacity), fee: parseInt(formData.fee), tags: formData.tags, slug,
+        image: formData.image, galleryImages: formData.galleryImages, activityFormat: formData.activityFormat,
+        date: `${startDate.toLocaleDateString('th-TH', { day: '2-digit', month: 'short' })} - ${endDate.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' })}`,
+        deadline: registrationDeadline.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }),
         participantCount: parseInt(formData.capacity),
         price: `฿${parseInt(formData.fee).toLocaleString()}`,
-        qualifications: {
-          level: editingCamp.qualifications?.level || 'ทุกระดับ',
-          fields: formData.tags,
-        },
+        qualifications: { level: formData.qualificationLevel, fields: qualificationInfo },
+        additionalInfo, organizers: formData.organizers.length > 0 ? formData.organizers : editingCamp.organizers,
       };
 
       const response = await fetch(`/api/camps/${editingCamp._id}`, {
@@ -284,36 +172,26 @@ export default function OrganizerDashboard() {
         body: JSON.stringify(updatePayload),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Update camp error:', errorData);
-        throw new Error(errorData.error || 'Failed to update camp');
-      }
+      if (!response.ok) throw new Error((await response.json()).error || 'Failed to update camp');
 
-      toast.success('อัพเดทค่ายสำเร็จ!');
+      toast.success('✅ อัพเดทค่ายสำเร็จ!');
+      onFormModalClose();
       setEditingCamp(null);
       resetForm();
       fetchData();
-    } catch (error) {
-      console.error('Error updating camp:', error);
-      toast.error(error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการอัพเดทค่าย');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการอัพเดทค่าย');
     }
   };
 
   const handleDeleteCamp = async (campId: string) => {
-    if (!confirm('คุณต้องการลบค่ายนี้หรือไม่?')) return;
-
+    if (!confirm('⚠️ คุณต้องการลบค่ายนี้หรือไม่?')) return;
     try {
-      const response = await fetch(`/api/camps/${campId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) throw new Error('Failed to delete camp');
-
-      toast.success('ลบค่ายสำเร็จ!');
+      const response = await fetch(`/api/camps/${campId}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete');
+      toast.success('✅ ลบค่ายสำเร็จ!');
       fetchData();
-    } catch (error) {
-      console.error('Error deleting camp:', error);
+    } catch {
       toast.error('เกิดข้อผิดพลาดในการลบค่าย');
     }
   };
@@ -323,19 +201,13 @@ export default function OrganizerDashboard() {
       const response = await fetch(`/api/registrations/${regId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          status: RegistrationStatus.APPROVED,
-          reviewedBy: session?.user?.id 
-        }),
+        body: JSON.stringify({ status: RegistrationStatus.APPROVED, reviewedBy: session?.user?.id }),
       });
-
-      if (!response.ok) throw new Error('Failed to approve registration');
-
-      toast.success('อนุมัติการสมัครสำเร็จ!');
+      if (!response.ok) throw new Error('Failed to approve');
+      toast.success('✅ อนุมัติสำเร็จ!');
       fetchData();
-    } catch (error) {
-      console.error('Error approving registration:', error);
-      toast.error('เกิดข้อผิดพลาดในการอนุมัติ');
+    } catch {
+      toast.error('เกิดข้อผิดพลาด');
     }
   };
 
@@ -344,55 +216,62 @@ export default function OrganizerDashboard() {
       const response = await fetch(`/api/registrations/${regId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          status: RegistrationStatus.REJECTED,
-          reviewedBy: session?.user?.id  
-        }),
+        body: JSON.stringify({ status: RegistrationStatus.REJECTED, reviewedBy: session?.user?.id }),
       });
-
-      if (!response.ok) throw new Error('Failed to reject registration');
-
-      toast.success('ปฏิเสธการสมัครสำเร็จ!');
+      if (!response.ok) throw new Error('Failed to reject');
+      toast.success('✅ ปฏิเสธสำเร็จ!');
       fetchData();
-    } catch (error) {
-      console.error('Error rejecting registration:', error);
-      toast.error('เกิดข้อผิดพลาดในการปฏิเสธ');
+    } catch {
+      toast.error('เกิดข้อผิดพลาด');
     }
   };
 
   const handleEditCamp = (camp: Camp) => {
     setEditingCamp(camp);
+    const qualificationFields = camp.qualifications?.fields || [];
+    const allowVocational = qualificationFields.some(f => f.includes('อาชีวะ'));
+    const qualificationDetails = qualificationFields.filter(f => !f.includes('อาชีวะ')).join(', ');
+    const additionalInfo = camp.additionalInfo || [];
+    const hasCertificate = additionalInfo.some(info => info.includes('ประกาศนียบัตร'));
+    const filteredAdditionalInfo = additionalInfo.filter(info => !info.includes('ประกาศนียบัตร'));
+
     setFormData({
-      name: camp.name,
-      description: camp.description,
+      name: camp.name, description: camp.description,
       startDate: camp.startDate ? new Date(camp.startDate).toISOString().split('T')[0] : '',
       endDate: camp.endDate ? new Date(camp.endDate).toISOString().split('T')[0] : '',
       registrationDeadline: camp.registrationDeadline ? new Date(camp.registrationDeadline).toISOString().split('T')[0] : '',
       location: camp.location,
       capacity: camp.capacity?.toString() || camp.participantCount.toString(),
-      fee: camp.fee?.toString() || '0',
-      tags: camp.tags || camp.qualifications?.fields || [],
+      fee: camp.fee?.toString() || '0', tags: camp.tags || [],
+      image: camp.image || '', galleryImages: camp.galleryImages || [],
+      activityFormat: camp.activityFormat || 'On-site',
+      qualificationLevel: camp.qualifications?.level || 'ทุกระดับ',
+      qualificationDetails, additionalInfo: filteredAdditionalInfo,
+      organizers: camp.organizers || [], hasCertificate, allowVocational,
     });
-    setShowCreateForm(true);
+    onFormModalOpen();
+  };
+
+  const handleViewCamp = (camp: Camp) => {
+    setViewingCamp(camp);
+    onDetailModalOpen();
   };
 
   const resetForm = () => {
     setFormData({
-      name: '',
-      description: '',
-      startDate: '',
-      endDate: '',
-      registrationDeadline: '',
-      location: '',
-      capacity: '',
-      fee: '0',
-      tags: [],
+      name: '', description: '', startDate: '', endDate: '', registrationDeadline: '',
+      location: '', capacity: '', fee: '0', tags: [], image: '', galleryImages: [],
+      activityFormat: 'On-site', qualificationLevel: 'ทุกระดับ', qualificationDetails: '',
+      additionalInfo: [], organizers: [], hasCertificate: false, allowVocational: false,
     });
     setEditingCamp(null);
-    setShowCreateForm(false);
   };
 
-  // Check authentication
+  const handleOpenCreateModal = () => {
+    resetForm();
+    onFormModalOpen();
+  };
+
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -410,311 +289,89 @@ export default function OrganizerDashboard() {
         <Card className="p-8 text-center">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">กรุณาเข้าสู่ระบบ</h2>
           <p className="text-gray-600 mb-6">คุณต้องเข้าสู่ระบบเพื่อเข้าถึงหน้านี้</p>
-          <Button color="primary" href="/login">
-            เข้าสู่ระบบ
-          </Button>
+          <Button color="primary" href="/login">เข้าสู่ระบบ</Button>
         </Card>
       </div>
     );
   }
 
-  // Statistics
   const totalEnrolled = camps.reduce((sum, c) => sum + (c.enrolled || 0), 0);
   const pendingRegs = registrations.filter(r => r.status === RegistrationStatus.PENDING).length;
   const approvedRegs = registrations.filter(r => r.status === RegistrationStatus.APPROVED).length;
+  const pendingRegistrations = registrations.filter(r => r.status === RegistrationStatus.PENDING);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            Organizer Dashboard
-          </h1>
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">🎯 Organizer Dashboard</h1>
           <p className="text-gray-600">จัดการค่ายและผู้สมัครของคุณ</p>
         </div>
 
-        {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100 text-sm mb-1">ค่ายทั้งหมด</p>
-                <p className="text-3xl font-bold">{camps.length}</p>
-              </div>
-              <Calendar className="w-12 h-12 text-blue-200" />
-            </div>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-100 text-sm mb-1">ผู้เข้าร่วมทั้งหมด</p>
-                <p className="text-3xl font-bold">{totalEnrolled}</p>
-              </div>
-              <Users className="w-12 h-12 text-green-200" />
-            </div>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-orange-100 text-sm mb-1">รออนุมัติ</p>
-                <p className="text-3xl font-bold">{pendingRegs}</p>
-              </div>
-              <TrendingUp className="w-12 h-12 text-orange-200" />
-            </div>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-purple-100 text-sm mb-1">อนุมัติแล้ว</p>
-                <p className="text-3xl font-bold">{approvedRegs}</p>
-              </div>
-              <CheckCircle className="w-12 h-12 text-purple-200" />
-            </div>
-          </Card>
+          <StatCard title="ค่ายทั้งหมด" value={camps.length} icon={FiCalendar} gradient="bg-gradient-to-br from-blue-500 to-blue-600" />
+          <StatCard title="ผู้เข้าร่วมทั้งหมด" value={totalEnrolled} icon={FiUsers} gradient="bg-gradient-to-br from-green-500 to-green-600" />
+          <StatCard title="รออนุมัติ" value={pendingRegs} icon={FiTrendingUp} gradient="bg-gradient-to-br from-orange-500 to-orange-600" />
+          <StatCard title="อนุมัติแล้ว" value={approvedRegs} icon={FiCheckCircle} gradient="bg-gradient-to-br from-purple-500 to-purple-600" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Create/Edit Form */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-6">
             <Card className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-800">
-                  {editingCamp ? 'แก้ไขค่าย' : 'สร้างค่ายใหม่'}
-                </h2>
-                {!showCreateForm && !editingCamp && (
-                  <Button
-                    color="primary"
-                    startContent={<Plus className="w-4 h-4" />}
-                    onPress={() => setShowCreateForm(true)}
-                  >
-                    สร้างค่าย
-                  </Button>
-                )}
-              </div>
-
-              {(showCreateForm || editingCamp) && (
-                <form onSubmit={editingCamp ? handleUpdateCamp : handleCreateCamp} className="space-y-4">
-                  <Input
-                    label="ชื่อค่าย"
-                    placeholder="เช่น Web Development Bootcamp"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                  />
-
-                  <Textarea
-                    label="รายละเอียด"
-                    placeholder="รายละเอียดของค่าย"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    minRows={3}
-                  />
-
-                  <Input
-                    label="สถานที่"
-                    placeholder="เช่น มหาวิทยาลัย X"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    required
-                  />
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input
-                      type="date"
-                      label="วันเริ่มต้น"
-                      value={formData.startDate}
-                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                      required
-                    />
-
-                    <Input
-                      type="date"
-                      label="วันสิ้นสุด"
-                      value={formData.endDate}
-                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <Input
-                    type="date"
-                    label="ปิดรับสมัคร"
-                    value={formData.registrationDeadline}
-                    onChange={(e) => setFormData({ ...formData, registrationDeadline: e.target.value })}
-                    required
-                  />
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input
-                      type="number"
-                      label="จำนวนที่รับ"
-                      placeholder="30"
-                      value={formData.capacity}
-                      onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
-                      required
-                    />
-
-                    <Input
-                      type="number"
-                      label="ค่าใช้จ่าย (บาท)"
-                      placeholder="0"
-                      value={formData.fee}
-                      onChange={(e) => setFormData({ ...formData, fee: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      type="submit"
-                      color="primary"
-                      className="flex-1"
-                    >
-                      {editingCamp ? 'บันทึกการแก้ไข' : 'สร้างค่าย'}
-                    </Button>
-
-                    {(showCreateForm || editingCamp) && (
-                      <Button
-                        type="button"
-                        color="default"
-                        variant="flat"
-                        onPress={resetForm}
-                      >
-                        ยกเลิก
-                      </Button>
-                    )}
-                  </div>
-                </form>
-              )}
+              <h2 className="text-xl font-bold text-gray-800 mb-4">⚡ Quick Actions</h2>
+              <Button color="primary" size="lg" startContent={<FiPlus className="w-5 h-5" />} onPress={handleOpenCreateModal} className="w-full">
+                สร้างค่ายใหม่
+              </Button>
             </Card>
 
-            {/* Pending Registrations */}
-            <Card className="p-6 mt-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">
-                คำขอรอดำเนินการ
-              </h2>
+            <Card className="p-6">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">⏳ คำขอรอดำเนินการ</h2>
               <div className="space-y-3 max-h-96 overflow-y-auto">
-                {registrations
-                  .filter(r => r.status === RegistrationStatus.PENDING)
-                  .map(reg => {
-                    const camp = camps.find(c => c._id === reg.campId);
-                    return (
-                      <div key={reg._id} className="border border-gray-200 rounded-lg p-4">
-                        <p className="font-semibold text-gray-800">{reg.userName}</p>
-                        <p className="text-sm text-gray-600 mb-2">{camp?.name}</p>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            color="success"
-                            startContent={<CheckCircle className="w-4 h-4" />}
-                            onPress={() => handleApproveRegistration(reg._id)}
-                            className="flex-1"
-                          >
-                            อนุมัติ
-                          </Button>
-                          <Button
-                            size="sm"
-                            color="danger"
-                            startContent={<XCircle className="w-4 h-4" />}
-                            onPress={() => handleRejectRegistration(reg._id)}
-                            className="flex-1"
-                          >
-                            ปฏิเสธ
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                {registrations.filter(r => r.status === RegistrationStatus.PENDING).length === 0 && (
-                  <p className="text-gray-500 text-center py-8">ไม่มีคำขอรอดำเนินการ</p>
+                {pendingRegistrations.map(reg => {
+                  const camp = camps.find(c => c._id === reg.campId);
+                  return (
+                    <RegistrationCard
+                      key={reg._id} registration={reg} campName={camp?.name}
+                      onApprove={() => handleApproveRegistration(reg._id)}
+                      onReject={() => handleRejectRegistration(reg._id)}
+                    />
+                  );
+                })}
+                {pendingRegistrations.length === 0 && (
+                  <EmptyState icon={FiCheckCircle} title="ไม่มีคำขอรอดำเนินการ" description="คุณได้ตรวจสอบคำขอทั้งหมดแล้ว" />
                 )}
               </div>
             </Card>
           </div>
 
-          {/* Right Column - Camps List */}
           <div className="lg:col-span-2">
             <Card className="p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">ค่ายของฉัน</h2>
-              <div className="grid grid-cols-1 gap-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-800">📚 ค่ายของฉัน</h2>
+                {camps.length > 0 && <p className="text-sm text-gray-500">{camps.length} ค่าย</p>}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {camps.map(camp => {
                   const campRegs = registrations.filter(r => r.campId === camp._id);
                   const pending = campRegs.filter(r => r.status === RegistrationStatus.PENDING).length;
-
                   return (
-                    <Card key={camp._id} className="p-4 hover:shadow-lg transition-shadow">
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex-1">
-                          <h3 className="font-bold text-lg text-gray-800 mb-1">{camp.name}</h3>
-                          <p className="text-sm text-gray-600 line-clamp-2">{camp.description}</p>
-                        </div>
-                        <div className="flex gap-2 ml-4">
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="flat"
-                            color="primary"
-                            onPress={() => handleEditCamp(camp)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="flat"
-                            color="danger"
-                            onPress={() => handleDeleteCamp(camp._id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        <Chip size="sm" variant="flat" color="primary">
-                          📍 {camp.location}
-                        </Chip>
-                        <Chip size="sm" variant="flat" color="secondary">
-                          📅 {camp.startDate ? new Date(camp.startDate).toLocaleDateString('th-TH') : camp.date}
-                        </Chip>
-                        <Chip size="sm" variant="flat" color="success">
-                          👥 {camp.enrolled || 0}/{camp.capacity || camp.participantCount}
-                        </Chip>
-                        {pending > 0 && (
-                          <Chip size="sm" variant="flat" color="warning">
-                            ⏳ รออนุมัติ {pending}
-                          </Chip>
-                        )}
-                      </div>
-
-                      <div className="bg-gray-200 rounded-full h-2 mb-2">
-                        <div
-                          className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all"
-                          style={{ width: `${((camp.enrolled || 0) / (camp.capacity || camp.participantCount)) * 100}%` }}
-                        />
-                      </div>
-
-                      <p className="text-xs text-gray-500 text-right">
-                        {(((camp.enrolled || 0) / (camp.capacity || camp.participantCount)) * 100).toFixed(0)}% เต็ม
-                      </p>
-                    </Card>
+                    <CampCardWithImage
+                      key={camp._id} camp={camp} pendingCount={pending}
+                      onEdit={() => handleEditCamp(camp)}
+                      onDelete={() => handleDeleteCamp(camp._id)}
+                      onView={() => handleViewCamp(camp)}
+                    />
                   );
                 })}
 
                 {camps.length === 0 && (
-                  <div className="text-center py-12">
-                    <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500 mb-4">คุณยังไม่มีค่าย</p>
-                    <Button
-                      color="primary"
-                      startContent={<Plus className="w-4 h-4" />}
-                      onPress={() => setShowCreateForm(true)}
-                    >
-                      สร้างค่ายแรกของคุณ
-                    </Button>
+                  <div className="col-span-2">
+                    <EmptyState
+                      icon={FiCalendar} title="ยังไม่มีค่าย"
+                      description="เริ่มต้นสร้างค่ายแรกของคุณเพื่อเข้าถึงผู้เรียน"
+                      actionLabel="สร้างค่ายแรก" onAction={handleOpenCreateModal}
+                    />
                   </div>
                 )}
               </div>
@@ -722,6 +379,23 @@ export default function OrganizerDashboard() {
           </div>
         </div>
       </div>
+
+      <CampFormModal
+        isOpen={isFormModalOpen} onClose={onFormModalClose}
+        formData={formData} onFormDataChange={setFormData}
+        onSubmit={editingCamp ? handleUpdateCamp : handleCreateCamp}
+        isEditing={!!editingCamp}
+      />
+
+      {viewingCamp && (
+        <CampDetailModal
+          isOpen={isDetailModalOpen} onClose={onDetailModalClose}
+          camp={viewingCamp}
+          registrations={registrations.filter(r => r.campId === viewingCamp._id)}
+          onApprove={handleApproveRegistration}
+          onReject={handleRejectRegistration}
+        />
+      )}
     </div>
   );
 }
