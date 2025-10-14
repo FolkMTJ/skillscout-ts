@@ -1,7 +1,6 @@
 "use client";
 
-import React from "react";
-import Image from "next/image";
+import React, { useState } from 'react';
 import {
   Modal,
   ModalContent,
@@ -10,11 +9,9 @@ import {
   ModalFooter,
   Button,
   Input,
-} from "@heroui/react";
-import type { CampData } from "@/lib/db";
-import {
-  FaUser, FaPhone, FaEnvelope, FaMapPin, FaCalendar, FaMapMarkerAlt
-} from "react-icons/fa";
+  Textarea,
+} from '@heroui/react';
+import type { CampData } from '@/lib/data';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -22,118 +19,176 @@ interface BookingModalProps {
   camp: CampData;
 }
 
-const mockUser = {
-    fullName: "Name example",
-    phone: "081-234-5678",
-    email: "example@gmail.com",
-    address: "123 ถนนสุขุมวิท แขวงคลองเตย กรุงเทพฯ 10110",
-};
-
 export default function BookingModal({ isOpen, onClose, camp }: BookingModalProps) {
-  const paymentFee = 25;
-  const campPrice = parseFloat(camp.price.replace(/[^0-9.-]+/g, ""));
-  const totalPrice = campPrice + paymentFee;
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    university: '',
+    year: '',
+    reason: '',
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      // TODO: Implement booking API
+      console.log('Booking data:', {
+        ...formData,
+        campId: camp._id,
+        campName: camp.name,
+      });
+
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      alert('สมัครเข้าร่วมสำเร็จ! เราจะติดต่อกลับทางอีเมล');
+      onClose();
+      
+      // Reset form
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        university: '',
+        year: '',
+        reason: '',
+      });
+    } catch (error) {
+      console.error('Error submitting booking:', error);
+      alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
-    <Modal size="4xl" isOpen={isOpen} onClose={onClose} scrollBehavior="inside">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="2xl"
+      scrollBehavior="inside"
+      classNames={{
+        base: "bg-white dark:bg-gray-800",
+        header: "border-b border-gray-200 dark:border-gray-700",
+        body: "py-6",
+        footer: "border-t border-gray-200 dark:border-gray-700",
+      }}
+    >
       <ModalContent>
-          <>
-            <ModalHeader className="flex flex-col gap-1 text-2xl font-bold border-b border-gray-200 dark:border-gray-700 pb-4">
-              ยืนยันการสมัคร
-            </ModalHeader>
+        <form onSubmit={handleSubmit}>
+          <ModalHeader className="flex flex-col gap-1">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              สมัครเข้าร่วม
+            </h2>
+            <p className="text-sm font-normal text-gray-600 dark:text-gray-400">
+              {camp.name}
+            </p>
+          </ModalHeader>
 
-            <ModalBody className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 py-6 bg-gray-50/50 dark:bg-gray-900/50">
-              
-              {/* Left Column: Booker Info & Payment */}
-              <div className="space-y-8">
-                
-                <div>
-                  <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">ข้อมูลผู้จอง</h3>
-                  <div className="space-y-4 rounded-lg bg-gray-100 dark:bg-gray-900/50 p-4 border dark:border-gray-700">
-                      <div className="flex items-center gap-3 text-sm">
-                          <FaUser className="text-gray-400 w-4 text-center" />
-                          <span className="text-gray-700 dark:text-gray-300">{mockUser.fullName}</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-sm">
-                          <FaPhone className="text-gray-400 w-4 text-center" />
-                          <span className="text-gray-700 dark:text-gray-300">{mockUser.phone}</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-sm">
-                          <FaEnvelope className="text-gray-400 w-4 text-center" />
-                          <span className="text-gray-700 dark:text-gray-300">{mockUser.email}</span>
-                      </div>
-                      <div className="flex items-start gap-3 text-sm">
-                          <FaMapPin className="text-gray-400 w-4 text-center mt-1" />
-                          <span className="text-gray-700 dark:text-gray-300">{mockUser.address}</span>
-                      </div>
-                  </div>
-                </div>
+          <ModalBody>
+            <div className="space-y-4">
+              {/* Name */}
+              <Input
+                label="ชื่อ-นามสกุล"
+                placeholder="กรอกชื่อ-นามสกุล"
+                value={formData.name}
+                onValueChange={(value) => setFormData({ ...formData, name: value })}
+                required
+                size="lg"
+              />
 
-                {/* Payment */}
-                <div>
-                  <h3 className="text-xl font-semibold mb-4 flex items-center gap-3 text-gray-800 dark:text-white">
-                     การชำระเงิน
-                  </h3>
-                  <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col items-center gap-4">
-                    <p className="font-semibold text-center">สแกนเพื่อชำระเงินผ่านแอปธนาคาร</p>
-                    <div className="p-2 bg-white rounded-lg">
-                      <Image src="/promptpay-qr.jpg" alt="QR Code PromptPay" width={307} height={300} />
-                    </div>
-                    <p className="text-xs text-gray-500">Thai QR Payment</p>
-                  </div>
+              {/* Email */}
+              <Input
+                type="email"
+                label="อีเมล"
+                placeholder="example@email.com"
+                value={formData.email}
+                onValueChange={(value) => setFormData({ ...formData, email: value })}
+                required
+                size="lg"
+              />
+
+              {/* Phone */}
+              <Input
+                type="tel"
+                label="เบอร์โทรศัพท์"
+                placeholder="0xx-xxx-xxxx"
+                value={formData.phone}
+                onValueChange={(value) => setFormData({ ...formData, phone: value })}
+                required
+                size="lg"
+              />
+
+              {/* University */}
+              <Input
+                label="มหาวิทยาลัย/สถาบัน"
+                placeholder="กรอกชื่อมหาวิทยาลัย"
+                value={formData.university}
+                onValueChange={(value) => setFormData({ ...formData, university: value })}
+                required
+                size="lg"
+              />
+
+              {/* Year */}
+              <Input
+                label="ชั้นปี"
+                placeholder="เช่น ปี 2"
+                value={formData.year}
+                onValueChange={(value) => setFormData({ ...formData, year: value })}
+                required
+                size="lg"
+              />
+
+              {/* Reason */}
+              <Textarea
+                label="เหตุผลที่ต้องการเข้าร่วม"
+                placeholder="บอกเราว่าทำไมคุณถึงสนใจค่ายนี้..."
+                value={formData.reason}
+                onValueChange={(value) => setFormData({ ...formData, reason: value })}
+                required
+                minRows={4}
+                size="lg"
+              />
+
+              {/* Camp Info Summary */}
+              <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg mt-6">
+                <h3 className="font-semibold text-amber-900 dark:text-amber-100 mb-2">
+                  รายละเอียดค่าย
+                </h3>
+                <div className="space-y-1 text-sm text-amber-800 dark:text-amber-200">
+                  <p><strong>วันที่:</strong> {camp.date}</p>
+                  <p><strong>สถานที่:</strong> {camp.location}</p>
+                  <p><strong>ค่าใช้จ่าย:</strong> {camp.price}</p>
+                  <p><strong>ปิดรับสมัคร:</strong> {camp.deadline}</p>
                 </div>
               </div>
+            </div>
+          </ModalBody>
 
-              {/* Right Column: Order Summary */}
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-inner-lg border border-gray-200 dark:border-gray-700 space-y-4 flex flex-col">
-                  <h3 className="text-xl font-semibold text-gray-800 dark:text-white">สรุปข้อมูลการจอง</h3>
-                  <div className="relative w-full h-32 rounded-lg overflow-hidden">
-                      <Image
-                          src={camp.image}
-                          alt={camp.name}
-                          fill
-                          style={{ objectFit: 'cover' }}
-                          sizes="50vw"
-                      />
-                  </div>
-                  <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg space-y-3">
-                      <p className="font-bold text-base">{camp.name}</p>
-                      <div className="text-sm space-y-2 text-gray-600 dark:text-gray-300">
-                          <p className="flex items-center gap-2"><FaCalendar className="text-gray-400" /> {camp.date}</p>
-                          <p className="flex items-center gap-2"><FaMapMarkerAlt className="text-gray-400" /> {camp.location}</p>
-                      </div>
-                  </div>
-
-                  <hr className="dark:border-gray-700" />
-
-                  <div className="space-y-2 text-sm">
-                      <div className="flex justify-between text-gray-600 dark:text-gray-300"><span>ค่าสมัคร</span><span>{camp.price}</span></div>
-                      <div className="flex justify-between text-gray-600 dark:text-gray-300"><span>ค่าธรรมเนียม</span><span>฿{paymentFee.toFixed(2)}</span></div>
-                      <div className="flex justify-between font-bold text-lg border-t border-dashed pt-3 mt-3 dark:border-gray-700"><span>ยอดรวม</span><span>฿{totalPrice.toFixed(2)}</span></div>
-                  </div>
-
-                  <div className="flex-grow"></div>
-
-                  <div className="space-y-4">
-                      <div className="flex gap-2">
-                          <Input placeholder="รหัสโปรโมชัน" size="sm" variant="bordered" />
-                          <Button size="sm" variant="ghost">ใช้รหัส</Button>
-                      </div>
-                      <div className="h-20 bg-gray-100 dark:bg-gray-900/50 rounded-lg flex items-center justify-center">
-                          <p className="text-sm text-gray-500">( พื้นที่สำหรับ CAPTCHA )</p>
-                      </div>
-                  </div>
-              </div>
-            </ModalBody>
-            <ModalFooter className="border-t border-gray-200 dark:border-gray-700">
-              <Button variant="light" onPress={onClose} size="lg">
-                ยกเลิก
-              </Button>
-              <Button className="bg-[#F2B33D] font-bold text-white" color="warning" variant="shadow" size="lg" onPress={onClose}>
-                ยืนยันชำระเงิน
-              </Button>
-            </ModalFooter>
-          </>
+          <ModalFooter>
+            <Button
+              color="danger"
+              variant="light"
+              onPress={onClose}
+              isDisabled={isSubmitting}
+            >
+              ยกเลิก
+            </Button>
+            <Button
+              type="submit"
+              color="warning"
+              className="bg-amber-500 font-bold"
+              isLoading={isSubmitting}
+            >
+              {isSubmitting ? 'กำลังส่งข้อมูล...' : 'ยืนยันการสมัคร'}
+            </Button>
+          </ModalFooter>
+        </form>
       </ModalContent>
     </Modal>
   );

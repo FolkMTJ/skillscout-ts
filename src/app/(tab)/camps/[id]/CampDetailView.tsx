@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import {
     FaMapMarkerAlt, FaCalendarAlt, FaClock, FaArrowLeft, FaUsers, FaGraduationCap, FaPaintBrush, FaCheckCircle
 } from "react-icons/fa";
-import { Chip, Progress } from "@heroui/react"; // 👈 เพิ่ม Progress
-import type { CampData, Review } from "@/lib/db"; // 👈 เพิ่ม Review type
+import { Chip, Progress } from "@heroui/react";
+import type { CampData, Review } from "@/lib/data"; // ✅ แก้ไขจาก @/lib/db เป็น @/lib/data
 
 import React, { useState } from "react";
 import { Button } from "@heroui/react";
@@ -23,7 +23,7 @@ const InfoCard: React.FC<{ title: string; icon: React.ReactNode; children: React
         </div>
     </div>
 );
-// Component ย่อยสำหรับแสดงรีวิว (เพิ่มเข้ามา)
+
 const ReviewCard: React.FC<{ review: Review }> = ({ review }) => (
     <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3 mb-2">
@@ -38,11 +38,11 @@ const ReviewCard: React.FC<{ review: Review }> = ({ review }) => (
     </div>
 );
 
-
 export default function CampDetailView({ camp }: { camp: CampData }) {
     const router = useRouter();
     const [selectedImage, setSelectedImage] = useState(camp.galleryImages[0] || camp.image);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    
     return (
         <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
             <div className="container mx-auto px-4 py-8 md:py-12">
@@ -136,7 +136,6 @@ export default function CampDetailView({ camp }: { camp: CampData }) {
                 </section>
 
                 <section className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left Column: Description & Gallery */}
                     <div className="lg:col-span-2 space-y-8">
                         <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg">
                             <div className="flex items-center gap-3 mb-3">
@@ -146,9 +145,7 @@ export default function CampDetailView({ camp }: { camp: CampData }) {
                             <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{camp.description}</p>
                         </div>
 
-                        {/* --- MODIFIED GALLERY --- */}
                         <div className="space-y-4">
-                            {/* 2. Main selected image display */}
                             <div className="relative w-full h-[500px] rounded-2xl overflow-hidden shadow-lg">
                                 <Image
                                     src={selectedImage}
@@ -159,16 +156,16 @@ export default function CampDetailView({ camp }: { camp: CampData }) {
                                     className="transition-all duration-300"
                                 />
                             </div>
-                            {/* 3. Clickable thumbnails */}
                             <div className="grid grid-cols-3 gap-4">
                                 {camp.galleryImages.map((img, i) => (
                                     <button
                                         key={i}
                                         onClick={() => setSelectedImage(img)}
-                                        className={`relative w-full h-67 rounded-lg overflow-hidden transition-all duration-300 focus:outline-none ${selectedImage === img
-                                            ? 'ring-4 ring-amber-500 ring-offset-2 ring-offset-gray-50 dark:ring-offset-gray-900'
-                                            : 'opacity-70 hover:opacity-100'
-                                            }`}
+                                        className={`relative w-full h-32 rounded-lg overflow-hidden transition-all duration-300 focus:outline-none ${
+                                            selectedImage === img
+                                                ? 'ring-4 ring-amber-500 ring-offset-2 ring-offset-gray-50 dark:ring-offset-gray-900'
+                                                : 'opacity-70 hover:opacity-100'
+                                        }`}
                                     >
                                         <Image
                                             src={img}
@@ -183,36 +180,26 @@ export default function CampDetailView({ camp }: { camp: CampData }) {
                         </div>
                     </div>
 
-                    {/* Right Column: Info Cards & Map (remains the same) */}
                     <div className="lg:col-span-1 space-y-6">
                         <InfoCard title="รูปแบบกิจกรรม" icon={<FaPaintBrush className="text-lg text-[#F2B33D]" />}>
                             <p>{camp.activityFormat}</p>
                         </InfoCard>
                         <InfoCard title="Key Information" icon={<FaCalendarAlt className="text-lg text-[#F2B33D]" />}>
                             <div className="space-y-4">
-                                {/* Activity Date */}
                                 <div className="flex items-center gap-3">
                                     <FaCalendarAlt className="text-base text-gray-400" />
                                     <div className="text-sm text-gray-700 dark:text-gray-300">
-                                        <div>
-                                            <div className="font-semibold">Date</div>
-                                            <span>{camp.date}</span>
-                                        </div>
+                                        <div className="font-semibold">Date</div>
+                                        <span>{camp.date}</span>
                                     </div>
                                 </div>
-
-                                {/* Application Deadline */}
                                 <div className="flex items-center gap-3">
                                     <FaClock className="text-base text-red-500" />
                                     <div className="text-sm text-gray-700 dark:text-gray-300">
                                         <span className="font-semibold">Deadline:</span>
-                                        <div>
-                                            {camp.deadline}
-                                        </div>
+                                        <div>{camp.deadline}</div>
                                     </div>
                                 </div>
-
-                                {/* Participant Count */}
                                 <div className="flex items-center gap-3">
                                     <FaUsers className="text-base text-gray-400" />
                                     <p className="text-sm text-gray-700 dark:text-gray-300">
@@ -223,7 +210,9 @@ export default function CampDetailView({ camp }: { camp: CampData }) {
                         </InfoCard>
                         <InfoCard title="คุณสมบัติ" icon={<FaGraduationCap className="text-lg text-[#F2B33D]" />}>
                             <p>{camp.qualifications.level}</p>
-                            {camp.qualifications.fields && <p className="text-xs text-gray-500">({camp.qualifications.fields.join(", ")})</p>}
+                            {camp.qualifications.fields && (
+                                <p className="text-xs text-gray-500">({camp.qualifications.fields.join(", ")})</p>
+                            )}
                         </InfoCard>
                         <InfoCard title="เพิ่มเติม" icon={<FaCheckCircle className="text-lg text-green-500" />}>
                             {camp.additionalInfo.map((info, i) => <p key={i}>• {info}</p>)}
@@ -232,26 +221,33 @@ export default function CampDetailView({ camp }: { camp: CampData }) {
                             <p>{camp.location}</p>
                         </InfoCard>
                         <div className="rounded-2xl overflow-hidden shadow-lg h-64 mt-6">
-                            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3875.870425721836!2d100.52182051533816!3d13.72592020188686!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x30e298bf3f6a2e4b%3A0x29c7c729a6b9a54!2sKnowledge%20Exchange%20(KX)!5e0!3m2!1sen!2sth!4v1678886450123!5m2!1sen!2sth" width="100%" height="100%" style={{ border: 0 }} allowFullScreen={false} loading="lazy" referrerPolicy="no-referrer-when-downgrade"></iframe>
+                            <iframe 
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3875.870425721836!2d100.52182051533816!3d13.72592020188686!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x30e298bf3f6a2e4b%3A0x29c7c729a6b9a54!2sKnowledge%20Exchange%20(KX)!5e0!3m2!1sen!2sth!4v1678886450123!5m2!1sen!2sth" 
+                                width="100%" 
+                                height="100%" 
+                                style={{ border: 0 }} 
+                                allowFullScreen={false} 
+                                loading="lazy" 
+                                referrerPolicy="no-referrer-when-downgrade"
+                            />
                         </div>
-
                     </div>
                 </section>
 
-
-                {/* --- SECTION ที่เพิ่มเข้ามา: REVIEWS --- */}
                 <section className="mt-12">
                     <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">รีวิวจากผู้เข้าร่วม</h2>
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-                        {/* Rating Summary */}
                         <div className="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
                             <div className="flex items-center gap-4 mb-4">
-                                <p className="text-5xl font-bold text-gray-800 dark:text-white">{camp.avgRating.toFixed(1)}</p>
+                                <p className="text-5xl font-bold text-gray-800 dark:text-white">
+                                    {camp.avgRating.toFixed(1)}
+                                </p>
                                 <div>
                                     <div className="flex items-center">
                                         {Array.from({ length: 5 }, (_, i) => (
-                                            <span key={i} className={i < Math.round(camp.avgRating) ? "text-amber-400" : "text-gray-300"}>★</span>
+                                            <span key={i} className={i < Math.round(camp.avgRating) ? "text-amber-400" : "text-gray-300"}>
+                                                ★
+                                            </span>
                                         ))}
                                     </div>
                                     <p className="text-sm text-gray-500">{camp.reviews.length} รีวิว</p>
@@ -260,13 +256,16 @@ export default function CampDetailView({ camp }: { camp: CampData }) {
                             <div className="space-y-2">
                                 {Object.entries(camp.ratingBreakdown).reverse().map(([stars, count]) => (
                                     <div key={stars} className="flex items-center gap-2">
-                                        <span className="text-sm text-gray-500">{stars} </span>
-                                        <Progress value={(count / (camp.reviews.length || 1)) * 100} classNames={{ indicator: "bg-amber-400" }} />
+                                        <span className="text-sm text-gray-500">{stars} ★</span>
+                                        <Progress 
+                                            value={(count / (camp.reviews.length || 1)) * 100} 
+                                            classNames={{ indicator: "bg-amber-400" }} 
+                                        />
                                     </div>
                                 ))}
                             </div>
                             <Button
-                                className="bg-linear-to-tr from-pink-500 to-yellow-500 text-white shadow-lg mt-5 h-12"
+                                className="bg-gradient-to-tr from-pink-500 to-yellow-500 text-white shadow-lg mt-5 h-12"
                                 fullWidth
                                 isDisabled
                                 radius="full"
@@ -275,20 +274,21 @@ export default function CampDetailView({ camp }: { camp: CampData }) {
                             </Button>
                         </div>
 
-                        {/* Individual Reviews */}
                         <div className="lg:col-span-2 space-y-4">
                             {camp.reviews.length > 0 ? (
                                 camp.reviews.map((review) => (
                                     <ReviewCard key={review.id} review={review} />
                                 ))
                             ) : (
-                                <div className="text-center text-gray-500 pt-10">ยังไม่มีรีวิวสำหรับค่ายนี้</div>
+                                <div className="text-center text-gray-500 pt-10">
+                                    ยังไม่มีรีวิวสำหรับค่ายนี้
+                                </div>
                             )}
                         </div>
                     </div>
                 </section>
-
             </div>
+            
             <BookingModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
