@@ -1,6 +1,7 @@
 // src/app/api/camps/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { CampModel } from '@/lib/db/models/Camp';
+import { Camp } from '@/types';
 
 // GET /api/camps
 export async function GET(request: NextRequest) {
@@ -9,7 +10,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category');
     const featured = searchParams.get('featured');
     const search = searchParams.get('search');
-    const includeAll = searchParams.get('includeAll'); // สำหรับ organizer dashboard
+    const includeAll = searchParams.get('includeAll');
 
     let camps;
 
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     // ถ้าไม่ได้ขอ includeAll ให้แสดงเฉพาะ active camps
     if (!includeAll) {
-      camps = camps.filter((c: any) => c.status === 'active');
+      camps = camps.filter((c: Camp) => c.status === 'active');
     }
 
     return NextResponse.json(camps);
@@ -46,7 +47,6 @@ export async function POST(request: NextRequest) {
     console.log('=== CREATE CAMP REQUEST ===');
     console.log('Received camp data:', JSON.stringify(body, null, 2));
 
-    // Validate required fields for our new structure
     if (!body.name || !body.description || !body.location) {
       console.error('Validation failed: Missing required fields');
       return NextResponse.json(
@@ -55,7 +55,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Set defaults and map fields
     const campData = {
       name: body.name,
       category: body.category || 'General',
@@ -76,11 +75,9 @@ export async function POST(request: NextRequest) {
       ratingBreakdown: { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 },
       featured: body.featured || false,
       slug: body.slug || body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
-      // Organizer info
       organizerId: body.organizerId,
       organizerName: body.organizerName,
       organizerEmail: body.organizerEmail,
-      // Additional fields - convert ISO strings to Date objects
       startDate: body.startDate ? new Date(body.startDate) : undefined,
       endDate: body.endDate ? new Date(body.endDate) : undefined,
       registrationDeadline: body.registrationDeadline ? new Date(body.registrationDeadline) : undefined,

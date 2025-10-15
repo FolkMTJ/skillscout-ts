@@ -1,42 +1,15 @@
 // src/lib/db/models/Payment.ts
 import { getCollection } from '@/lib/mongodb';
 import { ObjectId, Filter, UpdateFilter } from 'mongodb';
-
-export enum PaymentStatus {
-  PENDING = 'pending',
-  COMPLETED = 'completed',
-  CONFIRMED = 'confirmed', // User confirmed completion
-  RELEASED = 'released', // Money released to organizer
-  REFUNDED = 'refunded',
-  CANCELLED = 'cancelled'
-}
-
-export interface Payment {
-  _id: string;
-  registrationId: string;
-  campId: string;
-  userId: string;
-  organizerId: string;
-  amount: number;
-  discount: number;
-  finalAmount: number;
-  promoCode?: string;
-  status: PaymentStatus;
-  qrCodeUrl?: string;
-  slipUrl?: string;
-  paidAt?: Date;
-  confirmedAt?: Date;
-  releasedAt?: Date;
-  autoReleaseDate?: Date; // 15 days after completion
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { Payment, PaymentStatus } from '@/types';
 
 interface PaymentDoc {
   _id?: ObjectId;
   registrationId: string;
   campId: string;
   userId: string;
+  userEmail?: string;
+  userName?: string;
   organizerId: string;
   amount: number;
   discount: number;
@@ -45,6 +18,14 @@ interface PaymentDoc {
   status: PaymentStatus;
   qrCodeUrl?: string;
   slipUrl?: string;
+  slipVerified?: boolean;
+  requiresManualReview?: boolean;
+  slipUploadedAt?: Date;
+  verifiedAt?: Date;
+  verifiedBy?: string;
+  rejectedAt?: Date;
+  rejectedBy?: string;
+  rejectionReason?: string;
   paidAt?: Date;
   confirmedAt?: Date;
   releasedAt?: Date;
@@ -102,30 +83,27 @@ export class PaymentModel {
     return this.toPublic(payment);
   }
 
-  static async updateStatus(id: string, status: PaymentStatus, additionalData?: Partial<Payment>): Promise<boolean> {
+  static async updateStatus(id: string, status: PaymentStatus, additionalData?: Partial<Omit<PaymentDoc, '_id'>>): Promise<boolean> {
     const collection = await getCollection<PaymentDoc>(this.collectionName);
     const filter: Filter<PaymentDoc> = { _id: new ObjectId(id) } as Filter<PaymentDoc>;
     
-    const updateFields: any = {
+    const updateFields: Partial<PaymentDoc> = {
       status,
       updatedAt: new Date(),
       ...additionalData
     };
 
-    // Set auto-release date when payment is completed
     if (status === PaymentStatus.COMPLETED && !additionalData?.autoReleaseDate) {
       const releaseDate = new Date();
-      releaseDate.setDate(releaseDate.getDate() + 15); // 15 days from now
+      releaseDate.setDate(releaseDate.getDate() + 15);
       updateFields.autoReleaseDate = releaseDate;
       updateFields.paidAt = new Date();
     }
 
-    // Set confirmed date when user confirms
     if (status === PaymentStatus.CONFIRMED) {
       updateFields.confirmedAt = new Date();
     }
 
-    // Set released date when money is released
     if (status === PaymentStatus.RELEASED) {
       updateFields.releasedAt = new Date();
     }
@@ -154,6 +132,17 @@ export class PaymentModel {
   static async findByOrganizer(organizerId: string): Promise<Payment[]> {
     const collection = await getCollection<PaymentDoc>(this.collectionName);
     const filter: Filter<PaymentDoc> = { organizerId } as Filter<PaymentDoc>;
+    
+    const payments = await collection
+      .find(filter)
+      .sort({ createdAt: -1 })
+      .toArray();
+    
+    return payments.map(doc => this.toPublic(doc));
+  }
+
+  static async find(filter: Filter<PaymentDoc>): Promise<Payment[]> {
+    const collection = await getCollection<PaymentDoc>(this.collectionName);
     
     const payments = await collection
       .find(filter)

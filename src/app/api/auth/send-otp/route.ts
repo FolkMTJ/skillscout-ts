@@ -1,6 +1,6 @@
 // src/app/api/auth/send-otp/route.ts
 import { NextResponse } from 'next/server';
-import { UserModel } from '@/lib/db/models/User';
+import { UserModel } from '@/lib/db/models';
 import { sendOTPEmail } from '@/lib/email';
 
 export async function POST(request: Request) {
@@ -14,7 +14,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if user exists
     const user = await UserModel.findByEmail(email);
     if (!user) {
       return NextResponse.json(
@@ -23,10 +22,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generate OTP
     const otp = await UserModel.createOTP(email);
 
-    // Send OTP via email
     const sent = await sendOTPEmail(email, otp);
 
     if (!sent) {

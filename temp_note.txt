@@ -1,0 +1,6 @@
+// เปลี่ยนบรรทัด 430-431 จาก:
+// <Chip size="sm" color={getStatusColor(reg.status as any)} variant="flat">
+//   {getStatusText(reg.status as any)}
+// เป็น:
+<Chip size="sm" color={getStatusColor(reg.status as RegistrationStatus | 'attended')} variant="flat">
+  {getStatusText(reg.status as RegistrationStatus | 'attended')}

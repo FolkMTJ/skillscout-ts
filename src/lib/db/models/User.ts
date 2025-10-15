@@ -1,7 +1,7 @@
 // src/lib/db/models/User.ts
 import { getCollection } from '@/lib/mongodb';
 import { ObjectId, Filter } from 'mongodb';
-import { UserRole } from '@/types/camp';
+import { UserRole, User, OTP } from '@/types';
 
 interface UserDoc {
   _id?: ObjectId;
@@ -17,6 +17,7 @@ interface UserDoc {
   address?: string;
   province?: string;
   district?: string;
+  isBanned?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,6 +34,14 @@ export class UserModel {
   private static collectionName = 'users';
   private static otpCollectionName = 'otps';
 
+  private static toPublic(doc: UserDoc): User {
+    const { _id, ...rest } = doc;
+    return {
+      ...rest,
+      _id: _id?.toString() || '',
+    };
+  }
+
   static async create(userData: {
     email: string;
     name: string;
@@ -44,10 +53,9 @@ export class UserModel {
     address?: string;
     province?: string;
     district?: string;
-  }) {
+  }): Promise<User> {
     const collection = await getCollection<UserDoc>(this.collectionName);
     
-    // Check if user exists
     const existing = await collection.findOne({ email: userData.email } as Filter<UserDoc>);
     if (existing) {
       throw new Error('อีเมลนี้มีในระบบแล้ว');
@@ -65,6 +73,7 @@ export class UserModel {
       address: userData.address,
       province: userData.province,
       district: userData.district,
+      isBanned: false,
       createdAt: now,
       updatedAt: now,
     };
@@ -73,23 +82,30 @@ export class UserModel {
     
     return {
       _id: result.insertedId.toString(),
-      email: user.email,
-      name: user.name,
-      role: user.role,
+      ...user,
     };
   }
 
-  static async findByEmail(email: string) {
+  static async findByEmail(email: string): Promise<UserDoc | null> {
     const collection = await getCollection<UserDoc>(this.collectionName);
     return collection.findOne({ email } as Filter<UserDoc>);
   }
 
-  static async findById(id: string) {
+  static async findById(id: string): Promise<User | null> {
     const collection = await getCollection<UserDoc>(this.collectionName);
-    return collection.findOne({ _id: new ObjectId(id) } as Filter<UserDoc>);
+    const user = await collection.findOne({ _id: new ObjectId(id) } as Filter<UserDoc>);
+    
+    if (!user) return null;
+    return this.toPublic(user);
   }
 
-  static async update(id: string, updates: Partial<UserDoc>) {
+  static async findAll(): Promise<User[]> {
+    const collection = await getCollection<UserDoc>(this.collectionName);
+    const users = await collection.find({}).sort({ createdAt: -1 }).toArray();
+    return users.map(doc => this.toPublic(doc));
+  }
+
+  static async update(id: string, updates: Partial<Omit<User, '_id'>>): Promise<boolean> {
     const collection = await getCollection<UserDoc>(this.collectionName);
     const result = await collection.updateOne(
       { _id: new ObjectId(id) } as Filter<UserDoc>,
@@ -98,17 +114,19 @@ export class UserModel {
     return result.modifiedCount > 0;
   }
 
-  // OTP Methods
+  static async delete(id: string): Promise<boolean> {
+    const collection = await getCollection<UserDoc>(this.collectionName);
+    const result = await collection.deleteOne({ _id: new ObjectId(id) } as Filter<UserDoc>);
+    return result.deletedCount > 0;
+  }
+
   static async createOTP(email: string): Promise<string> {
     const collection = await getCollection<OTPDoc>(this.otpCollectionName);
     
-    // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     
-    // Delete old OTPs for this email
     await collection.deleteMany({ email } as Filter<OTPDoc>);
     
-    // Create new OTP (expires in 10 minutes)
     const otpDoc: Omit<OTPDoc, '_id'> = {
       email,
       otp,
@@ -132,7 +150,6 @@ export class UserModel {
     
     if (!otpDoc) return false;
     
-    // Delete used OTP
     await collection.deleteOne({ _id: otpDoc._id } as Filter<OTPDoc>);
     
     return true;

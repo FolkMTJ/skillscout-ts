@@ -1,9 +1,8 @@
 // src/lib/db/models/Registration.ts
 import { getCollection } from '@/lib/mongodb';
-import { Registration, RegistrationStatus } from '@/types/camp';
+import { Registration, RegistrationStatus } from '@/types';
 import { ObjectId, Filter, UpdateFilter } from 'mongodb';
 
-// Internal MongoDB document type
 interface RegistrationDoc {
   _id?: ObjectId;
   campId: string;
@@ -22,13 +21,11 @@ interface RegistrationDoc {
   }[];
 }
 
-// Type for creating new registration (without _id)
 type RegistrationInput = Omit<RegistrationDoc, '_id'>;
 
 export class RegistrationModel {
   private static collectionName = 'registrations';
 
-  // Helper: Convert MongoDB doc to public Registration
   private static toPublic(doc: RegistrationDoc): Registration {
     const { _id, ...rest } = doc;
     return {
@@ -79,7 +76,7 @@ export class RegistrationModel {
     const reg = await collection.findOne(filter);
     
     if (!reg) return null;
-    return this.toPublic(reg as RegistrationDoc);
+    return this.toPublic(reg);
   }
 
   static async findByCamp(campId: string): Promise<Registration[]> {
@@ -90,7 +87,7 @@ export class RegistrationModel {
       .sort({ appliedAt: -1 })
       .toArray();
     
-    return registrations.map(doc => this.toPublic(doc as RegistrationDoc));
+    return registrations.map(doc => this.toPublic(doc));
   }
 
   static async findByUser(userId: string): Promise<Registration[]> {
@@ -101,7 +98,7 @@ export class RegistrationModel {
       .sort({ appliedAt: -1 })
       .toArray();
     
-    return registrations.map(doc => this.toPublic(doc as RegistrationDoc));
+    return registrations.map(doc => this.toPublic(doc));
   }
 
   static async checkDuplicate(userId: string, campId: string): Promise<boolean> {
@@ -136,7 +133,7 @@ export class RegistrationModel {
     });
 
     if (!result) return null;
-    return this.toPublic(result as RegistrationDoc);
+    return this.toPublic(result);
   }
 
   static async delete(id: string): Promise<boolean> {
@@ -163,7 +160,7 @@ export class RegistrationModel {
       .sort({ appliedAt: -1 })
       .toArray();
     
-    return registrations.map(doc => this.toPublic(doc as RegistrationDoc));
+    return registrations.map(doc => this.toPublic(doc));
   }
 
   static async getPendingCount(): Promise<number> {

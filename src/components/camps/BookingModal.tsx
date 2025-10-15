@@ -184,6 +184,8 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
           registrationId: registration.registration._id,
           campId: camp._id,
           userId: session?.user?.email || formData.email,
+          userEmail: formData.email, // เพิ่ม
+          userName: formData.name, // เพิ่ม
           organizerId: camp.organizerId || 'default-organizer',
           amount: basePrice,
           discount: discount,

@@ -6,7 +6,7 @@ import { Card, Input, Button, Select, SelectItem, Textarea } from '@heroui/react
 import { Mail, User, Phone, Building, CreditCard, MapPin, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
-import { UserRole } from '@/types/camp';
+import { UserRole } from '@/types';
 import Image from 'next/image';
 
 const provinces = [
@@ -86,7 +86,6 @@ export default function RegisterPage() {
             </p>
           </div>
 
-          {/* Role Selection */}
           <div className="grid grid-cols-2 gap-4 mb-8">
             <button
               type="button"
@@ -118,7 +117,6 @@ export default function RegisterPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Common Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 type="email"
@@ -143,7 +141,6 @@ export default function RegisterPage() {
               />
             </div>
 
-            {/* Organizer Additional Fields */}
             {role === 'organizer' && (
               <>
                 <div className="border-t pt-6">
@@ -211,7 +208,7 @@ export default function RegisterPage() {
                   </div>
 
                   <Textarea
-                    label="ที่อยู่่"
+                    label="ที่อยู่่"
                     placeholder="บ้านเลขที่ ถนน ตำบล อำเภอ"
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
@@ -232,7 +229,7 @@ export default function RegisterPage() {
                       startContent={<MapPin className="w-4 h-4 text-gray-400" />}
                     >
                       {provinces.map((province) => (
-                        <SelectItem key={province} value={province}>
+                        <SelectItem key={province}>
                           {province}
                         </SelectItem>
                       ))}
@@ -253,7 +250,6 @@ export default function RegisterPage() {
               </>
             )}
 
-            {/* User Simple Fields */}
             {role === 'user' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
@@ -276,7 +272,6 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {/* Terms */}
             <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 การสมัครสมาชิก คุณยอมรับ{' '}

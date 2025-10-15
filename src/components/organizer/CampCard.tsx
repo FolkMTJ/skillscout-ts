@@ -3,7 +3,7 @@
 
 import { Card, Button, Chip } from '@heroui/react';
 import { Edit, Trash2 } from 'lucide-react';
-import { Camp } from '@/types/camp';
+import { Camp } from '@/types';
 
 interface CampCardProps {
   camp: Camp;

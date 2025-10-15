@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { RegistrationModel } from '@/lib/db/models/Registration';
 import { CampModel } from '@/lib/db/models/Camp';
+import { RegistrationStatus } from '@/types';
 
 // POST /api/registrations - Create new registration
 export async function POST(request: NextRequest) {
@@ -195,7 +196,7 @@ export async function GET(request: NextRequest) {
     } else if (userId) {
       registrations = await RegistrationModel.findByUser(userId);
     } else if (status) {
-      registrations = await RegistrationModel.findByStatus(status as any);
+      registrations = await RegistrationModel.findByStatus(status as RegistrationStatus);
     } else {
       return NextResponse.json(
         { error: 'Please provide campId, userId, or status parameter' },

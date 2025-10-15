@@ -3,22 +3,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { CampModel } from '@/lib/db/models/Camp';
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
-// GET /api/camps/[id] - Get camp by ID or slug (with view increment)
 export async function GET(
   request: NextRequest,
   { params }: RouteParams
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const incrementView = searchParams.get('incrementView') === 'true';
 
-    // Try to find by ID first, then by slug
     let camp = await CampModel.findById(id, incrementView);
     
     if (!camp) {
@@ -42,17 +40,13 @@ export async function GET(
   }
 }
 
-// PATCH /api/camps/[id] - Partial update camp
 export async function PATCH(
   request: NextRequest,
   { params }: RouteParams
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
-
-    // Note: You can add authentication/authorization here
-    // Example: Check if user has permission to update this camp
 
     const success = await CampModel.update(id, body);
 
@@ -74,17 +68,13 @@ export async function PATCH(
   }
 }
 
-// PUT /api/camps/[id] - Update camp
 export async function PUT(
   request: NextRequest,
   { params }: RouteParams
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
-
-    // Note: You can add authentication/authorization here
-    // Example: Check if user has permission to update this camp
 
     const success = await CampModel.update(id, body);
 
@@ -106,16 +96,12 @@ export async function PUT(
   }
 }
 
-// DELETE /api/camps/[id] - Delete camp
 export async function DELETE(
   request: NextRequest,
   { params }: RouteParams
 ) {
   try {
-    const { id } = params;
-
-    // Note: You should add authentication/authorization here
-    // Example: Check if user is admin or camp organizer
+    const { id } = await params;
 
     const success = await CampModel.delete(id);
 

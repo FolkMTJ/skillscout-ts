@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { RegistrationModel } from '@/lib/db/models/Registration';
 import { CampModel } from '@/lib/db/models/Camp';
+import { RegistrationStatus } from '@/types';
 
 // GET /api/ticket/verify?id=xxx - Verify and check-in by scanning QR
 export async function GET(request: NextRequest) {
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if already checked in
-    if (registration.status === 'attended') {
+    if (registration.status === RegistrationStatus.ATTENDED) {
       console.log('⚠️ Already checked in');
       return NextResponse.json({
         success: true,
@@ -62,13 +63,13 @@ export async function GET(request: NextRequest) {
           campDate: camp.date,
           campLocation: camp.location,
           status: registration.status,
-          checkedInAt: registration.updatedAt,
+          checkedInAt: registration.reviewedAt || registration.appliedAt,
         }
       });
     }
 
     // Check if registration is approved
-    if (registration.status !== 'approved' && registration.status !== 'pending') {
+    if (registration.status !== RegistrationStatus.APPROVED && registration.status !== RegistrationStatus.PENDING) {
       console.log('❌ Registration not approved, status:', registration.status);
       return NextResponse.json({
         success: false,
@@ -84,7 +85,9 @@ export async function GET(request: NextRequest) {
     // Mark as attended (check-in)
     const updated = await RegistrationModel.updateStatus(
       registrationId,
-      'attended'
+      RegistrationStatus.ATTENDED,
+      'system',
+      'เช็คอินที่หน้างาน'
     );
 
     if (!updated) {

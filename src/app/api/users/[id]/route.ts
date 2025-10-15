@@ -4,9 +4,9 @@ import { getCollection } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 // PATCH /api/users/[id] - Update user role
@@ -15,7 +15,7 @@ export async function PATCH(
   { params }: RouteParams
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { role } = body;
 

@@ -7,12 +7,29 @@ import {
     FaMapMarkerAlt, FaCalendarAlt, FaClock, FaArrowLeft, FaUsers, FaGraduationCap, FaPaintBrush, FaCheckCircle, FaTicketAlt
 } from "react-icons/fa";
 import { Chip, Progress } from "@heroui/react";
-import type { CampData, Review } from "@/lib/data";
+import { Camp, Organizer, Review } from "@/types";
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@heroui/react";
 import BookingModal from '@/components/camps/BookingModal';
 import TicketModal from '@/components/ticket/TicketModal';
+import LocationMap from '@/components/maps/LocationMap';
+
+interface TicketData {
+    _id: string;
+    userId: string;
+    campId: string;
+    campName: string;
+    userEmail: string;
+    userName: string;
+    qrCode: string;
+    registrationDate: string;
+    status: string;
+    campDate: string;
+    campLocation: string;
+    registrationId: string;
+    createdAt: string;
+}
 
 const InfoCard: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
     <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
@@ -40,16 +57,15 @@ const ReviewCard: React.FC<{ review: Review }> = ({ review }) => (
     </div>
 );
 
-export default function CampDetailView({ camp }: { camp: CampData }) {
+export default function CampDetailView({ camp }: { camp: Camp }) {
     const router = useRouter();
     const { data: session } = useSession();
     const [selectedImage, setSelectedImage] = useState(camp.galleryImages[0] || camp.image);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
     
-    // Check registration status
     const [isRegistered, setIsRegistered] = useState(false);
-    const [ticketData, setTicketData] = useState<any>(null);
+    const [ticketData, setTicketData] = useState<TicketData | null>(null);
     const [checkingRegistration, setCheckingRegistration] = useState(true);
 
     useEffect(() => {
@@ -84,15 +100,6 @@ export default function CampDetailView({ camp }: { camp: CampData }) {
             setIsTicketModalOpen(true);
         }
     };
-
-    // const handleBookingSuccess = () => {
-    //     // Refresh registration status after successful booking
-    //     setIsRegistered(false);
-    //     setCheckingRegistration(true);
-    //     setTimeout(() => {
-    //         window.location.reload();
-    //     }, 1000);
-    // };
     
     return (
         <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
@@ -145,25 +152,36 @@ export default function CampDetailView({ camp }: { camp: CampData }) {
                                     </div>
                                     {camp.organizers && camp.organizers.length > 0 && (
                                         <div className="mt-8">
-                                            <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300">ผู้จัดค่าย</h2>
-                                            <div className="flex items-center gap-4 mt-3">
-                                                {camp.organizers.map((organizer) => (
-                                                    <div key={organizer.name} className="flex flex-col items-center gap-2">
-                                                        <div className="relative w-16 h-16">
-                                                            <Image
-                                                                src={organizer.imageUrl}
-                                                                alt={organizer.name}
-                                                                fill
-                                                                className="rounded-full object-cover"
-                                                                sizes="64px"
-                                                            />
+                                            <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">ผู้จัดค่าย</h2>
+                                            <div className="flex flex-wrap items-center gap-4">
+                                                {camp.organizers.map((organizer: Organizer, index: number) => {
+                                                    const isPlaceholder = organizer.imageUrl === '/api/placeholder/100/100' || !organizer.imageUrl;
+                                                    return (
+                                                        <div key={`${organizer.name}-${index}`} className="flex flex-col items-center gap-2">
+                                                            <div className="relative w-16 h-16 rounded-full overflow-hidden border-3 border-amber-400/30 shadow-md hover:border-amber-400 transition-all">
+                                                                {isPlaceholder ? (
+                                                                    <div className="w-full h-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                                                                        <span className="text-white text-2xl font-bold">
+                                                                            {organizer.name.charAt(0).toUpperCase()}
+                                                                        </span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <Image
+                                                                        src={organizer.imageUrl}
+                                                                        alt={organizer.name}
+                                                                        fill
+                                                                        className="object-cover"
+                                                                        sizes="64px"
+                                                                    />
+                                                                )}
+                                                            </div>
+                                                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 text-center max-w-[80px] truncate">
+                                                                {organizer.name}
+                                                            </span>
                                                         </div>
-                                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                                                            {organizer.name}
-                                                        </span>
-                                                    </div>
-                                                ))}
-                            </div>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                     )}
                                     <div className="flex items-center justify-between pt-6">
@@ -171,7 +189,6 @@ export default function CampDetailView({ camp }: { camp: CampData }) {
                                             {camp.price}
                                         </p>
                                         
-                                        {/* Dynamic Button based on registration status */}
                                         {checkingRegistration ? (
                                             <Button
                                                 isLoading
@@ -202,7 +219,6 @@ export default function CampDetailView({ camp }: { camp: CampData }) {
                                         )}
                                     </div>
                                     
-                                    {/* Registration Status Badge */}
                                     {isRegistered && (
                                         <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border-2 border-green-500 rounded-lg">
                                             <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
@@ -242,7 +258,7 @@ export default function CampDetailView({ camp }: { camp: CampData }) {
                                 />
                             </div>
                             <div className="grid grid-cols-3 gap-4">
-                                {camp.galleryImages.map((img, i) => (
+                                {camp.galleryImages.map((img: string, i: number) => (
                                     <button
                                         key={i}
                                         onClick={() => setSelectedImage(img)}
@@ -300,22 +316,16 @@ export default function CampDetailView({ camp }: { camp: CampData }) {
                             )}
                         </InfoCard>
                         <InfoCard title="เพิ่มเติม" icon={<FaCheckCircle className="text-lg text-green-500" />}>
-                            {camp.additionalInfo.map((info, i) => <p key={i}>• {info}</p>)}
+                            {camp.additionalInfo.map((info: string, i: number) => <p key={i}>• {info}</p>)}
                         </InfoCard>
                         <InfoCard title="สถานที่จัด" icon={<FaMapMarkerAlt className="text-lg text-[#F2B33D]" />}>
                             <p>{camp.location}</p>
                         </InfoCard>
-                        <div className="rounded-2xl overflow-hidden shadow-lg h-64 mt-6">
-                            <iframe 
-                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3875.870425721836!2d100.52182051533816!3d13.72592020188686!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x30e298bf3f6a2e4b%3A0x29c7c729a6b9a54!2sKnowledge%20Exchange%20(KX)!5e0!3m2!1sen!2sth!4v1678886450123!5m2!1sen!2sth" 
-                                width="100%" 
-                                height="100%" 
-                                style={{ border: 0 }} 
-                                allowFullScreen={false} 
-                                loading="lazy" 
-                                referrerPolicy="no-referrer-when-downgrade"
-                            />
-                        </div>
+                        <LocationMap 
+                            location={camp.location}
+                            height="h-64"
+                            className="mt-6"
+                        />
                     </div>
                 </section>
 
@@ -343,7 +353,7 @@ export default function CampDetailView({ camp }: { camp: CampData }) {
                                     <div key={stars} className="flex items-center gap-2">
                                         <span className="text-sm text-gray-500">{stars} ★</span>
                                         <Progress 
-                                            value={(count / (camp.reviews.length || 1)) * 100} 
+                                            value={((count as number) / (camp.reviews.length || 1)) * 100} 
                                             classNames={{ indicator: "bg-amber-400" }} 
                                         />
                                     </div>
@@ -361,7 +371,7 @@ export default function CampDetailView({ camp }: { camp: CampData }) {
 
                         <div className="lg:col-span-2 space-y-4">
                             {camp.reviews.length > 0 ? (
-                                camp.reviews.map((review) => (
+                                camp.reviews.map((review: Review) => (
                                     <ReviewCard key={review.id} review={review} />
                                 ))
                             ) : (

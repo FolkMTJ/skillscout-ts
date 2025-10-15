@@ -1,11 +1,12 @@
 // src/app/api/payment/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { PaymentModel, PaymentStatus } from '@/lib/db/models/Payment';
+import { PaymentModel } from '@/lib/db/models/Payment';
+import { PaymentStatus } from '@/types';
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 // PATCH /api/payment/[id] - Update payment (add slip, change status)
@@ -14,7 +15,7 @@ export async function PATCH(
   { params }: RouteParams
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     console.log('=== UPDATE PAYMENT ===');
@@ -24,6 +25,7 @@ export async function PATCH(
     const { slipUrl, status, ...otherData } = body;
 
     // Prepare update data
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {
       ...otherData
     };
@@ -69,7 +71,7 @@ export async function GET(
   { params }: RouteParams
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const payment = await PaymentModel.findById(id);
 
     if (!payment) {

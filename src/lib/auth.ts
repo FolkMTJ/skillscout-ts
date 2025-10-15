@@ -1,7 +1,12 @@
 // src/lib/auth.ts
-import { NextAuthOptions } from 'next-auth';
+import { NextAuthOptions, User as NextAuthUser } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { UserModel } from '@/lib/db/models/User';
+import { UserRole } from '@/types';
+
+interface CustomUser extends NextAuthUser {
+  role: UserRole;
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -12,12 +17,11 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'email' },
         otp: { label: 'OTP', type: 'text' },
       },
-      async authorize(credentials) {
+      async authorize(credentials): Promise<CustomUser | null> {
         if (!credentials?.email || !credentials?.otp) {
           throw new Error('กรุณากรอกอีเมลและรหัส OTP');
         }
 
-        // Verify OTP
         const isValidOTP = await UserModel.verifyOTP(
           credentials.email,
           credentials.otp
@@ -27,7 +31,6 @@ export const authOptions: NextAuthOptions = {
           throw new Error('รหัส OTP ไม่ถูกต้องหรือหมดอายุแล้ว');
         }
 
-        // Get user
         const user = await UserModel.findByEmail(credentials.email);
 
         if (!user) {
@@ -47,15 +50,16 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.role = user.role;
+        const customUser = user as CustomUser;
+        token.id = customUser.id;
+        token.role = customUser.role;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role;
+        session.user.role = token.role as UserRole;
       }
       return session;
     },
@@ -65,7 +69,7 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 30 * 24 * 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET,
 };

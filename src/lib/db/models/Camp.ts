@@ -1,70 +1,8 @@
 // src/lib/db/models/Camp.ts
 import { getCollection } from '@/lib/mongodb';
 import { ObjectId, Filter, UpdateFilter } from 'mongodb';
+import { Camp, Organizer, Qualifications, Review, CampStatus } from '@/types';
 
-// Type Definitions
-export interface Organizer {
-  name: string;
-  imageUrl: string;
-}
-
-export interface Qualifications {
-  level: string;
-  fields?: string[];
-}
-
-export interface Review {
-  id: string;
-  author: string;
-  rating: number;
-  comment: string;
-  date: string;
-}
-
-export type CampStatus = 'draft' | 'active' | 'closed' | 'cancelled';
-
-export interface Camp {
-  _id: string;
-  id?: string; // Legacy support - same as _id
-  name: string;
-  category: string;
-  date: string;
-  location: string;
-  price: string;
-  image: string;
-  galleryImages: string[];
-  description: string;
-  deadline: string;
-  daysLeft?: number; // Legacy support - calculated field
-  participantCount: number;
-  activityFormat: string;
-  qualifications: Qualifications;
-  additionalInfo: string[];
-  organizers?: Organizer[];
-  reviews: Review[];
-  avgRating: number;
-  ratingBreakdown: Record<string, number>;
-  featured?: boolean;
-  slug: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-  // Organizer fields
-  organizerId?: string;
-  organizerName?: string;
-  organizerEmail?: string;
-  // Additional fields
-  startDate?: Date;
-  endDate?: Date;
-  registrationDeadline?: Date;
-  capacity?: number;
-  enrolled?: number;
-  fee?: number;
-  tags?: string[];
-  status?: CampStatus;
-  views?: number; // NEW: Track views for trending
-}
-
-// Internal MongoDB document type
 interface CampDoc {
   _id?: ObjectId;
   name: string;
@@ -102,18 +40,15 @@ interface CampDoc {
   views?: number;
 }
 
-// Type for creating new camp (without _id)
 export type CampInput = Omit<CampDoc, '_id'>;
 
 export class CampModel {
   private static collectionName = 'camps';
 
-  // Helper: Convert MongoDB doc to public Camp
   private static toPublic(doc: CampDoc): Camp {
     const { _id, ...rest } = doc;
     const idString = _id?.toString() || '';
     
-    // Calculate daysLeft from deadline
     let daysLeft: number | undefined;
     if (doc.deadline) {
       try {
@@ -132,22 +67,10 @@ export class CampModel {
       _id: idString,
       id: idString,
       daysLeft,
-      views: doc.views || 0, // Ensure views is always a number
-      organizerId: doc.organizerId,
-      organizerName: doc.organizerName,
-      organizerEmail: doc.organizerEmail,
-      startDate: doc.startDate,
-      endDate: doc.endDate,
-      registrationDeadline: doc.registrationDeadline,
-      capacity: doc.capacity,
-      enrolled: doc.enrolled,
-      fee: doc.fee,
-      tags: doc.tags,
-      status: doc.status,
+      views: doc.views || 0,
     };
   }
 
-  // Helper: Generate slug from name
   private static generateSlug(name: string): string {
     if (!name || name.trim() === '') {
       return `camp-${Date.now()}-${Math.random().toString(36).substring(7)}`;
@@ -165,111 +88,54 @@ export class CampModel {
     return slug;
   }
 
-  // Create
   static async create(campData: Partial<CampDoc>): Promise<Camp> {
-    try {
-      const collection = await getCollection<CampDoc>(this.collectionName);
-      
-      const now = new Date();
-      const campDoc: CampDoc = {
-        name: campData.name || '',
-        category: campData.category || '',
-        date: campData.date || '',
-        location: campData.location || '',
-        price: campData.price || '',
-        image: campData.image || '',
-        galleryImages: campData.galleryImages || [],
-        description: campData.description || '',
-        deadline: campData.deadline || '',
-        participantCount: campData.participantCount || 0,
-        activityFormat: campData.activityFormat || '',
-        qualifications: campData.qualifications || { level: '' },
-        additionalInfo: campData.additionalInfo || [],
-        organizers: campData.organizers || [],
-        slug: campData.slug || this.generateSlug(campData.name || ''),
-        avgRating: campData.avgRating || 0,
-        ratingBreakdown: campData.ratingBreakdown || { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 },
-        reviews: campData.reviews || [],
-        featured: campData.featured || false,
-        views: 0, // Initialize views to 0
-        createdAt: now,
-        updatedAt: now,
-        organizerId: campData.organizerId,
-        organizerName: campData.organizerName,
-        organizerEmail: campData.organizerEmail,
-        startDate: campData.startDate,
-        endDate: campData.endDate,
-        registrationDeadline: campData.registrationDeadline,
-        capacity: campData.capacity,
-        enrolled: campData.enrolled || 0,
-        fee: campData.fee,
-        tags: campData.tags || [],
-        status: campData.status,
-      };
-      
-      const insertResult = await collection.insertOne(campDoc);
-      const insertedId = insertResult.insertedId.toString();
-      
-      let daysLeft: number | undefined;
-      if (campDoc.deadline) {
-        try {
-          const deadlineDate = new Date(campDoc.deadline);
-          const today = new Date();
-          const diffTime = deadlineDate.getTime() - today.getTime();
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          daysLeft = diffDays > 0 ? diffDays : 0;
-        } catch {
-          daysLeft = undefined;
-        }
-      }
-      
-      const campResult: Camp = {
-        _id: insertedId,
-        id: insertedId,
-        daysLeft,
-        name: campDoc.name,
-        category: campDoc.category,
-        date: campDoc.date,
-        location: campDoc.location,
-        price: campDoc.price,
-        image: campDoc.image,
-        galleryImages: campDoc.galleryImages,
-        description: campDoc.description,
-        deadline: campDoc.deadline,
-        participantCount: campDoc.participantCount,
-        activityFormat: campDoc.activityFormat,
-        qualifications: campDoc.qualifications,
-        additionalInfo: campDoc.additionalInfo,
-        organizers: campDoc.organizers,
-        reviews: campDoc.reviews,
-        avgRating: campDoc.avgRating,
-        ratingBreakdown: campDoc.ratingBreakdown,
-        featured: campDoc.featured,
-        slug: campDoc.slug,
-        views: campDoc.views,
-        createdAt: campDoc.createdAt,
-        updatedAt: campDoc.updatedAt,
-        organizerId: campDoc.organizerId,
-        organizerName: campDoc.organizerName,
-        organizerEmail: campDoc.organizerEmail,
-        startDate: campDoc.startDate,
-        endDate: campDoc.endDate,
-        registrationDeadline: campDoc.registrationDeadline,
-        capacity: campDoc.capacity,
-        enrolled: campDoc.enrolled,
-        fee: campDoc.fee,
-        tags: campDoc.tags,
-        status: campDoc.status,
-      };
-      
-      return campResult;
-    } catch (error) {
-      console.error('Error creating camp:', error);
-      throw error;
-    }
+    const collection = await getCollection<CampDoc>(this.collectionName);
+    
+    const now = new Date();
+    const campDoc: CampDoc = {
+      name: campData.name || '',
+      category: campData.category || '',
+      date: campData.date || '',
+      location: campData.location || '',
+      price: campData.price || '',
+      image: campData.image || '',
+      galleryImages: campData.galleryImages || [],
+      description: campData.description || '',
+      deadline: campData.deadline || '',
+      participantCount: campData.participantCount || 0,
+      activityFormat: campData.activityFormat || '',
+      qualifications: campData.qualifications || { level: '' },
+      additionalInfo: campData.additionalInfo || [],
+      organizers: campData.organizers || [],
+      slug: campData.slug || this.generateSlug(campData.name || ''),
+      avgRating: campData.avgRating || 0,
+      ratingBreakdown: campData.ratingBreakdown || { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 },
+      reviews: campData.reviews || [],
+      featured: campData.featured || false,
+      views: 0,
+      createdAt: now,
+      updatedAt: now,
+      organizerId: campData.organizerId,
+      organizerName: campData.organizerName,
+      organizerEmail: campData.organizerEmail,
+      startDate: campData.startDate,
+      endDate: campData.endDate,
+      registrationDeadline: campData.registrationDeadline,
+      capacity: campData.capacity,
+      enrolled: campData.enrolled || 0,
+      fee: campData.fee,
+      tags: campData.tags || [],
+      status: campData.status,
+    };
+    
+    const result = await collection.insertOne(campDoc);
+    
+    return this.toPublic({
+      ...campDoc,
+      _id: result.insertedId,
+    });
   }
 
-  // Increment view count
   static async incrementViews(id: string): Promise<boolean> {
     try {
       const collection = await getCollection<CampDoc>(this.collectionName);
@@ -288,7 +154,6 @@ export class CampModel {
     }
   }
 
-  // Find by ID (with optional view increment)
   static async findById(id: string, incrementView: boolean = false): Promise<Camp | null> {
     const collection = await getCollection<CampDoc>(this.collectionName);
     const filter: Filter<CampDoc> = { _id: new ObjectId(id) } as Filter<CampDoc>;
@@ -302,7 +167,6 @@ export class CampModel {
     return this.toPublic(camp);
   }
 
-  // Find by slug (with optional view increment)
   static async findBySlug(slug: string, incrementView: boolean = false): Promise<Camp | null> {
     const collection = await getCollection<CampDoc>(this.collectionName);
     const filter: Filter<CampDoc> = { slug } as Filter<CampDoc>;
@@ -317,7 +181,6 @@ export class CampModel {
     return this.toPublic(camp);
   }
 
-  // Find all
   static async findAll(options?: { featured?: boolean }): Promise<Camp[]> {
     const collection = await getCollection<CampDoc>(this.collectionName);
     const filter: Filter<CampDoc> = (options?.featured ? { featured: true } : {}) as Filter<CampDoc>;
@@ -330,7 +193,6 @@ export class CampModel {
     return camps.map(doc => this.toPublic(doc));
   }
 
-  // Find by category
   static async findByCategory(category: string): Promise<Camp[]> {
     const collection = await getCollection<CampDoc>(this.collectionName);
     const filter: Filter<CampDoc> = { category } as Filter<CampDoc>;
@@ -343,7 +205,6 @@ export class CampModel {
     return camps.map(doc => this.toPublic(doc));
   }
 
-  // Search
   static async search(query: string): Promise<Camp[]> {
     const collection = await getCollection<CampDoc>(this.collectionName);
     const filter: Filter<CampDoc> = {
@@ -358,7 +219,6 @@ export class CampModel {
     return camps.map(doc => this.toPublic(doc));
   }
 
-  // Update
   static async update(id: string, updates: Partial<Omit<Camp, '_id'>>): Promise<boolean> {
     const collection = await getCollection<CampDoc>(this.collectionName);
     
@@ -376,23 +236,19 @@ export class CampModel {
     return result.modifiedCount > 0;
   }
 
-  // Add review
   static async addReview(id: string, review: Review): Promise<boolean> {
     const collection = await getCollection<CampDoc>(this.collectionName);
     
     const filter: Filter<CampDoc> = { _id: new ObjectId(id) } as Filter<CampDoc>;
     
-    // Get current camp
     const camp = await collection.findOne(filter);
     if (!camp) return false;
     
-    // Calculate new rating
     const currentReviews = camp.reviews || [];
     const allReviews = [...currentReviews, review];
     const totalRating = allReviews.reduce((sum, r) => sum + r.rating, 0);
     const avgRating = totalRating / allReviews.length;
     
-    // Calculate new breakdown
     const breakdown: Record<string, number> = { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 };
     allReviews.forEach(r => {
       breakdown[r.rating.toString()]++;
@@ -411,7 +267,6 @@ export class CampModel {
     return result.modifiedCount > 0;
   }
 
-  // Delete
   static async delete(id: string): Promise<boolean> {
     const collection = await getCollection<CampDoc>(this.collectionName);
     const filter: Filter<CampDoc> = { _id: new ObjectId(id) } as Filter<CampDoc>;
@@ -419,7 +274,6 @@ export class CampModel {
     return result.deletedCount > 0;
   }
 
-  // Get categories with count
   static async getCategories(): Promise<Array<{ name: string; count: number }>> {
     const collection = await getCollection<CampDoc>(this.collectionName);
     
@@ -445,7 +299,6 @@ export class CampModel {
     return categories as Array<{ name: string; count: number }>;
   }
 
-  // Get featured camps
   static async getFeatured(limit: number = 6): Promise<Camp[]> {
     const collection = await getCollection<CampDoc>(this.collectionName);
     const filter: Filter<CampDoc> = { featured: true } as Filter<CampDoc>;
@@ -459,7 +312,6 @@ export class CampModel {
     return camps.map(doc => this.toPublic(doc));
   }
 
-  // Get trending camps (sorted by views)
   static async getTrending(limit: number = 6): Promise<Camp[]> {
     const collection = await getCollection<CampDoc>(this.collectionName);
     
@@ -472,13 +324,11 @@ export class CampModel {
     return camps.map(doc => this.toPublic(doc));
   }
 
-  // Count documents
   static async count(filter?: Filter<CampDoc>): Promise<number> {
     const collection = await getCollection<CampDoc>(this.collectionName);
     return collection.countDocuments((filter || {}) as Filter<CampDoc>);
   }
 
-  // Get paginated results
   static async findPaginated(
     page: number = 1,
     limit: number = 10,
@@ -502,5 +352,17 @@ export class CampModel {
       total,
       pages,
     };
+  }
+
+  static async findByOrganizer(organizerId: string): Promise<Camp[]> {
+    const collection = await getCollection<CampDoc>(this.collectionName);
+    const filter: Filter<CampDoc> = { organizerId } as Filter<CampDoc>;
+    
+    const camps = await collection
+      .find(filter)
+      .sort({ createdAt: -1 })
+      .toArray();
+    
+    return camps.map(doc => this.toPublic(doc));
   }
 }

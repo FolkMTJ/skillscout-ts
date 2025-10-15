@@ -32,6 +32,11 @@ if (process.env.NODE_ENV === 'development') {
 // Export the clientPromise for direct use
 export default clientPromise;
 
+// Connect to database function
+export async function connectDB(): Promise<MongoClient> {
+  return await clientPromise;
+}
+
 // Helper function to get database
 export async function getDatabase(dbName: string = 'SkillScoutDB'): Promise<Db> {
   const client = await clientPromise;

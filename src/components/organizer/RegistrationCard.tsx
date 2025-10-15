@@ -3,7 +3,7 @@
 
 import { Button } from '@heroui/react';
 import { CheckCircle, XCircle } from 'lucide-react';
-import { Registration } from '@/types/camp';
+import { Registration } from '@/types';
 
 interface RegistrationCardProps {
   registration: Registration;

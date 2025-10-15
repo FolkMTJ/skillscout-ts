@@ -1,7 +1,8 @@
 // src/app/api/payment/verify-slip/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { PaymentModel, PaymentStatus } from '@/lib/db/models/Payment';
-import { verifySlipWithSlipOK, validateSlipData } from '@/lib/slip-verification/slipOk';
+import { PaymentModel } from '@/lib/db/models'
+import { PaymentStatus } from '@/types';
+import { verifySlipWithKBank, verifySlipWithSlipOK, verifySlipWithPromptpay, verifySlipWithSlipPocket, verifySlipWithThaiQR, validateSlipData } from '@/lib/slip-verification/slipOk';
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,76 +45,20 @@ export async function POST(request: NextRequest) {
 
     console.log('Verifying slip:', payment.slipUrl);
 
-    // Verify slip using SlipOK API
-    const slipVerification = await verifySlipWithSlipOK(payment.slipUrl);
-
-    console.log('Verification result:', slipVerification);
-
-    if (!slipVerification.success) {
-      return NextResponse.json({
-        success: false,
-        verified: false,
-        error: slipVerification.error || 'Unable to verify slip',
-        message: 'ไม่สามารถตรวจสอบสลิปอัตโนมัติได้ กรุณารอ Admin ตรวจสอบ'
-      });
-    }
-
-    // Validate slip data
-    const validation = validateSlipData(
-      slipVerification,
-      payment.finalAmount,
-      '0813259525' // Expected receiver phone number
-    );
-
-    console.log('Validation result:', validation);
-
-    if (validation.isValid) {
-      // Auto-approve payment
-      await PaymentModel.updateStatus(paymentId, PaymentStatus.COMPLETED, {
-        slipVerified: true,
-        verifiedAt: new Date(),
-        verificationData: {
-          amount: slipVerification.amount,
-          date: slipVerification.date,
-          transRef: slipVerification.transRef,
-          autoVerified: true,
-        }
-      });
-
-      console.log('✓ Payment auto-approved');
-
-      return NextResponse.json({
-        success: true,
-        verified: true,
-        autoApproved: true,
-        message: 'ตรวจสอบสลิปสำเร็จ! การชำระเงินได้รับการยืนยันแล้ว',
-        slipData: slipVerification
-      });
-    } else {
-      // Mark for manual review
-      await PaymentModel.updateStatus(paymentId, PaymentStatus.COMPLETED, {
-        slipVerified: false,
-        requiresManualReview: true,
-        verificationIssues: validation.reasons,
-        verificationData: {
-          amount: slipVerification.amount,
-          date: slipVerification.date,
-          transRef: slipVerification.transRef,
-          autoVerified: false,
-        }
-      });
-
-      console.log('⚠ Requires manual review:', validation.reasons);
-
-      return NextResponse.json({
-        success: true,
-        verified: false,
-        requiresManualReview: true,
-        reasons: validation.reasons,
-        message: 'พบข้อผิดพลาดในการตรวจสอบ กรุณารอ Admin ตรวจสอบภายใน 24 ชั่วโมง',
-        slipData: slipVerification
-      });
-    }
+    // บันทึกว่าได้รับสลิปแล้ว รอ Admin ตรวจสอบ
+    await PaymentModel.updateStatus(paymentId, PaymentStatus.COMPLETED, {
+      slipVerified: false,
+      requiresManualReview: true,
+      slipUploadedAt: new Date(),
+    });
+    
+    return NextResponse.json({
+      success: true,
+      verified: false,
+      requiresManualReview: true,
+      message: 'อัปโหลดสลิปสำเร็จ! กรุณารอ Admin ตรวจสอบภายใน 24 ชั่วโมง',
+      note: 'คุณสามารถตรวจสอบสถานะการชำระเงินได้ที่หน้า My Camps หรือรอรับอีเมลยืนยัน'
+    });
 
   } catch (error) {
     console.error('Error verifying slip:', error);

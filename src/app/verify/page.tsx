@@ -1,31 +1,37 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardBody, Spinner } from '@heroui/react';
 import { FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaTicketAlt } from 'react-icons/fa';
+
+interface TicketData {
+  success: boolean;
+  alreadyCheckedIn?: boolean;
+  message?: string;
+  registration?: {
+    userName: string;
+    campName: string;
+    campDate: string;
+    campLocation: string;
+    checkedInAt: string;
+    status?: string;
+  };
+}
 
 export default function VerifyPage() {
   const searchParams = useSearchParams();
   const registrationId = searchParams.get('id');
 
   const [loading, setLoading] = useState(true);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<TicketData | null>(null);
 
-  useEffect(() => {
-    if (registrationId) {
-      verifyTicket();
-    } else {
-      setLoading(false);
-    }
-  }, [registrationId]);
-
-  const verifyTicket = async () => {
+  const verifyTicket = useCallback(async () => {
     try {
       const response = await fetch(`/api/ticket/verify?id=${registrationId}`);
-      const data = await response.json();
+      const data: TicketData = await response.json();
       setResult(data);
-    } catch (error) {
+    } catch {
       setResult({
         success: false,
         message: 'เกิดข้อผิดพลาดในการตรวจสอบ'
@@ -33,7 +39,15 @@ export default function VerifyPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [registrationId]);
+
+  useEffect(() => {
+    if (registrationId) {
+      verifyTicket();
+    } else {
+      setLoading(false);
+    }
+  }, [registrationId, verifyTicket]);
 
   if (loading) {
     return (
@@ -81,7 +95,7 @@ export default function VerifyPage() {
               ✓ เช็คอินสำเร็จ!
             </h2>
             <p className="text-xl font-bold text-green-600 dark:text-green-400 mb-6">
-              ยินดีต้อนรับ {result.registration.userName}
+              ยินดีต้อนรับ {result.registration?.userName}
             </p>
             
             <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-6 space-y-3 text-left">
@@ -89,22 +103,22 @@ export default function VerifyPage() {
                 <FaTicketAlt className="text-green-600 flex-shrink-0" />
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">ค่าย</p>
-                  <p className="font-bold text-gray-900 dark:text-white">{result.registration.campName}</p>
+                  <p className="font-bold text-gray-900 dark:text-white">{result.registration?.campName}</p>
                 </div>
               </div>
               <div className="border-t border-green-200 dark:border-green-800 my-3"></div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">วันที่</p>
-                <p className="font-semibold text-gray-900 dark:text-white">{result.registration.campDate}</p>
+                <p className="font-semibold text-gray-900 dark:text-white">{result.registration?.campDate}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">สถานที่</p>
-                <p className="font-semibold text-gray-900 dark:text-white">{result.registration.campLocation}</p>
+                <p className="font-semibold text-gray-900 dark:text-white">{result.registration?.campLocation}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">เวลาเช็คอิน</p>
                 <p className="font-semibold text-gray-900 dark:text-white">
-                  {new Date(result.registration.checkedInAt).toLocaleString('th-TH')}
+                  {result.registration?.checkedInAt && new Date(result.registration.checkedInAt).toLocaleString('th-TH')}
                 </p>
               </div>
             </div>
@@ -131,19 +145,19 @@ export default function VerifyPage() {
               เช็คอินแล้ว
             </h2>
             <p className="text-xl font-bold text-yellow-600 dark:text-yellow-400 mb-6">
-              {result.registration.userName}
+              {result.registration?.userName}
             </p>
             
             <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-6 space-y-3 text-left">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">ค่าย</p>
-                <p className="font-bold text-gray-900 dark:text-white">{result.registration.campName}</p>
+                <p className="font-bold text-gray-900 dark:text-white">{result.registration?.campName}</p>
               </div>
               <div className="border-t border-yellow-200 dark:border-yellow-800 my-3"></div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">เช็คอินเมื่อ</p>
                 <p className="font-semibold text-gray-900 dark:text-white">
-                  {new Date(result.registration.checkedInAt).toLocaleString('th-TH')}
+                  {result.registration?.checkedInAt && new Date(result.registration.checkedInAt).toLocaleString('th-TH')}
                 </p>
               </div>
             </div>

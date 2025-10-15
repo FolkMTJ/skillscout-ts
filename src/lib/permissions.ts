@@ -1,5 +1,5 @@
 // src/lib/permissions.ts
-import { UserRole } from '@/types/camp';
+import { UserRole } from '@/types';
 
 export const permissions = {
   createCamp: [UserRole.ORGANIZER, UserRole.ADMIN],

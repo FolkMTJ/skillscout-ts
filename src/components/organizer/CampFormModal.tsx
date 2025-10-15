@@ -6,6 +6,7 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input
 import { FiPlus, FiX, FiSave } from 'react-icons/fi';
 import SimpleImageUpload from './SimpleImageUpload';
 import SimpleMultiImageUpload from './SimpleMultiImageUpload';
+import OrganizerImageUpload from './OrganizerImageUpload';
 import toast from 'react-hot-toast';
 
 interface FormDataType {
@@ -118,18 +119,52 @@ export default function CampFormModal({ isOpen, onClose, formData, onFormDataCha
                 </div>
 
                 {/* ผู้จัด */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <label className="text-sm font-semibold">ผู้จัดค่าย</label>
                   <div className="flex gap-2">
                     <Input placeholder="ชื่อผู้จัด" value={organizerName} onChange={(e) => setOrganizerName(e.target.value)} className="flex-1" />
-                    <Button color="primary" startContent={<FiPlus />} onPress={() => { if (organizerName.trim()) { onFormDataChange({ ...formData, organizers: [...formData.organizers, { name: organizerName.trim(), imageUrl: '/api/placeholder/100/100' }] }); setOrganizerName(''); toast.success('เพิ่มแล้ว'); }}}>เพิ่ม</Button>
+                    <Button color="primary" startContent={<FiPlus />} onPress={() => { if (organizerName.trim()) { onFormDataChange({ ...formData, organizers: [...formData.organizers, { name: organizerName.trim(), imageUrl: '/api/placeholder/100/100' }] }); setOrganizerName(''); toast.success('เพิ่มผู้จัดแล้ว'); }}}>เพิ่ม</Button>
                   </div>
-                  {formData.organizers.map((org, i) => (
-                    <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded">
-                      <span className="flex-1">{org.name}</span>
-                      <Button isIconOnly size="sm" color="danger" variant="flat" onPress={() => onFormDataChange({ ...formData, organizers: formData.organizers.filter((_, idx) => idx !== i) })}><FiX /></Button>
+                  
+                  {/* รายการผู้จัด */}
+                  {formData.organizers.length > 0 && (
+                    <div className="space-y-3">
+                      {formData.organizers.map((org, i) => (
+                        <div key={i} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                          <div className="flex items-start justify-between mb-3">
+                            <OrganizerImageUpload
+                              organizerName={org.name}
+                              imageUrl={org.imageUrl}
+                              onImageChange={(url) => {
+                                const updatedOrganizers = [...formData.organizers];
+                                updatedOrganizers[i] = { ...updatedOrganizers[i], imageUrl: url };
+                                onFormDataChange({ ...formData, organizers: updatedOrganizers });
+                              }}
+                            />
+                            <Button 
+                              isIconOnly 
+                              size="sm" 
+                              color="danger" 
+                              variant="flat" 
+                              onPress={() => {
+                                onFormDataChange({ 
+                                  ...formData, 
+                                  organizers: formData.organizers.filter((_, idx) => idx !== i) 
+                                });
+                                toast.success('ลบผู้จัดแล้ว');
+                              }}
+                            >
+                              <FiX />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
+                  
+                  {formData.organizers.length === 0 && (
+                    <p className="text-sm text-gray-500 text-center py-4">ยังไม่มีผู้จัดค่าย กดปุ่มเพิ่มด้านบน</p>
+                  )}
                 </div>
 
                 {/* เพิ่มเติม */}

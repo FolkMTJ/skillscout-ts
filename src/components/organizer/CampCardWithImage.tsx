@@ -2,8 +2,8 @@
 'use client';
 
 import { Card, Button, Chip } from '@heroui/react';
-import { FiEdit2, FiTrash2, FiEye } from 'react-icons/fi';
-import { Camp } from '@/types/camp';
+import { FiEdit2, FiTrash2, FiEye, FiCheckCircle } from 'react-icons/fi';
+import { Camp } from '@/types';
 import Image from 'next/image';
 
 interface CampCardWithImageProps {
@@ -12,6 +12,7 @@ interface CampCardWithImageProps {
   onEdit: () => void;
   onDelete: () => void;
   onView: () => void;
+  onComplete?: () => void; // เพิ่มฟังก์ชันจบค่าย
 }
 
 export default function CampCardWithImage({ 
@@ -19,9 +20,14 @@ export default function CampCardWithImage({
   pendingCount = 0, 
   onEdit, 
   onDelete,
-  onView 
+  onView,
+  onComplete
 }: CampCardWithImageProps) {
   const enrollmentPercentage = ((camp.enrolled || 0) / (camp.capacity || camp.participantCount)) * 100;
+  
+  // ตรวจสอบว่าค่ายจบแล้วหรือยัง
+  const isCompleted = camp.status === 'completed' || (camp.endDate && new Date(camp.endDate) < new Date());
+  const isActive = camp.status === 'active';
 
   return (
     <Card className="overflow-hidden hover:shadow-xl transition-all border border-gray-100">
@@ -31,7 +37,9 @@ export default function CampCardWithImage({
           <Image
             src={camp.image}
             alt={camp.name}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
@@ -74,18 +82,36 @@ export default function CampCardWithImage({
         </div>
 
         {/* Status Badge */}
-        {camp.status && (
-          <div className="absolute top-2 left-2">
+        <div className="absolute top-2 left-2">
+          {isCompleted ? (
             <Chip
               size="sm"
               variant="shadow"
-              color={camp.status === 'active' ? 'success' : 'default'}
-              className="bg-white/90 backdrop-blur-sm"
+              color="default"
+              className="bg-gray-600/90 backdrop-blur-sm text-white"
             >
-              {camp.status === 'active' ? 'เปิดรับสมัคร' : camp.status}
+              จบแล้ว
             </Chip>
-          </div>
-        )}
+          ) : camp.status === 'pending' ? (
+            <Chip
+              size="sm"
+              variant="shadow"
+              color="warning"
+              className="bg-orange-500/90 backdrop-blur-sm text-white"
+            >
+              รอตรวจสอบ
+            </Chip>
+          ) : camp.status === 'active' ? (
+            <Chip
+              size="sm"
+              variant="shadow"
+              color="success"
+              className="bg-green-500/90 backdrop-blur-sm text-white"
+            >
+              เปิดรับสมัคร
+            </Chip>
+          ) : null}
+        </div>
       </div>
 
       {/* Content */}
@@ -156,23 +182,39 @@ export default function CampCardWithImage({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-between items-center pt-2 border-t">
-          <div className="text-xs text-gray-500">
-            {camp.registrationDeadline ? (
-              <span>
-                ปิดรับ: {new Date(camp.registrationDeadline).toLocaleDateString('th-TH', {
-                  day: '2-digit',
-                  month: 'short',
-                })}
-              </span>
-            ) : (
-              <span>ปิดรับ: {camp.deadline}</span>
+        <div className="space-y-2">
+          <div className="flex justify-between items-center pt-2 border-t">
+            <div className="text-xs text-gray-500">
+              {camp.registrationDeadline ? (
+                <span>
+                  ปิดรับ: {new Date(camp.registrationDeadline).toLocaleDateString('th-TH', {
+                    day: '2-digit',
+                    month: 'short',
+                  })}
+                </span>
+              ) : (
+                <span>ปิดรับ: {camp.deadline}</span>
+              )}
+            </div>
+            {camp.price && (
+              <div className="text-sm font-bold text-primary">
+                {camp.price}
+              </div>
             )}
           </div>
-          {camp.price && (
-            <div className="text-sm font-bold text-primary">
-              {camp.price}
-            </div>
+          
+          {/* ปุ่มจบค่าย */}
+          {!isCompleted && isActive && onComplete && (
+            <Button
+              size="sm"
+              color="success"
+              variant="flat"
+              className="w-full"
+              startContent={<FiCheckCircle />}
+              onPress={onComplete}
+            >
+              จบค่าย
+            </Button>
           )}
         </div>
       </div>

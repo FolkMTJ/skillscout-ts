@@ -1,14 +1,13 @@
 // src/app/api/auth/register/route.ts
 import { NextResponse } from 'next/server';
-import { UserModel } from '@/lib/db/models/User';
-import { UserRole } from '@/types/camp';
+import { UserModel } from '@/lib/db/models';
+import { UserRole } from '@/types';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { email, name, role, phone, lineId, organization, idCard, address, province, district } = body;
 
-    // Validate required fields
     if (!email || !name) {
       return NextResponse.json(
         { error: 'กรุณากรอกอีเมลและชื่อ' },
@@ -16,7 +15,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate organizer fields
     if (role === UserRole.ORGANIZER) {
       if (!organization || !idCard || !phone || !lineId || !address || !province || !district) {
         return NextResponse.json(
@@ -26,7 +24,6 @@ export async function POST(request: Request) {
       }
     }
 
-    // Create user
     const user = await UserModel.create({
       email,
       name,

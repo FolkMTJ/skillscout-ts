@@ -1,22 +1,22 @@
 // src/app/api/camps/[id]/approve/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { CampModel } from '@/lib/db/models/Camp';
+import { Camp, CampStatus } from '@/types';
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
-// POST /api/camps/[id]/approve - Admin approves camp
 export async function POST(
   request: NextRequest,
   { params }: RouteParams
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
-    const { adminId, action } = body; // action: 'approve' or 'reject'
+    const { adminId, action } = body;
 
     console.log('=== CAMP APPROVAL ===');
     console.log('Camp ID:', id);
@@ -32,16 +32,11 @@ export async function POST(
       );
     }
 
-    // Auto-verify camp quality
     const verificationResult = await autoVerifyCamp(camp);
     
     if (action === 'approve') {
       await CampModel.update(id, { 
-        status: 'active',
-        approvedBy: adminId,
-        approvedAt: new Date(),
-        verificationScore: verificationResult.score,
-        verificationIssues: verificationResult.issues
+        status: CampStatus.ACTIVE,
       });
 
       console.log('✓ Camp approved');
@@ -56,12 +51,7 @@ export async function POST(
       const { reason } = body;
       
       await CampModel.update(id, { 
-        status: 'rejected',
-        rejectedBy: adminId,
-        rejectedAt: new Date(),
-        rejectionReason: reason,
-        verificationScore: verificationResult.score,
-        verificationIssues: verificationResult.issues
+        status: CampStatus.REJECTED,
       });
 
       console.log('✗ Camp rejected');
@@ -87,12 +77,10 @@ export async function POST(
   }
 }
 
-// Auto-verify camp quality
-async function autoVerifyCamp(camp: any) {
+async function autoVerifyCamp(camp: Camp) {
   const issues: string[] = [];
   let score = 100;
 
-  // Check required fields
   if (!camp.name || camp.name.length < 5) {
     issues.push('ชื่อค่ายสั้นเกินไป (ควรมากกว่า 5 ตัวอักษร)');
     score -= 10;
@@ -108,7 +96,6 @@ async function autoVerifyCamp(camp: any) {
     score -= 10;
   }
 
-  // Check dates
   if (camp.startDate && camp.endDate) {
     const start = new Date(camp.startDate);
     const end = new Date(camp.endDate);
@@ -125,25 +112,21 @@ async function autoVerifyCamp(camp: any) {
     }
   }
 
-  // Check capacity
   if (!camp.capacity || camp.capacity < 1) {
     issues.push('จำนวนที่รับไม่ถูกต้อง');
     score -= 10;
   }
 
-  // Check location
   if (!camp.location || camp.location.length < 5) {
     issues.push('สถานที่จัดงานไม่ชัดเจน');
     score -= 10;
   }
 
-  // Check contact info
-  if (!camp.organizerEmail && !camp.contact?.email) {
+  if (!camp.organizerEmail) {
     issues.push('ไม่มีข้อมูลติดต่อผู้จัด');
     score -= 5;
   }
 
-  // Check inappropriate content
   const inappropriateWords = ['หลอกลวง', 'โกง', 'ฉ้อโกง'];
   const text = `${camp.name} ${camp.description}`.toLowerCase();
   
@@ -160,6 +143,6 @@ async function autoVerifyCamp(camp: any) {
   return {
     score: Math.max(0, score),
     issues,
-    passed: score >= 70 // ผ่านถ้าคะแนน >= 70
+    passed: score >= 70
   };
 }

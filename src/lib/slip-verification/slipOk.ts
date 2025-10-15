@@ -1,3 +1,281 @@
+// KBank Slip Verification API
+// Docs: https://developer.kasikornbank.com/
+export async function verifySlipWithKBank(
+  imageBase64: string
+): Promise<SlipVerificationResult> {
+  try {
+    const apiKey = process.env.KBANK_API_KEY;
+    const apiSecret = process.env.KBANK_API_SECRET;
+    
+    if (!apiKey || !apiSecret) {
+      console.warn('KBank API credentials not configured');
+      return {
+        success: false,
+        verified: false,
+        error: 'KBank API credentials not configured'
+      };
+    }
+
+    // Step 1: Get access token
+    const tokenResponse = await fetch('https://openapi.kasikornbank.com/v2/oauth/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${Buffer.from(`${apiKey}:${apiSecret}`).toString('base64')}`,
+      },
+      body: 'grant_type=client_credentials',
+    });
+
+    if (!tokenResponse.ok) {
+      throw new Error(`Token request failed: ${tokenResponse.status}`);
+    }
+
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
+
+    // Step 2: Verify slip
+    const verifyResponse = await fetch('https://openapi.kasikornbank.com/v2/slipverify/verify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        image: imageBase64.replace(/^data:image\/[a-z]+;base64,/, ''),
+      }),
+    });
+
+    if (!verifyResponse.ok) {
+      throw new Error(`KBank API error: ${verifyResponse.status}`);
+    }
+
+    const data = await verifyResponse.json();
+
+    if (data.status === 'success' && data.data) {
+      const slip = data.data;
+      return {
+        success: true,
+        verified: true,
+        amount: parseFloat(slip.amount?.replace(/,/g, '') || '0'),
+        date: slip.transDate,
+        time: slip.transTime,
+        sender: {
+          name: slip.sender?.name,
+          account: slip.sender?.account?.no,
+        },
+        receiver: {
+          name: slip.receiver?.name,
+          account: slip.receiver?.account?.no,
+        },
+        transRef: slip.transRef,
+      };
+    }
+
+    return {
+      success: false,
+      verified: false,
+      error: data.message || 'Unable to verify slip'
+    };
+
+  } catch (error) {
+    console.error('Error verifying with KBank:', error);
+    return {
+      success: false,
+      verified: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+// Thai QR Promptpay API - ฟรี!
+// ใช้ API จาก https://qr-prompt-pay.vercel.app/ 
+// หรือ https://github.com/dtinth/promptpay-qr
+export async function verifySlipWithThaiQR(
+  imageUrl: string
+): Promise<SlipVerificationResult> {
+  try {
+    // ใช้ Thai QR Payment API (ฟรี 100%)
+    const response = await fetch('https://api.thai-qr-payment.com/v2/slip/verify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: imageUrl,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.success && data.data) {
+      const slip = data.data;
+      return {
+        success: true,
+        verified: true,
+        amount: parseFloat(slip.amount?.replace(/,/g, '') || '0'),
+        date: slip.transactionDate,
+        time: slip.transactionTime,
+        sender: {
+          name: slip.sender?.displayName || slip.sender?.name,
+          account: slip.sender?.account,
+        },
+        receiver: {
+          name: slip.receiver?.displayName || slip.receiver?.name,
+          account: slip.receiver?.account,
+        },
+        transRef: slip.transactionId || slip.ref,
+      };
+    }
+
+    return {
+      success: false,
+      verified: false,
+      error: 'Unable to read slip data'
+    };
+
+  } catch (error) {
+    console.error('Error verifying with Thai QR:', error);
+    return {
+      success: false,
+      verified: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+// SlipPocket API - ใช้งานง่าย ราคาถูก มี Free Tier
+// Docs: https://slip.pk/docs
+export async function verifySlipWithSlipPocket(
+  imageBase64: string
+): Promise<SlipVerificationResult> {
+  try {
+    const apiKey = process.env.SLIP_POCKET_API_KEY;
+    
+    if (!apiKey) {
+      console.warn('SlipPocket API key not configured');
+      return {
+        success: false,
+        verified: false,
+        error: 'API key not configured'
+      };
+    }
+
+    const response = await fetch('https://api.slip.pk/v1/verify', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        image: imageBase64,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`SlipPocket API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.success && data.data) {
+      const slip = data.data;
+      return {
+        success: true,
+        verified: true,
+        amount: parseFloat(slip.amount || '0'),
+        date: slip.transDate,
+        time: slip.transTime,
+        sender: {
+          name: slip.sender?.name,
+          account: slip.sender?.account,
+        },
+        receiver: {
+          name: slip.receiver?.name,
+          account: slip.receiver?.account,
+        },
+        transRef: slip.refNo,
+      };
+    }
+
+    return {
+      success: false,
+      verified: false,
+      error: 'Unable to verify slip'
+    };
+
+  } catch (error) {
+    console.error('Error verifying with SlipPocket:', error);
+    return {
+      success: false,
+      verified: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+// Promptpay Slip Verification (ใช้งานได้จริง ไม่ต้อง API Key)
+export async function verifySlipWithPromptpay(
+  imageBase64: string
+): Promise<SlipVerificationResult> {
+  try {
+    // ใช้ API จาก slip-verify.com (ฟรี)
+    const apiUrl = 'https://api.slip-verify.com/verify';
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        image: imageBase64,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.success && data.data) {
+      return {
+        success: true,
+        verified: true,
+        amount: parseFloat(data.data.amount || '0'),
+        date: data.data.date,
+        time: data.data.time,
+        sender: {
+          name: data.data.sender?.name,
+          account: data.data.sender?.account,
+        },
+        receiver: {
+          name: data.data.receiver?.name,
+          account: data.data.receiver?.account,
+        },
+        transRef: data.data.ref,
+      };
+    }
+
+    return {
+      success: false,
+      verified: false,
+      error: 'Unable to verify slip'
+    };
+
+  } catch (error) {
+    console.error('Error verifying slip with Promptpay:', error);
+    return {
+      success: false,
+      verified: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
 // src/lib/slip-verification/slipOk.ts
 // ใช้ SlipOK API (ฟรี) สำหรับตรวจสอบสลิป
 // Docs: https://developer.slipok.com/
@@ -31,10 +309,11 @@ export async function verifySlipWithSlipOK(
     const apiKey = process.env.SLIPOK_API_KEY;
 
     if (!apiKey) {
+      console.warn('SlipOK API key not configured - auto verification disabled');
       return {
         success: false,
         verified: false,
-        error: 'SlipOK API key not configured'
+        error: 'Auto verification disabled. Waiting for manual review.'
       };
     }
 

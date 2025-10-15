@@ -1,63 +1,80 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
   Card,
-  CardBody,
-  Tabs,
-  Tab,
+  Button,
+  Chip,
   Table,
   TableHeader,
   TableColumn,
   TableBody,
   TableRow,
   TableCell,
-  Button,
-  Chip,
+  Tabs,
+  Tab,
   Modal,
   ModalContent,
   ModalHeader,
   ModalBody,
   ModalFooter,
-  Textarea,
-  Image,
+  useDisclosure,
+  Input,
 } from '@heroui/react';
-import { 
-  FiCheckCircle, 
-  FiXCircle, 
-  FiUsers, 
-  FiCalendar, 
-  FiAlertCircle,
+import {
+  FiUsers,
+  FiCalendar,
+  FiShield,
+  FiTrash2,
   FiEye,
-  FiShield
+  FiSearch,
+  FiAlertCircle,
+  FiXCircle,
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+  isBanned?: boolean;
+  createdAt: string;
+}
+
+interface Camp {
+  _id: string;
+  name: string;
+  organizerName: string;
+  organizerEmail: string;
+  status: string;
+  enrolled: number;
+  capacity: number;
+  createdAt: string;
+}
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  
-  const [camps, setCamps] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [camps, setCamps] = useState<Camp[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCamp, setSelectedCamp] = useState<any>(null);
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
-  const [rejectReason, setRejectReason] = useState('');
-  const [processing, setProcessing] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const { isOpen: isBanModalOpen, onOpen: onBanModalOpen, onClose: onBanModalClose } = useDisclosure();
+  const { isOpen: isDeleteModalOpen, onOpen: onDeleteModalOpen, onClose: onDeleteModalClose } = useDisclosure();
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/');
-    } else if (status === 'authenticated') {
+    if (status === 'authenticated') {
+      // เฉพาะ Admin เท่านั้นที่เข้าหน้า Admin Dashboard ได้
       if (session?.user?.role !== 'admin') {
-        toast.error('คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
         router.push('/');
-      } else {
-        fetchData();
+        return;
       }
+      fetchData();
     }
   }, [status, session, router]);
 
@@ -65,17 +82,16 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
       
-      // Fetch all camps (including pending)
+      // Fetch users
+      const usersRes = await fetch('/api/admin/users');
+      const usersData = await usersRes.json();
+      if (usersData.users) setUsers(usersData.users);
+
+      // Fetch camps
       const campsRes = await fetch('/api/camps?includeAll=true');
       const campsData = await campsRes.json();
-      setCamps(campsData);
+      setCamps(Array.isArray(campsData) ? campsData : campsData.camps || []);
 
-      // Fetch all users
-      const usersRes = await fetch('/api/users');
-      if (usersRes.ok) {
-        const usersData = await usersRes.json();
-        setUsers(usersData);
-      }
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('ไม่สามารถโหลดข้อมูลได้');
@@ -84,518 +100,396 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleApproveCamp = async (campId: string) => {
-    setProcessing(true);
+  const handleBanUser = (user: User) => {
+    setSelectedUser(user);
+    onBanModalOpen();
+  };
+
+  const handleDeleteUser = (user: User) => {
+    setSelectedUser(user);
+    onDeleteModalOpen();
+  };
+
+  const confirmBanUser = async () => {
+    if (!selectedUser) return;
+
     try {
-      const response = await fetch(`/api/camps/${campId}/approve`, {
+      const response = await fetch(`/api/admin/users/${selectedUser._id}/ban`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'approve',
-          adminId: session?.user?.id,
-        }),
       });
 
-      if (!response.ok) throw new Error('Failed to approve');
+      if (!response.ok) throw new Error('Failed to ban user');
 
-      toast.success('อนุมัติค่ายสำเร็จ!');
+      toast.success(selectedUser.isBanned ? '✅ ปลดแบน User สำเร็จ!' : '✅ แบน User สำเร็จ!');
+      onBanModalClose();
       fetchData();
-      setIsViewModalOpen(false);
-    } catch {
-      toast.error('ไม่สามารถอนุมัติได้');
-    } finally {
-      setProcessing(false);
+    } catch (error) {
+      toast.error('เกิดข้อผิดพลาด');
     }
   };
 
-  const handleRejectCamp = async () => {
-    if (!selectedCamp || !rejectReason.trim()) {
-      toast.error('กรุณาระบุเหตุผล');
-      return;
-    }
-
-    setProcessing(true);
-    try {
-      const response = await fetch(`/api/camps/${selectedCamp._id}/approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'reject',
-          adminId: session?.user?.id,
-          reason: rejectReason,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to reject');
-
-      toast.success('ปฏิเสธค่ายสำเร็จ');
-      fetchData();
-      setIsRejectModalOpen(false);
-      setIsViewModalOpen(false);
-      setRejectReason('');
-    } catch {
-      toast.error('ไม่สามารถปฏิเสธได้');
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleDeleteCamp = async (campId: string) => {
-    if (!confirm('⚠️ คุณต้องการลบค่ายนี้หรือไม่?')) return;
+  const confirmDeleteUser = async () => {
+    if (!selectedUser) return;
 
     try {
-      const response = await fetch(`/api/camps/${campId}`, {
+      const response = await fetch(`/api/admin/users/${selectedUser._id}`, {
         method: 'DELETE',
       });
 
-      if (!response.ok) throw new Error('Failed to delete');
+      if (!response.ok) throw new Error('Failed to delete user');
 
-      toast.success('ลบค่ายสำเร็จ');
+      toast.success('✅ ลบ User สำเร็จ!');
+      onDeleteModalClose();
       fetchData();
-    } catch {
-      toast.error('ไม่สามารถลบได้');
+    } catch (error) {
+      toast.error('เกิดข้อผิดพลาด');
     }
   };
 
-  const handleUpdateUserRole = async (userId: string, newRole: string) => {
-    if (!confirm(`เปลี่ยนสิทธิ์เป็น ${newRole}?`)) return;
+  const filteredUsers = users.filter(user =>
+    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-    try {
-      const response = await fetch(`/api/users/${userId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: newRole }),
-      });
+  const totalUsers = users.length;
+  const organizers = users.filter(u => u.role === 'organizer').length;
+  const bannedUsers = users.filter(u => u.isBanned).length;
+  const pendingCamps = camps.filter(c => c.status === 'pending').length;
+  const activeCamps = camps.filter(c => c.status === 'active').length;
 
-      if (!response.ok) throw new Error('Failed to update');
-
-      toast.success('อัปเดตสิทธิ์สำเร็จ');
-      fetchData();
-    } catch {
-      toast.error('ไม่สามารถอัปเดตได้');
-    }
-  };
-
-  if (loading) {
+  if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">กำลังโหลด...</p>
-        </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
-  const pendingCamps = camps.filter(c => c.status === 'pending');
-  // const activeCamps = camps.filter(c => c.status === 'active');
-  // const rejectedCamps = camps.filter(c => c.status === 'rejected');
-  // const adminUsers = users.filter(u => u.role === 'admin');
-  const organizerUsers = users.filter(u => u.role === 'organizer');
-  // const regularUsers = users.filter(u => u.role === 'user');
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'success';
-      case 'pending': return 'warning';
-      case 'rejected': return 'danger';
-      default: return 'default';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'active': return 'เปิดรับสมัคร';
-      case 'pending': return 'รอตรวจสอบ';
-      case 'rejected': return 'ปฏิเสธ';
-      case 'closed': return 'ปิดรับสมัคร';
-      default: return status;
-    }
-  };
+  if (status === 'unauthenticated' || session?.user?.role !== 'admin') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <FiShield className="w-16 h-16 mx-auto mb-4 text-red-500" />
+          <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
+          <p className="text-gray-600 mb-6">คุณไม่มีสิทธิ์เข้าถึงหน้านี้ (เฉพาะ Admin)</p>
+          <Button color="primary" onPress={() => router.push('/')}>
+            กลับหน้าหลัก
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <FiShield className="text-4xl text-orange-500" />
-            <h1 className="text-4xl font-black text-gray-900">Admin Dashboard</h1>
+            <FiShield className="text-3xl text-blue-600" />
+            <h1 className="text-4xl font-bold text-gray-800 dark:text-white">Admin Dashboard</h1>
           </div>
-          <p className="text-gray-600">จัดการค่าย ผู้ใช้ และระบบทั้งหมด</p>
+          <p className="text-gray-600 dark:text-gray-400">จัดการระบบและผู้ใช้งาน</p>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-orange-500 to-amber-500">
-            <CardBody className="text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm opacity-90">รออนุมัติ</p>
-                  <p className="text-3xl font-black">{pendingCamps.length}</p>
-                </div>
-                <FiAlertCircle className="text-4xl opacity-50" />
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+          <Card className="p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90">ผู้ใช้ทั้งหมด</p>
+                <p className="text-3xl font-bold mt-1">{totalUsers}</p>
               </div>
-            </CardBody>
+              <FiUsers className="text-4xl opacity-80" />
+            </div>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-500 to-emerald-500">
-            <CardBody className="text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm opacity-90">ค่ายทั้งหมด</p>
-                  <p className="text-3xl font-black">{camps.length}</p>
-                </div>
-                <FiCalendar className="text-4xl opacity-50" />
+          <Card className="p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90">Organizers</p>
+                <p className="text-3xl font-bold mt-1">{organizers}</p>
               </div>
-            </CardBody>
+              <FiShield className="text-4xl opacity-80" />
+            </div>
           </Card>
 
-          <Card className="bg-gradient-to-br from-blue-500 to-indigo-500">
-            <CardBody className="text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm opacity-90">ผู้ใช้ทั้งหมด</p>
-                  <p className="text-3xl font-black">{users.length}</p>
-                </div>
-                <FiUsers className="text-4xl opacity-50" />
+          <Card className="p-6 bg-gradient-to-br from-red-500 to-red-600 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90">Banned</p>
+                <p className="text-3xl font-bold mt-1">{bannedUsers}</p>
               </div>
-            </CardBody>
+              <FiXCircle className="text-4xl opacity-80" />
+            </div>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-500 to-pink-500">
-            <CardBody className="text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm opacity-90">Organizer</p>
-                  <p className="text-3xl font-black">{organizerUsers.length}</p>
-                </div>
-                <FiShield className="text-4xl opacity-50" />
+          <Card className="p-6 bg-gradient-to-br from-orange-500 to-orange-600 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90">ค่ายรออนุมัติ</p>
+                <p className="text-3xl font-bold mt-1">{pendingCamps}</p>
               </div>
-            </CardBody>
+              <FiAlertCircle className="text-4xl opacity-80" />
+            </div>
+          </Card>
+
+          <Card className="p-6 bg-gradient-to-br from-green-500 to-green-600 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90">ค่ายที่เปิด</p>
+                <p className="text-3xl font-bold mt-1">{activeCamps}</p>
+              </div>
+              <FiCalendar className="text-4xl opacity-80" />
+            </div>
           </Card>
         </div>
 
         {/* Tabs */}
-        <Card>
-          <CardBody>
-            <Tabs variant="underlined" color="warning">
-              {/* Tab: ค่ายรออนุมัติ */}
-              <Tab key="pending" title={`รออนุมัติ (${pendingCamps.length})`}>
-                <div className="py-4">
-                  <Table aria-label="Pending camps">
-                    <TableHeader>
-                      <TableColumn>ชื่อค่าย</TableColumn>
-                      <TableColumn>ผู้จัด</TableColumn>
-                      <TableColumn>วันที่</TableColumn>
-                      <TableColumn>ค่าใช้จ่าย</TableColumn>
-                      <TableColumn>สถานะ</TableColumn>
-                      <TableColumn>จัดการ</TableColumn>
-                    </TableHeader>
-                    <TableBody emptyContent="ไม่มีค่ายรออนุมัติ">
-                      {pendingCamps.map((camp) => (
-                        <TableRow key={camp._id}>
-                          <TableCell>
-                            <div className="font-bold">{camp.name}</div>
-                            <div className="text-sm text-gray-500">{camp.location}</div>
-                          </TableCell>
-                          <TableCell>{camp.organizerName || camp.organizerEmail}</TableCell>
-                          <TableCell className="text-sm">{camp.date}</TableCell>
-                          <TableCell>{camp.price}</TableCell>
-                          <TableCell>
-                            <Chip size="sm" color="warning" variant="flat">
-                              รอตรวจสอบ
-                            </Chip>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                color="primary"
-                                variant="flat"
-                                startContent={<FiEye />}
-                                onPress={() => {
-                                  setSelectedCamp(camp);
-                                  setIsViewModalOpen(true);
-                                }}
-                              >
-                                ดู
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </Tab>
+        <Card className="p-6">
+          <Tabs
+            selectedKey={activeTab}
+            onSelectionChange={(key) => setActiveTab(key as string)}
+            variant="underlined"
+          >
+            <Tab key="overview" title="ภาพรวม">
+              <div className="py-6 space-y-6">
+                <Card className="p-6">
+                  <h3 className="text-xl font-bold mb-4">สถิติระบบ</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-blue-600">{totalUsers}</p>
+                      <p className="text-sm text-gray-600">Users</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-green-600">{activeCamps}</p>
+                      <p className="text-sm text-gray-600">Active Camps</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-orange-600">{pendingCamps}</p>
+                      <p className="text-sm text-gray-600">Pending</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-purple-600">{organizers}</p>
+                      <p className="text-sm text-gray-600">Organizers</p>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            </Tab>
 
-              {/* Tab: ค่ายทั้งหมด */}
-              <Tab key="all-camps" title={`ค่ายทั้งหมด (${camps.length})`}>
-                <div className="py-4">
-                  <Table aria-label="All camps">
-                    <TableHeader>
-                      <TableColumn>ชื่อค่าย</TableColumn>
-                      <TableColumn>ผู้จัด</TableColumn>
-                      <TableColumn>วันที่</TableColumn>
-                      <TableColumn>สถานะ</TableColumn>
-                      <TableColumn>ผู้สมัคร</TableColumn>
-                      <TableColumn>จัดการ</TableColumn>
-                    </TableHeader>
-                    <TableBody>
-                      {camps.map((camp) => (
-                        <TableRow key={camp._id}>
-                          <TableCell>
-                            <div className="font-bold">{camp.name}</div>
-                            <div className="text-sm text-gray-500">{camp.location}</div>
-                          </TableCell>
-                          <TableCell>{camp.organizerName || camp.organizerEmail}</TableCell>
-                          <TableCell className="text-sm">{camp.date}</TableCell>
-                          <TableCell>
-                            <Chip size="sm" color={getStatusColor(camp.status)} variant="flat">
-                              {getStatusText(camp.status)}
-                            </Chip>
-                          </TableCell>
-                          <TableCell>{camp.enrolled || 0} / {camp.capacity}</TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                color="primary"
-                                variant="flat"
-                                startContent={<FiEye />}
-                                onPress={() => {
-                                  setSelectedCamp(camp);
-                                  setIsViewModalOpen(true);
-                                }}
-                              >
-                                ดู
-                              </Button>
-                              <Button
-                                size="sm"
-                                color="danger"
-                                variant="flat"
-                                startContent={<FiXCircle />}
-                                onPress={() => handleDeleteCamp(camp._id)}
-                              >
-                                ลบ
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+            <Tab key="users" title={`Users (${totalUsers})`}>
+              <div className="py-6">
+                <div className="mb-4">
+                  <Input
+                    placeholder="ค้นหา User..."
+                    value={searchTerm}
+                    onValueChange={setSearchTerm}
+                    startContent={<FiSearch />}
+                    size="lg"
+                  />
                 </div>
-              </Tab>
 
-              {/* Tab: ผู้ใช้ทั้งหมด */}
-              <Tab key="users" title={`ผู้ใช้ (${users.length})`}>
-                <div className="py-4">
-                  <Table aria-label="All users">
-                    <TableHeader>
-                      <TableColumn>ชื่อ</TableColumn>
-                      <TableColumn>อีเมล</TableColumn>
-                      <TableColumn>สิทธิ์</TableColumn>
-                      <TableColumn>วันที่สมัคร</TableColumn>
-                      <TableColumn>จัดการ</TableColumn>
-                    </TableHeader>
-                    <TableBody>
-                      {users.map((user) => (
-                        <TableRow key={user._id}>
-                          <TableCell>{user.name || '-'}</TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>
-                            <Chip
+                <Table aria-label="Users table">
+                  <TableHeader>
+                    <TableColumn>ชื่อ</TableColumn>
+                    <TableColumn>อีเมล</TableColumn>
+                    <TableColumn>Role</TableColumn>
+                    <TableColumn>สถานะ</TableColumn>
+                    <TableColumn>วันที่สมัคร</TableColumn>
+                    <TableColumn>จัดการ</TableColumn>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.map((user) => (
+                      <TableRow key={user._id}>
+                        <TableCell>{user.name}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          <Chip
+                            size="sm"
+                            color={
+                              user.role === 'admin' ? 'danger' :
+                              user.role === 'organizer' ? 'primary' : 'default'
+                            }
+                          >
+                            {user.role}
+                          </Chip>
+                        </TableCell>
+                        <TableCell>
+                          {user.isBanned ? (
+                            <Chip size="sm" color="danger" variant="flat">
+                              Banned
+                            </Chip>
+                          ) : (
+                            <Chip size="sm" color="success" variant="flat">
+                              Active
+                            </Chip>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(user.createdAt).toLocaleDateString('th-TH')}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
                               size="sm"
-                              color={
-                                user.role === 'admin' ? 'danger' :
-                                user.role === 'organizer' ? 'warning' : 'default'
-                              }
+                              color={user.isBanned ? "success" : "warning"}
                               variant="flat"
+                              onPress={() => handleBanUser(user)}
+                              isDisabled={user.role === 'admin'}
                             >
-                              {user.role}
-                            </Chip>
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {user.createdAt ? new Date(user.createdAt).toLocaleDateString('th-TH') : '-'}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              {user.role !== 'admin' && (
-                                <Button
-                                  size="sm"
-                                  color="warning"
-                                  variant="flat"
-                                  onPress={() => handleUpdateUserRole(user._id, 'organizer')}
-                                  isDisabled={user.role === 'organizer'}
-                                >
-                                  → Organizer
-                                </Button>
-                              )}
-                              {user.role !== 'admin' && (
-                                <Button
-                                  size="sm"
-                                  color="danger"
-                                  variant="flat"
-                                  onPress={() => handleUpdateUserRole(user._id, 'admin')}
-                                >
-                                  → Admin
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </Tab>
-            </Tabs>
-          </CardBody>
+                              {user.isBanned ? 'ปลดแบน' : 'แบน'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              color="danger"
+                              variant="flat"
+                              onPress={() => handleDeleteUser(user)}
+                              isDisabled={user.role === 'admin'}
+                              startContent={<FiTrash2 />}
+                            >
+                              ลบ
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </Tab>
+
+            <Tab key="camps" title={`ค่าย (${camps.length})`}>
+              <div className="py-6">
+                <Table aria-label="Camps table">
+                  <TableHeader>
+                    <TableColumn>ชื่อค่าย</TableColumn>
+                    <TableColumn>Organizer</TableColumn>
+                    <TableColumn>สถานะ</TableColumn>
+                    <TableColumn>ผู้เข้าร่วม</TableColumn>
+                    <TableColumn>วันที่สร้าง</TableColumn>
+                    <TableColumn>จัดการ</TableColumn>
+                  </TableHeader>
+                  <TableBody>
+                    {camps.map((camp) => (
+                      <TableRow key={camp._id}>
+                        <TableCell>{camp.name}</TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{camp.organizerName}</p>
+                            <p className="text-xs text-gray-500">{camp.organizerEmail}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            size="sm"
+                            color={
+                              camp.status === 'active' ? 'success' :
+                              camp.status === 'pending' ? 'warning' : 'default'
+                            }
+                          >
+                            {camp.status}
+                          </Chip>
+                        </TableCell>
+                        <TableCell>
+                          {camp.enrolled || 0}/{camp.capacity}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(camp.createdAt).toLocaleDateString('th-TH')}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="flat"
+                            startContent={<FiEye />}
+                            onPress={() => router.push(`/camps/${camp._id}`)}
+                          >
+                            ดู
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </Tab>
+          </Tabs>
         </Card>
       </div>
 
-      {/* View Camp Modal */}
-      <Modal
-        isOpen={isViewModalOpen}
-        onClose={() => setIsViewModalOpen(false)}
-        size="3xl"
-        scrollBehavior="inside"
-      >
+      {/* Ban Modal */}
+      <Modal isOpen={isBanModalOpen} onClose={onBanModalClose}>
         <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>
-                <h3 className="text-2xl font-bold">รายละเอียดค่าย</h3>
-              </ModalHeader>
-              <ModalBody>
-                {selectedCamp && (
-                  <div className="space-y-4">
-                    {selectedCamp.image && (
-                      <Image
-                        src={selectedCamp.image}
-                        alt={selectedCamp.name}
-                        className="w-full h-64 object-cover rounded-lg"
-                      />
-                    )}
-
-                    <div>
-                      <h4 className="font-bold text-xl mb-2">{selectedCamp.name}</h4>
-                      <p className="text-gray-600">{selectedCamp.description}</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-gray-500">ผู้จัด</p>
-                        <p className="font-semibold">{selectedCamp.organizerName}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">อีเมล</p>
-                        <p className="font-semibold">{selectedCamp.organizerEmail}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">วันที่</p>
-                        <p className="font-semibold">{selectedCamp.date}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">สถานที่</p>
-                        <p className="font-semibold">{selectedCamp.location}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">ค่าใช้จ่าย</p>
-                        <p className="font-semibold">{selectedCamp.price}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">จำนวนที่รับ</p>
-                        <p className="font-semibold">{selectedCamp.capacity} คน</p>
-                      </div>
-                    </div>
-
-                    {selectedCamp.status === 'pending' && (
-                      <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
-                        <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                          ⚠️ ค่ายนี้รอการอนุมัติจากคุณ
-                        </p>
-                      </div>
-                    )}
-
-                    {selectedCamp.rejectionReason && (
-                      <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
-                        <p className="text-sm font-bold text-red-800 dark:text-red-200 mb-1">
-                          เหตุผลที่ปฏิเสธ:
-                        </p>
-                        <p className="text-sm text-red-700 dark:text-red-300">
-                          {selectedCamp.rejectionReason}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </ModalBody>
-              <ModalFooter>
-                <Button color="default" variant="flat" onPress={onClose}>
-                  ปิด
-                </Button>
-                {selectedCamp?.status === 'pending' && (
-                  <>
-                    <Button
-                      color="danger"
-                      variant="flat"
-                      startContent={<FiXCircle />}
-                      onPress={() => {
-                        setIsRejectModalOpen(true);
-                      }}
-                      isDisabled={processing}
-                    >
-                      ปฏิเสธ
-                    </Button>
-                    <Button
-                      color="success"
-                      startContent={<FiCheckCircle />}
-                      onPress={() => handleApproveCamp(selectedCamp._id)}
-                      isLoading={processing}
-                    >
-                      อนุมัติ
-                    </Button>
-                  </>
-                )}
-              </ModalFooter>
-            </>
-          )}
+          <ModalHeader>
+            <h3 className="text-xl font-bold">
+              {selectedUser?.isBanned ? 'ปลดแบน User' : 'แบน User'}
+            </h3>
+          </ModalHeader>
+          <ModalBody>
+            {selectedUser && (
+              <div className="space-y-4">
+                <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                  <p className="font-semibold">{selectedUser.name}</p>
+                  <p className="text-sm text-gray-600">{selectedUser.email}</p>
+                </div>
+                <p className="text-gray-700">
+                  {selectedUser.isBanned
+                    ? 'คุณต้องการปลดแบน User นี้หรือไม่? User จะสามารถเข้าใช้งานระบบได้อีกครั้ง'
+                    : 'คุณต้องการแบน User นี้หรือไม่? User จะไม่สามารถเข้าใช้งานระบบได้'}
+                </p>
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onBanModalClose}>
+              ยกเลิก
+            </Button>
+            <Button
+              color={selectedUser?.isBanned ? "success" : "warning"}
+              onPress={confirmBanUser}
+            >
+              {selectedUser?.isBanned ? 'ปลดแบน' : 'แบน'}
+            </Button>
+          </ModalFooter>
         </ModalContent>
       </Modal>
 
-      {/* Reject Modal */}
-      <Modal isOpen={isRejectModalOpen} onClose={() => setIsRejectModalOpen(false)}>
+      {/* Delete Modal */}
+      <Modal isOpen={isDeleteModalOpen} onClose={onDeleteModalClose}>
         <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>ปฏิเสธค่าย</ModalHeader>
-              <ModalBody>
-                <Textarea
-                  label="เหตุผลในการปฏิเสธ"
-                  placeholder="ระบุเหตุผลที่ปฏิเสธค่ายนี้..."
-                  value={rejectReason}
-                  onValueChange={setRejectReason}
-                  minRows={3}
-                />
-              </ModalBody>
-              <ModalFooter>
-                <Button color="default" variant="flat" onPress={onClose}>
-                  ยกเลิก
-                </Button>
-                <Button
-                  color="danger"
-                  onPress={handleRejectCamp}
-                  isLoading={processing}
-                  isDisabled={!rejectReason.trim()}
-                >
-                  ยืนยันปฏิเสธ
-                </Button>
-              </ModalFooter>
-            </>
-          )}
+          <ModalHeader>
+            <h3 className="text-xl font-bold text-red-600">⚠️ ลบ User</h3>
+          </ModalHeader>
+          <ModalBody>
+            {selectedUser && (
+              <div className="space-y-4">
+                <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border-2 border-red-200">
+                  <p className="font-semibold">{selectedUser.name}</p>
+                  <p className="text-sm text-gray-600">{selectedUser.email}</p>
+                </div>
+                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                    <strong>คำเตือน:</strong> การลบ User จะลบข้อมูลทั้งหมดของ User นี้ออกจากระบบ
+                    และไม่สามารถกู้คืนได้!
+                  </p>
+                </div>
+                <p className="text-gray-700 font-semibold">
+                  คุณแน่ใจหรือไม่ที่จะลบ User นี้?
+                </p>
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onDeleteModalClose}>
+              ยกเลิก
+            </Button>
+            <Button
+              color="danger"
+              onPress={confirmDeleteUser}
+              startContent={<FiTrash2 />}
+            >
+              ลบ User
+            </Button>
+          </ModalFooter>
         </ModalContent>
       </Modal>
     </div>

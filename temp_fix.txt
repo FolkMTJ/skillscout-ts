@@ -1,0 +1,4 @@
+// เปลี่ยนบรรทัดที่ 39 จาก:
+// import { Camp, Registration, RegistrationStatus } from '@/types/camp';
+// เป็น:
+import { Camp, Registration, RegistrationStatus } from '@/types';

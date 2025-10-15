@@ -1,78 +1,58 @@
 // src/types/camp.ts
-export enum UserRole {
-  USER = 'user',
-  ORGANIZER = 'organizer',
-  ADMIN = 'admin'
-}
-
 export enum CampStatus {
-  DRAFT = 'draft',           // ร่าง - ยังไม่ส่ง
-  PENDING = 'pending',       // รอตรวจสอบ - ส่งแล้วรอ Admin
-  REJECTED = 'rejected',     // ปฏิเสธ - ไม่ผ่าน
-  ACTIVE = 'active',         // เปิดรับสมัคร - ผ่านแล้ว
-  FULL = 'full',             // เต็ม
-  CLOSED = 'closed',         // ปิดรับสมัคร
-  CANCELLED = 'cancelled'    // ยกเลิก
-}
-
-export enum RegistrationStatus {
+  DRAFT = 'draft',
   PENDING = 'pending',
-  APPROVED = 'approved',
   REJECTED = 'rejected',
+  ACTIVE = 'active',
+  FULL = 'full',
+  CLOSED = 'closed',
+  COMPLETED = 'completed',
   CANCELLED = 'cancelled'
 }
 
-export interface User {
-  _id: string;
-  email: string;
+export interface Organizer {
   name: string;
-  role: UserRole;
-  phone?: string;
-  lineId?: string;
-  bio?: string;
-  profileImage?: string;
-  organization?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  imageUrl: string;
 }
 
-// Updated Camp interface to match our Camp Model
+export interface Qualifications {
+  level: string;
+  fields?: string[];
+}
+
+export interface Review {
+  id: string;
+  author: string;
+  rating: number;
+  comment: string;
+  date: string;
+}
+
 export interface Camp {
   _id: string;
+  id?: string;
   name: string;
-  description: string;
   category: string;
   date: string;
   location: string;
   price: string;
   image: string;
   galleryImages: string[];
+  description: string;
   deadline: string;
+  daysLeft?: number;
   participantCount: number;
   activityFormat: string;
-  qualifications: {
-    level: string;
-    fields?: string[];
-  };
+  qualifications: Qualifications;
   additionalInfo: string[];
-  organizers?: {
-    name: string;
-    imageUrl: string;
-  }[];
-  reviews: {
-    id: string;
-    author: string;
-    rating: number;
-    comment: string;
-    date: string;
-  }[];
+  organizers?: Organizer[];
+  reviews: Review[];
   avgRating: number;
   ratingBreakdown: Record<string, number>;
   featured?: boolean;
   slug: string;
   createdAt?: Date;
   updatedAt?: Date;
-  // Additional fields for organizer
   organizerId?: string;
   organizerName?: string;
   organizerEmail?: string;
@@ -84,31 +64,5 @@ export interface Camp {
   fee?: number;
   tags?: string[];
   status?: CampStatus;
-  thumbnail?: string;
-  requirements?: string[];
-  syllabus?: string[];
-  contact?: {
-    email: string;
-    phone?: string;
-    line?: string;
-  };
-  views?: number; // NEW: Track views for trending camps
-}
-
-export interface Registration {
-  _id: string;
-  campId: string;
-  userId: string;
-  userName: string;
-  userEmail: string;
-  userPhone?: string;
-  status: RegistrationStatus;
-  appliedAt: Date;
-  reviewedAt?: Date;
-  reviewedBy?: string;
-  notes?: string;
-  answers?: {
-    question: string;
-    answer: string;
-  }[];
+  views?: number;
 }

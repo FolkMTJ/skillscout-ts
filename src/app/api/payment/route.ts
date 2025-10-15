@@ -1,6 +1,7 @@
 // src/app/api/payment/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { PaymentModel, PaymentStatus } from '@/lib/db/models/Payment';
+import { PaymentModel } from '@/lib/db/models'
+import { PaymentStatus } from '@/types';
 import { PromoCodeModel } from '@/lib/db/models/PromoCode';
 
 // POST /api/payment - Create payment record
@@ -24,6 +25,8 @@ export async function POST(request: NextRequest) {
       registrationId: body.registrationId,
       campId: body.campId,
       userId: body.userId,
+      userEmail: body.userEmail, // เพิ่ม
+      userName: body.userName, // เพิ่ม
       organizerId: body.organizerId || 'default',
       amount: body.amount,
       discount: body.discount || 0,

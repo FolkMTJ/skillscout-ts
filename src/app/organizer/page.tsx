@@ -3,9 +3,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { Card, Button, useDisclosure, Chip } from '@heroui/react';
-import { FiCalendar, FiUsers, FiCheckCircle, FiPlus, FiTrendingUp, FiUserCheck } from 'react-icons/fi';
-import { Camp, Registration, RegistrationStatus } from '@/types/camp';
+import { FiCalendar, FiUsers, FiCheckCircle, FiPlus, FiClock, FiUserCheck, FiCreditCard } from 'react-icons/fi';
+import { Camp, Registration, RegistrationStatus } from '@/types';
 import { 
   CampFormModal, CampDetailModal, CampCardWithImage, StatCard, RegistrationCard, EmptyState 
 } from '@/components/organizer';
@@ -13,6 +14,7 @@ import toast from 'react-hot-toast';
 
 export default function OrganizerDashboard() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [camps, setCamps] = useState<Camp[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,11 +36,16 @@ export default function OrganizerDashboard() {
     if (!session?.user?.id) return;
     try {
       setLoading(true);
-      const campsRes = await fetch('/api/camps?includeAll=true'); // ดึงค่ายทุกสถานะ
+      const campsRes = await fetch('/api/camps?includeAll=true');
       if (!campsRes.ok) throw new Error('Failed to fetch camps');
       const campsData = await campsRes.json();
       const allCamps = Array.isArray(campsData) ? campsData : (campsData.camps || []);
-      const myCamps = allCamps.filter((c: Camp) => c.organizerId === session.user.id);
+      
+      // Admin สามารถดูค่ายทั้งหมด, Organizer ดูเฉพาะค่ายของตัวเอง
+      const myCamps = session.user.role === 'admin' 
+        ? allCamps 
+        : allCamps.filter((c: Camp) => c.organizerId === session.user.id);
+      
       setCamps(myCamps);
 
       if (myCamps.length > 0) {
@@ -64,7 +71,7 @@ export default function OrganizerDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [session?.user?.id]);
+  }, [session?.user?.id, session?.user?.role]);
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.id) fetchData();
@@ -120,7 +127,7 @@ export default function OrganizerDashboard() {
         enrolled: 0,
         fee: parseInt(formData.fee || '0'),
         tags: formData.tags,
-        status: 'pending' as const, // รอ Admin อนุมัติก่อน
+        status: 'pending' as const,
       };
 
       const response = await fetch('/api/camps', {
@@ -207,7 +214,28 @@ export default function OrganizerDashboard() {
     }
   };
 
-  // ลบฟังก์ชันอนุมัติ/ปฏิเสธ - ไม่ใช้แล้ว
+  const handleCompleteCamp = async (campId: string, campName: string) => {
+    const message = '🎯 ยืนยันจบค่าย "' + campName + '" หรือไม่?\n\nหมายเหตุ: ค่ายจะถูกตั้งเป็นสถานะ "จบแล้ว" และไม่สามารถรับสมัครเพิ่มได้';
+    if (!confirm(message)) return;
+    
+    try {
+      const response = await fetch('/api/camps/' + campId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          status: 'completed',
+          endDate: new Date().toISOString()
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to complete camp');
+      
+      toast.success('✅ จบค่ายสำเร็จ!');
+      fetchData();
+    } catch (err) {
+      toast.error('เกิดข้อผิดพลาดในการจบค่าย');
+    }
+  };
 
   const handleEditCamp = (camp: Camp) => {
     setEditingCamp(camp);
@@ -279,11 +307,12 @@ export default function OrganizerDashboard() {
   }
 
   const totalEnrolled = camps.reduce((sum, c) => sum + (c.enrolled || 0), 0);
-  const pendingRegs = registrations.filter(r => r.status === RegistrationStatus.PENDING).length;
-  const approvedRegs = registrations.filter(r => r.status === RegistrationStatus.APPROVED).length;
-  const attendedRegs = registrations.filter(r => r.status === 'attended').length;
+  const pendingCamps = camps.filter(c => c.status === 'pending');
+  const completedCamps = camps.filter(c => {
+    return c.status === 'completed' || (c.endDate && new Date(c.endDate) < new Date());
+  });
+  const attendedRegs = registrations.filter(r => r.status === RegistrationStatus.CONFIRMED).length;
   const pendingRegistrations = registrations.filter(r => r.status === RegistrationStatus.PENDING);
-  const pendingCamps = camps.filter(c => c.status === 'pending'); // ค่ายรออนุมัติ
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
@@ -296,8 +325,8 @@ export default function OrganizerDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <StatCard title="ค่ายทั้งหมด" value={camps.length} icon={FiCalendar} gradient="bg-gradient-to-br from-blue-500 to-blue-600" />
           <StatCard title="ผู้เข้าร่วมทั้งหมด" value={totalEnrolled} icon={FiUsers} gradient="bg-gradient-to-br from-green-500 to-green-600" />
-          <StatCard title="รออนุมัติ" value={pendingRegs} icon={FiTrendingUp} gradient="bg-gradient-to-br from-orange-500 to-orange-600" />
-          <StatCard title="อนุมัติแล้ว" value={approvedRegs} icon={FiCheckCircle} gradient="bg-gradient-to-br from-purple-500 to-purple-600" />
+          <StatCard title="ค่ายรอตรวจสอบ" value={pendingCamps.length} icon={FiClock} gradient="bg-gradient-to-br from-orange-500 to-orange-600" />
+          <StatCard title="ค่ายที่จบแล้ว" value={completedCamps.length} icon={FiCheckCircle} gradient="bg-gradient-to-br from-purple-500 to-purple-600" />
           <StatCard title="เช็คอินแล้ว" value={attendedRegs} icon={FiUserCheck} gradient="bg-gradient-to-br from-pink-500 to-purple-600" />
         </div>
 
@@ -305,9 +334,14 @@ export default function OrganizerDashboard() {
           <div className="lg:col-span-1 space-y-6">
             <Card className="p-6">
               <h2 className="text-xl font-bold text-gray-800 mb-4">⚡ Quick Actions</h2>
-              <Button color="primary" size="lg" startContent={<FiPlus className="w-5 h-5" />} onPress={handleOpenCreateModal} className="w-full">
-                สร้างค่ายใหม่
-              </Button>
+              <div className="space-y-3">
+                <Button color="primary" size="lg" startContent={<FiPlus className="w-5 h-5" />} onPress={handleOpenCreateModal} className="w-full">
+                  สร้างค่ายใหม่
+                </Button>
+                <Button color="secondary" size="lg" startContent={<FiCreditCard className="w-5 h-5" />} onPress={() => router.push('/organizer/payments')} className="w-full">
+                  ตรวจสอบสลิป
+                </Button>
+              </div>
             </Card>
 
             <Card className="p-6">
@@ -357,6 +391,7 @@ export default function OrganizerDashboard() {
                       onEdit={() => handleEditCamp(camp)}
                       onDelete={() => handleDeleteCamp(camp._id)}
                       onView={() => handleViewCamp(camp)}
+                      onComplete={() => handleCompleteCamp(camp._id, camp.name)}
                     />
                   );
                 })}

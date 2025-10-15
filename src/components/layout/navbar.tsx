@@ -24,7 +24,7 @@ import React, { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { LogOut, Settings, LayoutDashboard } from 'lucide-react';
+import { LogOut, Settings, LayoutDashboard, Calendar, Shield } from 'lucide-react';
 
 const navLinks = [
     { name: "หน้าหลัก", href: "/" },
@@ -105,7 +105,6 @@ export default function Component(props: NavbarProps) {
                     {status === 'loading' ? (
                         <div className="w-8 h-8 rounded-full bg-default-200 animate-pulse" />
                     ) : session ? (
-                        // Logged in
                         <Dropdown placement="bottom-end">
                             <DropdownTrigger>
                                 <Avatar
@@ -127,10 +126,34 @@ export default function Component(props: NavbarProps) {
                                 <DropdownItem
                                     key="dashboard"
                                     startContent={<LayoutDashboard className="w-4 h-4" />}
-                                    href={session.user?.role === 'organizer' ? '/organizer' : '/profile'}
+                                    href={
+                                        session.user?.role === 'admin' ? '/admin' :
+                                        session.user?.role === 'organizer' ? '/organizer' : '/profile'
+                                    }
                                 >
-                                    {session.user?.role === 'organizer' ? 'แดชบอร์ด' : 'โปรไฟล์'}
+                                    {
+                                        session.user?.role === 'admin' ? 'Admin Dashboard' :
+                                        session.user?.role === 'organizer' ? 'แดชบอร์ด' : 'โปรไฟล์'
+                                    }
                                 </DropdownItem>
+                                {session.user?.role === 'admin' ? (
+                                    <DropdownItem
+                                        key="organizer-dashboard"
+                                        startContent={<Shield className="w-4 h-4" />}
+                                        href="/organizer"
+                                    >
+                                        Organizer Dashboard
+                                    </DropdownItem>
+                                ) : null}
+                                {(session.user?.role === 'user' || session.user?.role === 'admin') ? (
+                                    <DropdownItem
+                                        key="my-camps"
+                                        startContent={<Calendar className="w-4 h-4" />}
+                                        href="/my-camps"
+                                    >
+                                        ค่ายของฉัน
+                                    </DropdownItem>
+                                ) : null}
                                 <DropdownItem
                                     key="settings"
                                     startContent={<Settings className="w-4 h-4" />}
@@ -149,7 +172,6 @@ export default function Component(props: NavbarProps) {
                             </DropdownMenu>
                         </Dropdown>
                     ) : (
-                        // Not logged in
                         <>
                             <Button
                                 as={Link}
@@ -198,18 +220,47 @@ export default function Component(props: NavbarProps) {
                     </NavbarMenuItem>
                 ))}
                 
-                {session && (
+                {session ? (
                     <>
-                        <NavbarMenuItem>
+                        <NavbarMenuItem key="dashboard-menu">
                             <Link
                                 className="text-default-500 w-full"
-                                href={session.user?.role === 'organizer' ? '/organizer' : '/profile'}
+                                href={
+                                    session.user?.role === 'admin' ? '/admin' :
+                                    session.user?.role === 'organizer' ? '/organizer' : '/profile'
+                                }
                                 size="md"
                             >
-                                {session.user?.role === 'organizer' ? 'แดชบอร์ด' : 'โปรไฟล์'}
+                                {
+                                    session.user?.role === 'admin' ? 'Admin Dashboard' :
+                                    session.user?.role === 'organizer' ? 'แดชบอร์ด' : 'โปรไฟล์'
+                                }
                             </Link>
                         </NavbarMenuItem>
-                        <NavbarMenuItem>
+                        {session.user?.role === 'admin' ? (
+                            <NavbarMenuItem key="organizer-menu">
+                                <Link
+                                    className="text-default-500 w-full"
+                                    href="/organizer"
+                                    size="md"
+                                >
+                                    Organizer Dashboard
+                                </Link>
+                            </NavbarMenuItem>
+                        ) : null}
+                        {(session.user?.role === 'user' || session.user?.role === 'admin') ? (
+                            <NavbarMenuItem key="my-camps-menu">
+                                <Link
+                                    className="text-default-500 w-full"
+                                    href="/my-camps"
+                                    size="md"
+                                    color={pathname === '/my-camps' ? "primary" : "foreground"}
+                                >
+                                    ค่ายของฉัน
+                                </Link>
+                            </NavbarMenuItem>
+                        ) : null}
+                        <NavbarMenuItem key="logout-menu">
                             <button
                                 className="text-danger w-full text-left"
                                 onClick={handleSignOut}
@@ -218,7 +269,7 @@ export default function Component(props: NavbarProps) {
                             </button>
                         </NavbarMenuItem>
                     </>
-                )}
+                ) : null}
             </NavbarMenu>
         </Navbar>
     );

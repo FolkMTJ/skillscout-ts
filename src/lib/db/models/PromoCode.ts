@@ -1,28 +1,7 @@
 // src/lib/db/models/PromoCode.ts
 import { getCollection } from '@/lib/mongodb';
 import { ObjectId, Filter } from 'mongodb';
-
-export enum DiscountType {
-  PERCENTAGE = 'percentage',
-  FIXED = 'fixed'
-}
-
-export interface PromoCode {
-  _id: string;
-  code: string;
-  discountType: DiscountType;
-  discountValue: number; // percentage (0-100) or fixed amount
-  minAmount?: number;
-  maxDiscount?: number; // max discount for percentage type
-  usageLimit?: number;
-  usedCount: number;
-  validFrom: Date;
-  validUntil: Date;
-  isActive: boolean;
-  applicableCamps?: string[]; // specific camp IDs, empty = all camps
-  createdBy: string;
-  createdAt: Date;
-}
+import { PromoCode, DiscountType } from '@/types';
 
 interface PromoCodeDoc {
   _id?: ObjectId;
@@ -95,22 +74,18 @@ export class PromoCodeModel {
 
     const now = new Date();
 
-    // Check if active
     if (!promo.isActive) {
       return { valid: false, discount: 0, message: 'รหัสโปรโมชั่นนี้ถูกปิดใช้งานแล้ว' };
     }
 
-    // Check date validity
     if (now < promo.validFrom || now > promo.validUntil) {
       return { valid: false, discount: 0, message: 'รหัสโปรโมชั่นหมดอายุแล้ว' };
     }
 
-    // Check usage limit
     if (promo.usageLimit && promo.usedCount >= promo.usageLimit) {
       return { valid: false, discount: 0, message: 'รหัสโปรโมชั่นถูกใช้งานครบแล้ว' };
     }
 
-    // Check minimum amount
     if (promo.minAmount && amount < promo.minAmount) {
       return { 
         valid: false, 
@@ -119,14 +94,12 @@ export class PromoCodeModel {
       };
     }
 
-    // Check camp applicability
     if (campId && promo.applicableCamps && promo.applicableCamps.length > 0) {
       if (!promo.applicableCamps.includes(campId)) {
         return { valid: false, discount: 0, message: 'รหัสนี้ใช้ไม่ได้กับค่ายนี้' };
       }
     }
 
-    // Calculate discount
     let discount = 0;
     if (promo.discountType === DiscountType.PERCENTAGE) {
       discount = (amount * promo.discountValue) / 100;
@@ -137,7 +110,6 @@ export class PromoCodeModel {
       discount = promo.discountValue;
     }
 
-    // Ensure discount doesn't exceed amount
     discount = Math.min(discount, amount);
 
     return { 

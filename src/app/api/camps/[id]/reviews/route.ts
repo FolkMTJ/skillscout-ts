@@ -1,11 +1,12 @@
 // src/app/api/camps/[id]/reviews/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { CampModel, Review } from '@/lib/db/models/Camp';
+import { CampModel } from '@/lib/db/models/Camp';
+import { Review } from '@/types';
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 // POST /api/camps/[id]/reviews
@@ -14,7 +15,7 @@ export async function POST(
   { params }: RouteParams
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     // Validate required fields
