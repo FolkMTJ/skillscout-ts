@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category');
     const featured = searchParams.get('featured');
     const search = searchParams.get('search');
+    const includeAll = searchParams.get('includeAll'); // สำหรับ organizer dashboard
 
     let camps;
 
@@ -20,6 +21,11 @@ export async function GET(request: NextRequest) {
       camps = await CampModel.getFeatured();
     } else {
       camps = await CampModel.findAll();
+    }
+
+    // ถ้าไม่ได้ขอ includeAll ให้แสดงเฉพาะ active camps
+    if (!includeAll) {
+      camps = camps.filter((c: any) => c.status === 'active');
     }
 
     return NextResponse.json(camps);

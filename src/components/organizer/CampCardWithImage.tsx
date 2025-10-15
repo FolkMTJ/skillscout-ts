@@ -4,6 +4,7 @@
 import { Card, Button, Chip } from '@heroui/react';
 import { FiEdit2, FiTrash2, FiEye } from 'react-icons/fi';
 import { Camp } from '@/types/camp';
+import Image from 'next/image';
 
 interface CampCardWithImageProps {
   camp: Camp;
@@ -27,7 +28,7 @@ export default function CampCardWithImage({
       {/* รูปปก */}
       <div className="relative h-48 bg-gray-200">
         {camp.image ? (
-          <img
+          <Image
             src={camp.image}
             alt={camp.name}
             className="w-full h-full object-cover"

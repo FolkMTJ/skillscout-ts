@@ -99,7 +99,7 @@ interface CampDoc {
   fee?: number;
   tags?: string[];
   status?: CampStatus;
-  views?: number; // NEW: Track views for trending
+  views?: number;
 }
 
 // Type for creating new camp (without _id)
@@ -276,7 +276,7 @@ export class CampModel {
       const filter: Filter<CampDoc> = { _id: new ObjectId(id) } as Filter<CampDoc>;
       
       const update: UpdateFilter<CampDoc> = {
-        $inc: { views: 1 } as any,
+        $inc: { views: 1 },
         $set: { updatedAt: new Date() } as Partial<CampDoc>,
       };
       

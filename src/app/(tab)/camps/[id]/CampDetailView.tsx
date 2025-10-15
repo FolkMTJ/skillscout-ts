@@ -2,15 +2,17 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
-    FaMapMarkerAlt, FaCalendarAlt, FaClock, FaArrowLeft, FaUsers, FaGraduationCap, FaPaintBrush, FaCheckCircle
+    FaMapMarkerAlt, FaCalendarAlt, FaClock, FaArrowLeft, FaUsers, FaGraduationCap, FaPaintBrush, FaCheckCircle, FaTicketAlt
 } from "react-icons/fa";
 import { Chip, Progress } from "@heroui/react";
-import type { CampData, Review } from "@/lib/data"; // ✅ แก้ไขจาก @/lib/db เป็น @/lib/data
+import type { CampData, Review } from "@/lib/data";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@heroui/react";
 import BookingModal from '@/components/camps/BookingModal';
+import TicketModal from '@/components/ticket/TicketModal';
 
 const InfoCard: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
     <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
@@ -40,8 +42,57 @@ const ReviewCard: React.FC<{ review: Review }> = ({ review }) => (
 
 export default function CampDetailView({ camp }: { camp: CampData }) {
     const router = useRouter();
+    const { data: session } = useSession();
     const [selectedImage, setSelectedImage] = useState(camp.galleryImages[0] || camp.image);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
+    
+    // Check registration status
+    const [isRegistered, setIsRegistered] = useState(false);
+    const [ticketData, setTicketData] = useState<any>(null);
+    const [checkingRegistration, setCheckingRegistration] = useState(true);
+
+    useEffect(() => {
+        const checkRegistration = async () => {
+            if (!session?.user?.email) {
+                setCheckingRegistration(false);
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    `/api/ticket?userId=${encodeURIComponent(session.user.email)}&campId=${camp._id}`
+                );
+                const data = await response.json();
+
+                if (data.registered && data.ticket) {
+                    setIsRegistered(true);
+                    setTicketData(data.ticket);
+                }
+            } catch (error) {
+                console.error('Error checking registration:', error);
+            } finally {
+                setCheckingRegistration(false);
+            }
+        };
+
+        checkRegistration();
+    }, [session, camp._id]);
+
+    const handleTicketClick = () => {
+        if (ticketData) {
+            setIsTicketModalOpen(true);
+        }
+    };
+
+    // const handleBookingSuccess = () => {
+    //     // Refresh registration status after successful booking
+    //     setIsRegistered(false);
+    //     setCheckingRegistration(true);
+    //     setTimeout(() => {
+    //         window.location.reload();
+    //     }, 1000);
+    // };
     
     return (
         <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
@@ -112,23 +163,57 @@ export default function CampDetailView({ camp }: { camp: CampData }) {
                                                         </span>
                                                     </div>
                                                 ))}
-                                            </div>
+                            </div>
                                         </div>
                                     )}
                                     <div className="flex items-center justify-between pt-6">
                                         <p className="text-5xl font-black bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
                                             {camp.price}
                                         </p>
-                                        <Button
-                                            className="bg-[#F2B33D] font-bold text-gray-900"
-                                            color="warning"
-                                            variant="shadow"
-                                            size="lg"
-                                            onPress={() => setIsModalOpen(true)}
-                                        >
-                                            สมัครเข้าร่วม
-                                        </Button>
+                                        
+                                        {/* Dynamic Button based on registration status */}
+                                        {checkingRegistration ? (
+                                            <Button
+                                                isLoading
+                                                className="bg-gray-300"
+                                                size="lg"
+                                            >
+                                                กำลังตรวจสอบ...
+                                            </Button>
+                                        ) : isRegistered ? (
+                                            <Button
+                                                className="bg-gradient-to-r from-green-500 to-emerald-500 font-bold text-white shadow-lg"
+                                                size="lg"
+                                                startContent={<FaTicketAlt />}
+                                                onPress={handleTicketClick}
+                                            >
+                                                รับ Ticket
+                                            </Button>
+                                        ) : (
+                                            <Button
+                                                className="bg-[#F2B33D] font-bold text-gray-900"
+                                                color="warning"
+                                                variant="shadow"
+                                                size="lg"
+                                                onPress={() => setIsModalOpen(true)}
+                                            >
+                                                สมัครเข้าร่วม
+                                            </Button>
+                                        )}
                                     </div>
+                                    
+                                    {/* Registration Status Badge */}
+                                    {isRegistered && (
+                                        <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border-2 border-green-500 rounded-lg">
+                                            <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                                                <FaCheckCircle />
+                                                <span className="font-semibold">คุณได้สมัครค่ายนี้แล้ว</span>
+                                            </div>
+                                            <p className="text-sm text-green-600 dark:text-green-500 mt-1">
+                                                กดปุ่ม รับTicket เพื่อดาวน์โหลดบัตรเข้าค่าย
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -294,6 +379,14 @@ export default function CampDetailView({ camp }: { camp: CampData }) {
                 onClose={() => setIsModalOpen(false)}
                 camp={camp}
             />
+
+            {ticketData && (
+                <TicketModal
+                    isOpen={isTicketModalOpen}
+                    onClose={() => setIsTicketModalOpen(false)}
+                    ticket={ticketData}
+                />
+            )}
         </div>
     );
 }

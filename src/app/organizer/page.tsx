@@ -3,8 +3,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import { Card, Button, useDisclosure } from '@heroui/react';
-import { FiCalendar, FiUsers, FiCheckCircle, FiPlus, FiTrendingUp } from 'react-icons/fi';
+import { Card, Button, useDisclosure, Chip } from '@heroui/react';
+import { FiCalendar, FiUsers, FiCheckCircle, FiPlus, FiTrendingUp, FiUserCheck } from 'react-icons/fi';
 import { Camp, Registration, RegistrationStatus } from '@/types/camp';
 import { 
   CampFormModal, CampDetailModal, CampCardWithImage, StatCard, RegistrationCard, EmptyState 
@@ -34,7 +34,7 @@ export default function OrganizerDashboard() {
     if (!session?.user?.id) return;
     try {
       setLoading(true);
-      const campsRes = await fetch('/api/camps');
+      const campsRes = await fetch('/api/camps?includeAll=true'); // ดึงค่ายทุกสถานะ
       if (!campsRes.ok) throw new Error('Failed to fetch camps');
       const campsData = await campsRes.json();
       const allCamps = Array.isArray(campsData) ? campsData : (campsData.camps || []);
@@ -43,10 +43,21 @@ export default function OrganizerDashboard() {
 
       if (myCamps.length > 0) {
         const regPromises = myCamps.map((camp: Camp) =>
-          fetch(`/api/registrations?campId=${camp._id}`).then(r => r.json()).catch(() => ({ registrations: [] }))
+          fetch(`/api/registrations?campId=${camp._id}`)
+            .then(r => r.json())
+            .then(data => {
+              console.log(`Registrations for camp ${camp._id}:`, data);
+              return data;
+            })
+            .catch(err => {
+              console.error(`Error fetching registrations for camp ${camp._id}:`, err);
+              return { registrations: [] };
+            })
         );
         const regResults = await Promise.all(regPromises);
-        setRegistrations(regResults.flatMap(r => r.registrations || []));
+        const allRegs = regResults.flatMap(r => r.registrations || []);
+        console.log('Total registrations loaded:', allRegs.length);
+        setRegistrations(allRegs);
       }
     } catch {
       toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
@@ -109,7 +120,7 @@ export default function OrganizerDashboard() {
         enrolled: 0,
         fee: parseInt(formData.fee || '0'),
         tags: formData.tags,
-        status: 'active' as const,
+        status: 'pending' as const, // รอ Admin อนุมัติก่อน
       };
 
       const response = await fetch('/api/camps', {
@@ -196,35 +207,7 @@ export default function OrganizerDashboard() {
     }
   };
 
-  const handleApproveRegistration = async (regId: string) => {
-    try {
-      const response = await fetch(`/api/registrations/${regId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: RegistrationStatus.APPROVED, reviewedBy: session?.user?.id }),
-      });
-      if (!response.ok) throw new Error('Failed to approve');
-      toast.success('✅ อนุมัติสำเร็จ!');
-      fetchData();
-    } catch {
-      toast.error('เกิดข้อผิดพลาด');
-    }
-  };
-
-  const handleRejectRegistration = async (regId: string) => {
-    try {
-      const response = await fetch(`/api/registrations/${regId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: RegistrationStatus.REJECTED, reviewedBy: session?.user?.id }),
-      });
-      if (!response.ok) throw new Error('Failed to reject');
-      toast.success('✅ ปฏิเสธสำเร็จ!');
-      fetchData();
-    } catch {
-      toast.error('เกิดข้อผิดพลาด');
-    }
-  };
+  // ลบฟังก์ชันอนุมัติ/ปฏิเสธ - ไม่ใช้แล้ว
 
   const handleEditCamp = (camp: Camp) => {
     setEditingCamp(camp);
@@ -298,7 +281,9 @@ export default function OrganizerDashboard() {
   const totalEnrolled = camps.reduce((sum, c) => sum + (c.enrolled || 0), 0);
   const pendingRegs = registrations.filter(r => r.status === RegistrationStatus.PENDING).length;
   const approvedRegs = registrations.filter(r => r.status === RegistrationStatus.APPROVED).length;
+  const attendedRegs = registrations.filter(r => r.status === 'attended').length;
   const pendingRegistrations = registrations.filter(r => r.status === RegistrationStatus.PENDING);
+  const pendingCamps = camps.filter(c => c.status === 'pending'); // ค่ายรออนุมัติ
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
@@ -308,11 +293,12 @@ export default function OrganizerDashboard() {
           <p className="text-gray-600">จัดการค่ายและผู้สมัครของคุณ</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <StatCard title="ค่ายทั้งหมด" value={camps.length} icon={FiCalendar} gradient="bg-gradient-to-br from-blue-500 to-blue-600" />
           <StatCard title="ผู้เข้าร่วมทั้งหมด" value={totalEnrolled} icon={FiUsers} gradient="bg-gradient-to-br from-green-500 to-green-600" />
           <StatCard title="รออนุมัติ" value={pendingRegs} icon={FiTrendingUp} gradient="bg-gradient-to-br from-orange-500 to-orange-600" />
           <StatCard title="อนุมัติแล้ว" value={approvedRegs} icon={FiCheckCircle} gradient="bg-gradient-to-br from-purple-500 to-purple-600" />
+          <StatCard title="เช็คอินแล้ว" value={attendedRegs} icon={FiUserCheck} gradient="bg-gradient-to-br from-pink-500 to-purple-600" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -325,20 +311,30 @@ export default function OrganizerDashboard() {
             </Card>
 
             <Card className="p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">⏳ คำขอรอดำเนินการ</h2>
+              <h2 className="text-xl font-bold text-gray-800 mb-4">⏳ ค่ายรอตรวจสอบ</h2>
               <div className="space-y-3 max-h-96 overflow-y-auto">
-                {pendingRegistrations.map(reg => {
-                  const camp = camps.find(c => c._id === reg.campId);
-                  return (
-                    <RegistrationCard
-                      key={reg._id} registration={reg} campName={camp?.name}
-                      onApprove={() => handleApproveRegistration(reg._id)}
-                      onReject={() => handleRejectRegistration(reg._id)}
-                    />
-                  );
-                })}
-                {pendingRegistrations.length === 0 && (
-                  <EmptyState icon={FiCheckCircle} title="ไม่มีคำขอรอดำเนินการ" description="คุณได้ตรวจสอบคำขอทั้งหมดแล้ว" />
+                {pendingCamps.map(camp => (
+                  <Card key={camp._id} className="p-4 border-2 border-orange-200 bg-orange-50">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-bold text-gray-800">{camp.name}</h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                          <FiCalendar className="inline mr-1" />
+                          {camp.date}
+                        </p>
+                        <Chip size="sm" color="warning" variant="flat" className="mt-2">
+                          รอ Admin ตรวจสอบ
+                        </Chip>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+                {pendingCamps.length === 0 && (
+                  <EmptyState 
+                    icon={FiCheckCircle} 
+                    title="ไม่มีค่ายรอตรวจสอบ" 
+                    description="ค่ายทั้งหมดได้รับการอนุมัติแล้ว" 
+                  />
                 )}
               </div>
             </Card>
@@ -392,8 +388,6 @@ export default function OrganizerDashboard() {
           isOpen={isDetailModalOpen} onClose={onDetailModalClose}
           camp={viewingCamp}
           registrations={registrations.filter(r => r.campId === viewingCamp._id)}
-          onApprove={handleApproveRegistration}
-          onReject={handleRejectRegistration}
         />
       )}
     </div>

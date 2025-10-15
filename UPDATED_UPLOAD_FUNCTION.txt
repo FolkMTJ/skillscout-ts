@@ -1,0 +1,77 @@
+// src/components/camps/BookingModal.tsx - Update handleUploadSlip function only
+
+  const handleUploadSlip = async () => {
+    if (!slipFile) {
+      setError('กรุณาเลือกไฟล์สลิป');
+      return;
+    }
+    setIsUploading(true);
+    setError('');
+    setUploadProgress(0);
+
+    try {
+      // Step 1: Upload to Cloudinary
+      const formData = new FormData();
+      formData.append('file', slipFile);
+      formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'skillscout');
+
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 10, 70));
+      }, 200);
+
+      const uploadResponse = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        { method: 'POST', body: formData }
+      );
+
+      clearInterval(progressInterval);
+      setUploadProgress(75);
+
+      if (!uploadResponse.ok) throw new Error('Failed to upload slip');
+      const uploadData = await uploadResponse.json();
+      const slipUrl = uploadData.secure_url;
+
+      // Step 2: Update payment with slip URL
+      setUploadProgress(80);
+      const updateResponse = await fetch(`/api/payment/${paymentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slipUrl: slipUrl, status: 'completed' }),
+      });
+      if (!updateResponse.ok) throw new Error('Failed to update payment');
+
+      // Step 3: Auto-verify slip
+      setUploadProgress(90);
+      const verifyResponse = await fetch('/api/payment/verify-slip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentId: paymentId }),
+      });
+
+      const verifyData = await verifyResponse.json();
+      setUploadProgress(100);
+
+      console.log('Verification result:', verifyData);
+
+      // Show appropriate message based on verification
+      if (verifyData.autoApproved) {
+        // Auto-approved!
+        setStep(4);
+        setTimeout(() => handleClose(), 3000);
+      } else if (verifyData.requiresManualReview) {
+        // Needs manual review but uploaded successfully
+        setStep(4);
+        setTimeout(() => handleClose(), 3000);
+      } else {
+        // Verification failed but slip uploaded
+        setStep(4);
+        setTimeout(() => handleClose(), 3000);
+      }
+
+    } catch (error) {
+      setError('ไม่สามารถอัปโหลดสลิปได้ กรุณาลองใหม่');
+      setUploadProgress(0);
+    } finally {
+      setIsUploading(false);
+    }
+  };

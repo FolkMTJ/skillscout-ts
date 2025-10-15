@@ -21,6 +21,8 @@ import { categories } from "@/data/categories";
 import HeroSection from '@/components/HeroSection';
 import { Camp } from "@/types/camp";
 
+type CampCardData = ReturnType<typeof campToCampData>;
+
 // Helper function to convert Camp to CampData format for CampCard
 function campToCampData(camp: Camp) {
   // Calculate days left from deadline
@@ -52,8 +54,8 @@ function campToCampData(camp: Camp) {
 }
 
 export default function HomePage() {
-  const [urgentCamps, setUrgentCamps] = useState<any[]>([]);
-  const [trendingCamps, setTrendingCamps] = useState<any[]>([]);
+  const [urgentCamps, setUrgentCamps] = useState<CampCardData[]>([]);
+  const [trendingCamps, setTrendingCamps] = useState<CampCardData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -111,7 +113,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-2C2C2C dark:bg-zinc-900 overflow-x-hidden">
       {/* Banner Section - กระทัดรัดมากขึ้น */}
       <section className="relative min-h-[480px] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-orange-400 via-amber-500 to-yellow-400 dark:from-gray-900 dark:via-orange-900/30 dark:to-gray-900">
+        <div className="absolute inset-0 bg-gradient-to-t from-white-50 from-0% via-yellow-500 via-50% to-orange-400 to-100% dark:from-gray-900 dark:via-orange-900/30 dark:to-gray-900">
           <div className="absolute top-10 left-10 w-72 h-72 bg-white/20 rounded-full blur-3xl animate-pulse" />
           <div className="absolute inset-0 opacity-10 dark:opacity-20" style={{
             backgroundImage: `linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px)`,
@@ -176,7 +178,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-amber-50 to-transparent dark:from-zinc-900" />
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white-50 to-transparent dark:from-zinc-900" />
       </section>
 
       {/* Loading State */}

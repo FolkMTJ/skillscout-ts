@@ -35,7 +35,7 @@ export default function LoginPage() {
       toast.success('ส่งรหัส OTP ไปยังอีเมลของคุณแล้ว');
       setStep('otp');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'เกิดข้อผิดพลาด');
+      toast.error((error as Error).message || 'เกิดข้อผิดพลาด');
     } finally {
       setLoading(false);
     }
@@ -167,3 +167,4 @@ export default function LoginPage() {
     </div>
   );
 }
+// cspell:disable

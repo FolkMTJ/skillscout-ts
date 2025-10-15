@@ -6,11 +6,13 @@ export enum UserRole {
 }
 
 export enum CampStatus {
-  DRAFT = 'draft',
-  ACTIVE = 'active',
-  FULL = 'full',
-  CLOSED = 'closed',
-  CANCELLED = 'cancelled'
+  DRAFT = 'draft',           // ร่าง - ยังไม่ส่ง
+  PENDING = 'pending',       // รอตรวจสอบ - ส่งแล้วรอ Admin
+  REJECTED = 'rejected',     // ปฏิเสธ - ไม่ผ่าน
+  ACTIVE = 'active',         // เปิดรับสมัคร - ผ่านแล้ว
+  FULL = 'full',             // เต็ม
+  CLOSED = 'closed',         // ปิดรับสมัคร
+  CANCELLED = 'cancelled'    // ยกเลิก
 }
 
 export enum RegistrationStatus {

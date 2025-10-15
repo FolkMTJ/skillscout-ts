@@ -24,12 +24,7 @@ import React, { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { LogOut, User, Settings, LayoutDashboard } from 'lucide-react';
-
-const menuItems = [
-    "About", "Blog", "Customers", "Pricing", "Enterprise",
-    "Changelog", "Documentation", "Contact Us",
-];
+import { LogOut, Settings, LayoutDashboard } from 'lucide-react';
 
 const navLinks = [
     { name: "หน้าหลัก", href: "/" },

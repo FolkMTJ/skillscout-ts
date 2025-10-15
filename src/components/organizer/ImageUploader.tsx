@@ -2,10 +2,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Card } from '@heroui/react';
-import { FiUpload, FiX, FiImage } from 'react-icons/fi';
+import { Button } from '@heroui/react';
+import { FiX, FiImage } from 'react-icons/fi';
 import { CldUploadWidget } from 'next-cloudinary';
 import toast from 'react-hot-toast';
+import Image from 'next/image';
 
 interface ImageUploaderProps {
   value?: string;
@@ -28,7 +29,7 @@ export default function ImageUploader({ value, onChange, label, description }: I
       
       {value ? (
         <div className="relative">
-          <img 
+          <Image  
             src={value} 
             alt="Uploaded" 
             className="w-full h-48 object-cover rounded-lg"
