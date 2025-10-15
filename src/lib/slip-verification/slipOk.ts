@@ -375,8 +375,6 @@ export async function verifySlipWithSlipOK(
 
 // Alternative: Use Tesseract.js (OCR) - ฟรีแต่แม่นยำน้อยกว่า
 export async function verifySlipWithOCR(
-  imageUrl: string,
-  expectedAmount: number
 ): Promise<SlipVerificationResult> {
   try {
     // ใช้ Google Cloud Vision API หรือ AWS Textract

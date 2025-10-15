@@ -37,6 +37,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@tsconfig/recommended": "^1.0.10",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.19.21",
     "@types/qrcode": "^1.5.5",

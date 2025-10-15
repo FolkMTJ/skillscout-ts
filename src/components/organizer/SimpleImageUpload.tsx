@@ -70,6 +70,7 @@ export default function SimpleImageUpload({ value, onChange, label }: SimpleImag
       
       {value ? (
         <div className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={value} alt="Preview" className="w-full h-48 object-cover rounded-lg" />
           <Button isIconOnly size="sm" color="danger" className="absolute top-2 right-2" onPress={() => onChange('')}>
             <FiX />

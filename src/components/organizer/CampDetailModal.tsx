@@ -69,29 +69,38 @@ export default function CampDetailModal({
 }: CampDetailModalProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [loadingPayments, setLoadingPayments] = useState(false);
   const [viewingSlip, setViewingSlip] = useState<Payment | null>(null);
   const { isOpen: isSlipModalOpen, onOpen: onSlipModalOpen, onClose: onSlipModalClose } = useDisclosure();
 
   useEffect(() => {
+    const loadPayments = async () => {
+      try {
+        const response = await fetch(`/api/payments/camp/${camp._id}`);
+        const data = await response.json();
+        
+        if (data.payments) {
+          setPayments(data.payments);
+        }
+      } catch (err) {
+        console.error('Error fetching payments:', err);
+      }
+    };
+
     if (isOpen && camp._id) {
-      fetchPayments();
+      loadPayments();
     }
   }, [isOpen, camp._id]);
 
   const fetchPayments = async () => {
     try {
-      setLoadingPayments(true);
       const response = await fetch(`/api/payments/camp/${camp._id}`);
       const data = await response.json();
       
       if (data.payments) {
         setPayments(data.payments);
       }
-    } catch (error) {
-      console.error('Error fetching payments:', error);
-    } finally {
-      setLoadingPayments(false);
+    } catch (err) {
+      console.error('Error fetching payments:', err);
     }
   };
 
@@ -114,7 +123,8 @@ export default function CampDetailModal({
       onSlipModalClose();
       fetchPayments();
       if (onRefresh) onRefresh();
-    } catch (error) {
+    } catch (err) {
+      console.error('Error approving slip:', err);
       toast.error('เกิดข้อผิดพลาดในการอนุมัติ');
     }
   };
@@ -136,15 +146,14 @@ export default function CampDetailModal({
       onSlipModalClose();
       fetchPayments();
       if (onRefresh) onRefresh();
-    } catch (error) {
+    } catch (err) {
+      console.error('Error rejecting slip:', err);
       toast.error('เกิดข้อผิดพลาดในการปฏิเสธ');
     }
   };
 
   const enrollmentPercentage = ((camp.enrolled || 0) / (camp.capacity || camp.participantCount)) * 100;
-  const pendingRegs = registrations.filter(r => r.status === RegistrationStatus.PENDING);
   const approvedRegs = registrations.filter(r => r.status === RegistrationStatus.APPROVED);
-  const rejectedRegs = registrations.filter(r => r.status === RegistrationStatus.REJECTED);
   const attendedRegs = registrations.filter(r => r.status === 'attended');
   const attendanceRate = approvedRegs.length > 0 ? ((attendedRegs.length / approvedRegs.length) * 100).toFixed(1) : 0;
 

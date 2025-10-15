@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardBody, Spinner } from '@heroui/react';
 import { FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaTicketAlt } from 'react-icons/fa';
@@ -19,7 +19,7 @@ interface TicketData {
   };
 }
 
-export default function VerifyPage() {
+function VerifyContent() {
   const searchParams = useSearchParams();
   const registrationId = searchParams.get('id');
 
@@ -205,5 +205,22 @@ export default function VerifyPage() {
         </CardBody>
       </Card>
     </div>
+  );
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardBody className="text-center py-12">
+            <Spinner size="lg" color="warning" />
+            <p className="mt-4 text-gray-600 dark:text-gray-400">กำลังโหลด...</p>
+          </CardBody>
+        </Card>
+      </div>
+    }>
+      <VerifyContent />
+    </Suspense>
   );
 }

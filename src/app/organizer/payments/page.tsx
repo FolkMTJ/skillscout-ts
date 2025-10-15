@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { Card, Button, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Tabs, Tab } from '@heroui/react';
-import { FiCheck, FiX, FiEye, FiClock, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
+import { FiCheck, FiX, FiEye, FiClock, FiCheckCircle } from 'react-icons/fi';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 
@@ -27,7 +27,7 @@ interface Payment {
 }
 
 export default function PaymentsPage() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewingPayment, setViewingPayment] = useState<Payment | null>(null);
@@ -48,8 +48,8 @@ export default function PaymentsPage() {
       if (data.payments) {
         setPayments(data.payments);
       }
-    } catch (error) {
-      console.error('Error fetching payments:', error);
+    } catch (err) {
+      console.error('Error fetching payments:', err);
       toast.error('ไม่สามารถโหลดข้อมูลได้');
     } finally {
       setLoading(false);
@@ -69,7 +69,8 @@ export default function PaymentsPage() {
       toast.success('✅ อนุมัติสลิปสำเร็จ!');
       setViewingPayment(null);
       fetchPayments();
-    } catch (error) {
+    } catch (err) {
+      console.error('Error approving payment:', err);
       toast.error('เกิดข้อผิดพลาดในการอนุมัติ');
     }
   };
@@ -90,7 +91,8 @@ export default function PaymentsPage() {
       toast.success('✅ ปฏิเสธสลิปสำเร็จ');
       setViewingPayment(null);
       fetchPayments();
-    } catch (error) {
+    } catch (err) {
+      console.error('Error rejecting payment:', err);
       toast.error('เกิดข้อผิดพลาดในการปฏิเสธ');
     }
   };

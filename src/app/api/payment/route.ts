@@ -1,7 +1,6 @@
 // src/app/api/payment/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { PaymentModel } from '@/lib/db/models'
-import { PaymentStatus } from '@/types';
 import { PromoCodeModel } from '@/lib/db/models/PromoCode';
 
 // POST /api/payment - Create payment record

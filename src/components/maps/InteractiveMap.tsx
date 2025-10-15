@@ -11,10 +11,72 @@ interface InteractiveMapProps {
     markerTitle?: string;
 }
 
+// Google Maps type definitions
+type GoogleMapsLatLng = {
+    lat(): number;
+    lng(): number;
+};
+
+type GoogleMapsLatLngLiteral = {
+    lat: number;
+    lng: number;
+};
+
+type GoogleMapsMapOptions = {
+    center: GoogleMapsLatLng | GoogleMapsLatLngLiteral;
+    zoom?: number;
+    mapTypeControl?: boolean;
+    streetViewControl?: boolean;
+    fullscreenControl?: boolean;
+    zoomControl?: boolean;
+};
+
+type GoogleMapsMarkerOptions = {
+    position: GoogleMapsLatLng | GoogleMapsLatLngLiteral;
+    map?: unknown;
+    title?: string;
+    animation?: number;
+};
+
+type GoogleMapsGeocoderRequest = {
+    address?: string;
+};
+
+type GoogleMapsGeocoderResult = {
+    geometry: {
+        location: GoogleMapsLatLng;
+    };
+};
+
+type GoogleMapsGeocoderResponse = {
+    results: GoogleMapsGeocoderResult[];
+};
+
+type GoogleMapsInfoWindowOptions = {
+    content?: string;
+};
+
 // Declare google global type
 declare global {
     interface Window {
-        google: typeof google;
+        google?: {
+            maps: {
+                Map: new (mapDiv: Element, opts?: GoogleMapsMapOptions) => unknown;
+                Marker: new (opts?: GoogleMapsMarkerOptions) => {
+                    addListener(event: string, handler: () => void): void;
+                    setMap(map: unknown): void;
+                };
+                Geocoder: new () => {
+                    geocode(request: GoogleMapsGeocoderRequest): Promise<GoogleMapsGeocoderResponse>;
+                };
+                InfoWindow: new (opts?: GoogleMapsInfoWindowOptions) => {
+                    open(map: unknown, marker: unknown): void;
+                };
+                Animation: {
+                    DROP: number;
+                };
+            };
+        };
     }
 }
 
@@ -29,10 +91,8 @@ export default function InteractiveMap({
     const mapRef = useRef<HTMLDivElement>(null);
     const [mapError, setMapError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const googleMapRef = useRef<any>(null);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const markerRef = useRef<any>(null);
+    const googleMapRef = useRef<unknown>(null);
+    const markerRef = useRef<unknown>(null);
 
     useEffect(() => {
         if (!apiKey || apiKey === 'YOUR_GOOGLE_MAPS_API_KEY') {
@@ -118,12 +178,12 @@ export default function InteractiveMap({
         loadGoogleMapsScript();
 
         return () => {
-            if (markerRef.current) {
-                markerRef.current.setMap(null);
+            // Cleanup
+            const marker = markerRef.current as { setMap?: (map: unknown) => void } | null;
+            if (marker?.setMap) {
+                marker.setMap(null);
             }
-            if (googleMapRef.current) {
-                googleMapRef.current = null;
-            }
+            googleMapRef.current = null;
         };
     }, [location, apiKey, zoom, markerTitle]);
 

@@ -8,7 +8,7 @@ import { Card, Button, useDisclosure, Chip } from '@heroui/react';
 import { FiCalendar, FiUsers, FiCheckCircle, FiPlus, FiClock, FiUserCheck, FiCreditCard } from 'react-icons/fi';
 import { Camp, Registration, RegistrationStatus } from '@/types';
 import { 
-  CampFormModal, CampDetailModal, CampCardWithImage, StatCard, RegistrationCard, EmptyState 
+  CampFormModal, CampDetailModal, CampCardWithImage, StatCard, EmptyState 
 } from '@/components/organizer';
 import toast from 'react-hot-toast';
 
@@ -145,8 +145,9 @@ export default function OrganizerDashboard() {
       onFormModalClose();
       resetForm();
       fetchData();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการสร้างค่าย');
+    } catch (error) {
+      console.error('Error creating camp:', error);
+      toast.error(error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการสร้างค่าย');
     }
   };
 
@@ -197,8 +198,9 @@ export default function OrganizerDashboard() {
       setEditingCamp(null);
       resetForm();
       fetchData();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการอัพเดทค่าย');
+    } catch (updateError) {
+      console.error('Error updating camp:', updateError);
+      toast.error(updateError instanceof Error ? updateError.message : 'เกิดข้อผิดพลาดในการอัพเดทค่าย');
     }
   };
 
@@ -232,7 +234,8 @@ export default function OrganizerDashboard() {
       
       toast.success('✅ จบค่ายสำเร็จ!');
       fetchData();
-    } catch (err) {
+    } catch (completeError) {
+      console.error('Error completing camp:', completeError);
       toast.error('เกิดข้อผิดพลาดในการจบค่าย');
     }
   };
@@ -312,7 +315,6 @@ export default function OrganizerDashboard() {
     return c.status === 'completed' || (c.endDate && new Date(c.endDate) < new Date());
   });
   const attendedRegs = registrations.filter(r => r.status === RegistrationStatus.CONFIRMED).length;
-  const pendingRegistrations = registrations.filter(r => r.status === RegistrationStatus.PENDING);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">

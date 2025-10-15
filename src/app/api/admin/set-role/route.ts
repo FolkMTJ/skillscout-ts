@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       // Create user if not exists
-      const result = await users.insertOne({
+      const createResult = await users.insertOne({
         email,
         name: email.split('@')[0],
         role,
@@ -47,12 +47,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: 'User created successfully',
-        userId: result.insertedId.toString(),
+        userId: createResult.insertedId.toString(),
         role
       });
     } else {
       // Update existing user role
-      const result = await users.updateOne(
+      await users.updateOne(
         { email },
         { 
           $set: { 

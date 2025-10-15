@@ -1,7 +1,7 @@
 // src/lib/db/models/User.ts
 import { getCollection } from '@/lib/mongodb';
 import { ObjectId, Filter } from 'mongodb';
-import { UserRole, User, OTP } from '@/types';
+import { UserRole, User } from '@/types';
 
 interface UserDoc {
   _id?: ObjectId;

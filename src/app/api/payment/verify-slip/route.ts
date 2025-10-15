@@ -2,7 +2,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PaymentModel } from '@/lib/db/models'
 import { PaymentStatus } from '@/types';
-import { verifySlipWithKBank, verifySlipWithSlipOK, verifySlipWithPromptpay, verifySlipWithSlipPocket, verifySlipWithThaiQR, validateSlipData } from '@/lib/slip-verification/slipOk';
 
 export async function POST(request: NextRequest) {
   try {

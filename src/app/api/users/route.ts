@@ -1,9 +1,9 @@
 // src/app/api/users/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getCollection } from '@/lib/mongodb';
 
 // GET /api/users - Get all users (Admin only)
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const users = await getCollection('users');
     const allUsers = await users.find({}).sort({ createdAt: -1 }).toArray();

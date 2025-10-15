@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { Button } from '@heroui/react';
 import { FiX, FiImage } from 'react-icons/fi';
-import { CldUploadWidget } from 'next-cloudinary';
+import { CldUploadWidget, CloudinaryUploadWidgetResults } from 'next-cloudinary';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 
@@ -47,9 +47,11 @@ export default function ImageUploader({ value, onChange, label, description }: I
       ) : (
         <CldUploadWidget
           uploadPreset="skillscout"
-          onSuccess={(result: any) => {
-            onChange(result.info.secure_url);
-            toast.success('อัปโหลดรูปภาพสำเร็จ!');
+          onSuccess={(result: CloudinaryUploadWidgetResults) => {
+            if (typeof result.info === 'object' && 'secure_url' in result.info) {
+              onChange(result.info.secure_url);
+              toast.success('อัปโหลดรูปภาพสำเร็จ!');
+            }
             setIsUploading(false);
           }}
           onError={() => {

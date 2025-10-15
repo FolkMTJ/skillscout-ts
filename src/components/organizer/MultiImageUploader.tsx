@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { Button } from '@heroui/react';
 import { FiPlus, FiX } from 'react-icons/fi';
-import { CldUploadWidget } from 'next-cloudinary';
+import { CldUploadWidget, CloudinaryUploadWidgetResults } from 'next-cloudinary';
 import toast from 'react-hot-toast';
 
 interface MultiImageUploaderProps {
@@ -43,6 +43,7 @@ export default function MultiImageUploader({
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {values.map((url, index) => (
           <div key={index} className="relative group">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src={url} 
               alt={`Gallery ${index + 1}`}
@@ -63,9 +64,11 @@ export default function MultiImageUploader({
         {canAddMore && (
           <CldUploadWidget
             uploadPreset="skillscout"
-            onSuccess={(result: any) => {
-              onChange([...values, result.info.secure_url]);
-              toast.success('อัปโหลดรูปภาพสำเร็จ!');
+            onSuccess={(result: CloudinaryUploadWidgetResults) => {
+              if (typeof result.info === 'object' && 'secure_url' in result.info) {
+                onChange([...values, result.info.secure_url]);
+                toast.success('อัปโหลดรูปภาพสำเร็จ!');
+              }
               setIsUploading(false);
             }}
             onError={() => {

@@ -30,7 +30,7 @@ export class UserModel {
   private static collectionName = 'users';
 
   private static toPublic(doc: UserDoc): User {
-    const { _id, password, ...rest } = doc;
+    const { _id, ...rest } = doc;
     return {
       ...rest,
       _id: _id?.toString() || '',

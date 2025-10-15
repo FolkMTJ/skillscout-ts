@@ -72,6 +72,7 @@ export default function SimpleMultiImageUpload({ values, onChange, label, maxIma
       <div className="grid grid-cols-3 gap-3">
         {values.map((url, index) => (
           <div key={index} className="relative group">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={url} alt={`Gallery ${index + 1}`} className="w-full h-32 object-cover rounded-lg" />
             <Button isIconOnly size="sm" color="danger" className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity" onPress={() => onChange(values.filter((_, i) => i !== index))}>
               <FiX className="w-3 h-3" />

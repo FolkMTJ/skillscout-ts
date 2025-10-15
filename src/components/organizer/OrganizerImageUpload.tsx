@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Button, Card } from '@heroui/react';
+import { Button } from '@heroui/react';
 import { FiUpload, FiX, FiUser } from 'react-icons/fi';
 import Image from 'next/image';
 import toast from 'react-hot-toast';

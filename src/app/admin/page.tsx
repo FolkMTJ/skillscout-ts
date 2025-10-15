@@ -92,8 +92,8 @@ export default function AdminDashboard() {
       const campsData = await campsRes.json();
       setCamps(Array.isArray(campsData) ? campsData : campsData.camps || []);
 
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    } catch (err) {
+      console.error('Error fetching data:', err);
       toast.error('ไม่สามารถโหลดข้อมูลได้');
     } finally {
       setLoading(false);
@@ -123,7 +123,8 @@ export default function AdminDashboard() {
       toast.success(selectedUser.isBanned ? '✅ ปลดแบน User สำเร็จ!' : '✅ แบน User สำเร็จ!');
       onBanModalClose();
       fetchData();
-    } catch (error) {
+    } catch (err) {
+      console.error('Error banning user:', err);
       toast.error('เกิดข้อผิดพลาด');
     }
   };
@@ -141,7 +142,8 @@ export default function AdminDashboard() {
       toast.success('✅ ลบ User สำเร็จ!');
       onDeleteModalClose();
       fetchData();
-    } catch (error) {
+    } catch (err) {
+      console.error('Error deleting user:', err);
       toast.error('เกิดข้อผิดพลาด');
     }
   };
