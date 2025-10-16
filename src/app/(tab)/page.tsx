@@ -14,7 +14,6 @@ import {
 
 import CampCarousel from "@/components/(card)/CampCarousel";
 import CampCard from "@/components/(card)/CampCard";
-import Footer from "@/components/layout/Footer";
 
 import { categories } from "@/data/categories";
 
@@ -327,8 +326,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      <Footer />
     </div>
   );
 }
