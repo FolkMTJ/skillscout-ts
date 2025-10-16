@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Card, Input, Button } from '@heroui/react';
-import { Mail, Lock, ArrowLeft } from 'lucide-react';
+import { FaEnvelope, FaLock, FaArrowLeft, FaKey } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -67,26 +68,48 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
-      <Card className="w-full max-w-md p-8 shadow-xl">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 relative overflow-hidden">
+      {/* Decorative Background Elements */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-orange-200/30 dark:bg-orange-500/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-200/30 dark:bg-amber-500/10 rounded-full blur-3xl" />
+      
+      <Card className="w-full max-w-md p-8 shadow-2xl border-2 border-orange-200 dark:border-orange-900/30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl relative z-10">
         {step === 'otp' && (
           <button
             onClick={() => setStep('email')}
-            className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 mb-4"
+            className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 mb-4 font-semibold transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <FaArrowLeft className="w-4 h-4" />
             กลับ
           </button>
         )}
 
         <div className="text-center mb-8">
-          <div className="inline-block p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-4">
-            <Lock className="w-8 h-8 text-white" />
+          {/* Logo */}
+          <div className="flex justify-center mb-4">
+            <div className="p-4 bg-white dark:bg-white/95 rounded-2xl shadow-lg">
+              <Image
+                width={100}
+                height={40}
+                src="/skillscoutLogo-black.png"
+                alt="SkillScout"
+              />
+            </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+
+          {/* Icon */}
+          <div className="inline-block p-4 bg-gradient-to-br from-orange-500 to-amber-500 rounded-2xl mb-4 shadow-xl">
+            {step === 'email' ? (
+              <FaLock className="w-8 h-8 text-white" />
+            ) : (
+              <FaKey className="w-8 h-8 text-white" />
+            )}
+          </div>
+
+          <h1 className="text-3xl font-black text-gray-900 dark:text-white mb-2">
             {step === 'email' ? 'เข้าสู่ระบบ' : 'ยืนยัน OTP'}
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <p className="text-gray-600 dark:text-gray-400">
             {step === 'email'
               ? 'กรอกอีเมลเพื่อรับรหัส OTP'
               : `เราส่งรหัส OTP ไปที่ ${email}`}
@@ -101,15 +124,17 @@ export default function LoginPage() {
               placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              startContent={<Mail className="w-4 h-4 text-gray-400" />}
+              startContent={<FaEnvelope className="w-4 h-4 text-gray-400" />}
               required
               size="lg"
+              classNames={{
+                inputWrapper: "border-2 hover:border-orange-400 focus-within:border-orange-500"
+              }}
             />
 
             <Button
               type="submit"
-              color="primary"
-              className="w-full"
+              className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all"
               isLoading={loading}
               size="lg"
             >
@@ -120,24 +145,27 @@ export default function LoginPage() {
           <form onSubmit={handleVerifyOTP} className="space-y-6">
             <Input
               type="text"
-              label="รหัส OTP"
-              placeholder="123456"
+              label="รหัส OTP (6 หลัก)"
+              placeholder="● ● ● ● ● ●"
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
               maxLength={6}
               required
               size="lg"
               classNames={{
-                input: 'text-center text-2xl tracking-widest',
+                input: 'text-center text-2xl tracking-widest font-bold',
+                inputWrapper: "border-2 hover:border-orange-400 focus-within:border-orange-500"
               }}
             />
 
-            <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-              ไม่ได้รับรหัส?{' '}
+            <div className="text-center">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                ไม่ได้รับรหัส?
+              </p>
               <button
                 type="button"
                 onClick={() => setStep('email')}
-                className="text-blue-600 hover:underline"
+                className="text-orange-600 dark:text-orange-400 hover:underline font-semibold"
               >
                 ส่งใหม่อีกครั้ง
               </button>
@@ -145,26 +173,32 @@ export default function LoginPage() {
 
             <Button
               type="submit"
-              color="primary"
-              className="w-full"
+              className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all"
               isLoading={loading}
               size="lg"
             >
-              ยืนยัน
+              ยืนยันและเข้าสู่ระบบ
             </Button>
           </form>
         )}
 
-        <div className="mt-8 text-center border-t pt-6">
+        <div className="mt-8 text-center border-t-2 border-orange-200 dark:border-orange-900/30 pt-6">
           <p className="text-gray-600 dark:text-gray-400">
             ยังไม่มีบัญชี?{' '}
-            <Link href="/register" className="text-blue-600 hover:underline font-semibold">
+            <Link href="/register" className="text-orange-600 dark:text-orange-400 hover:underline font-bold">
               สมัครสมาชิก
             </Link>
+          </p>
+        </div>
+
+        {/* Additional Info */}
+        <div className="mt-6 p-4 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-xl border border-orange-200 dark:border-orange-800">
+          <p className="text-xs text-center text-gray-600 dark:text-gray-400">
+            เข้าสู่ระบบด้วยรหัส OTP ที่ส่งไปยังอีเมลของคุณ<br />
+            ปลอดภัยและไม่ต้องจำรหัสผ่าน
           </p>
         </div>
       </Card>
     </div>
   );
 }
-// cspell:disable

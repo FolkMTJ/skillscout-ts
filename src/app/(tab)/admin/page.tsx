@@ -23,16 +23,7 @@ import {
   useDisclosure,
   Input,
 } from '@heroui/react';
-import {
-  FiUsers,
-  FiCalendar,
-  FiShield,
-  FiTrash2,
-  FiEye,
-  FiSearch,
-  FiAlertCircle,
-  FiXCircle,
-} from 'react-icons/fi';
+import { FiUsers, FiCalendar, FiShield, FiTrash2, FiEye, FiSearch, FiAlertCircle, FiXCircle, FiAlertTriangle } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 interface User {
@@ -120,7 +111,7 @@ export default function AdminDashboard() {
 
       if (!response.ok) throw new Error('Failed to ban user');
 
-      toast.success(selectedUser.isBanned ? '✅ ปลดแบน User สำเร็จ!' : '✅ แบน User สำเร็จ!');
+      toast.success(selectedUser.isBanned ? 'ปลดแบน User สำเร็จ!' : 'แบน User สำเร็จ!');
       onBanModalClose();
       fetchData();
     } catch (err) {
@@ -139,7 +130,7 @@ export default function AdminDashboard() {
 
       if (!response.ok) throw new Error('Failed to delete user');
 
-      toast.success('✅ ลบ User สำเร็จ!');
+      toast.success('ลบ User สำเร็จ!');
       onDeleteModalClose();
       fetchData();
     } catch (err) {
@@ -459,7 +450,10 @@ export default function AdminDashboard() {
       <Modal isOpen={isDeleteModalOpen} onClose={onDeleteModalClose}>
         <ModalContent>
           <ModalHeader>
-            <h3 className="text-xl font-bold text-red-600">⚠️ ลบ User</h3>
+            <h3 className="text-xl font-bold text-red-600 flex items-center gap-2">
+              <FiAlertTriangle />
+              ลบ User
+            </h3>
           </ModalHeader>
           <ModalBody>
             {selectedUser && (

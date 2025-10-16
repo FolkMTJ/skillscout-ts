@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@heroui/react";
-import { FaArrowRight, FaCheckCircle, FaLightbulb, FaCompass } from "react-icons/fa";
+import { FaArrowRight, FaCheckCircle, FaLightbulb, FaCompass, FaLaptopCode, FaPalette, FaChartBar, FaRocket, FaBullseye, FaBolt, FaTools, FaMobileAlt, FaStar } from "react-icons/fa";
 
 export default function HeroSection() {
   return (
@@ -77,25 +77,25 @@ export default function HeroSection() {
             <div className="relative w-full h-full flex items-center justify-center">
               <div className="grid grid-cols-3 gap-4 p-8">
                 {[
-                  { emoji: "💻", delay: "0s" },
-                  { emoji: "🎨", delay: "0.1s" },
-                  { emoji: "📊", delay: "0.2s" },
-                  { emoji: "🚀", delay: "0.3s" },
-                  { emoji: "🎯", delay: "0.4s" },
-                  { emoji: "⚡", delay: "0.5s" },
-                  { emoji: "🔧", delay: "0.6s" },
-                  { emoji: "📱", delay: "0.7s" },
-                  { emoji: "🌟", delay: "0.8s" }
+                  { icon: FaLaptopCode, color: "text-blue-500", delay: "0s" },
+                  { icon: FaPalette, color: "text-pink-500", delay: "0.1s" },
+                  { icon: FaChartBar, color: "text-green-500", delay: "0.2s" },
+                  { icon: FaRocket, color: "text-purple-500", delay: "0.3s" },
+                  { icon: FaBullseye, color: "text-red-500", delay: "0.4s" },
+                  { icon: FaBolt, color: "text-yellow-500", delay: "0.5s" },
+                  { icon: FaTools, color: "text-gray-500", delay: "0.6s" },
+                  { icon: FaMobileAlt, color: "text-indigo-500", delay: "0.7s" },
+                  { icon: FaStar, color: "text-amber-500", delay: "0.8s" }
                 ].map((item, idx) => (
                   <div
                     key={idx}
-                    className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white dark:bg-gray-800 shadow-lg flex items-center justify-center text-2xl md:text-3xl hover:scale-110 transition-transform duration-300 hover:shadow-xl border-2 border-orange-100 dark:border-orange-900/30"
+                    className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white dark:bg-gray-800 shadow-lg flex items-center justify-center hover:scale-110 transition-transform duration-300 hover:shadow-xl border-2 border-orange-100 dark:border-orange-900/30"
                     style={{
                       animation: 'float 6s ease-in-out infinite',
                       animationDelay: item.delay
                     }}
                   >
-                    {item.emoji}
+                    <item.icon className={item.color} size={28} />
                   </div>
                 ))}
               </div>

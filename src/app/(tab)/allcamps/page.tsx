@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { Button, Input, Chip, Spinner } from "@heroui/react";
-import { FaSearch, FaTrophy, FaClock, FaFire, FaChevronDown, FaFilter, FaTimes } from "react-icons/fa";
+import { FaSearch, FaTrophy, FaClock, FaFire, FaChevronDown, FaFilter, FaTimes, FaSearchPlus } from "react-icons/fa";
 import CampCard from "@/components/(card)/CampCard";
 import PageHeader from "@/components/layout/PageHeader";
 import { Camp } from "@/types/camp";
+import { useSearchParams } from 'next/navigation';
 
 // Helper function to convert Camp to CampData format for CampCard
 function campToCampData(camp: Camp) {
@@ -13,8 +14,21 @@ function campToCampData(camp: Camp) {
   let daysLeft = 0;
   if (camp.deadline) {
     try {
-      const deadlineDate = new Date(camp.deadline);
+      // Parse Thai date format or ISO date
+      let deadlineDate: Date;
+      
+      if (camp.registrationDeadline) {
+        // Use registrationDeadline if available (ISO format)
+        deadlineDate = new Date(camp.registrationDeadline);
+      } else {
+        // Try to parse Thai format (e.g., "25 ธ.ค. 2567")
+        deadlineDate = new Date(camp.deadline);
+      }
+      
       const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time to start of day
+      deadlineDate.setHours(0, 0, 0, 0);
+      
       const diffTime = deadlineDate.getTime() - today.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       daysLeft = diffDays > 0 ? diffDays : 0;
@@ -39,20 +53,25 @@ function campToCampData(camp: Camp) {
 
 const categories = [
   "ทั้งหมด",
-  "เทคโนโลยี",
-  "ภาษา",
-  "วิทยาศาสตร์",
-  "ศิลปะ",
-  "ธุรกิจ",
-  "ภาวะผู้นำ"
+  "Web Development",
+  "Mobile Development",
+  "Data Science & AI",
+  "Cybersecurity",
+  "Cloud & DevOps",
+  "Game Development",
+  "UI/UX Design",
+  "Networking"
 ];
 
 export default function AllCampsPage() {
+  const searchParams = useSearchParams();
+  const searchFromUrl = searchParams.get('search') || '';
+  
   const [allCamps, setAllCamps] = useState<Camp[]>([]);
   const [filteredCamps, setFilteredCamps] = useState<Camp[]>([]);
   const [loading, setLoading] = useState(true);
   
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(searchFromUrl);
   const [selectedCategory, setSelectedCategory] = useState("ทั้งหมด");
   const [showMore, setShowMore] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -260,7 +279,11 @@ export default function AllCampsPage() {
         {/* No Results */}
         {!loading && filteredCamps.length === 0 && (
           <div className="text-center py-20">
-            <div className="text-6xl mb-4">🔍</div>
+            <div className="flex justify-center mb-4">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center">
+                <FaSearchPlus className="text-white" size={48} />
+              </div>
+            </div>
             <h3 className="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-2">ไม่พบค่ายที่ค้นหา</h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6">ลองค้นหาด้วยคำอื่นหรือเปลี่ยนตัวกรอง</p>
             <Button

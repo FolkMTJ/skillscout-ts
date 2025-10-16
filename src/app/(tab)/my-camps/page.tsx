@@ -91,7 +91,7 @@ export default function MyCampsPage() {
 
       if (!response.ok) throw new Error('Failed to confirm');
 
-      toast.success('✅ ยืนยันการเข้าร่วมสำเร็จ!');
+      toast.success('ยืนยันการเข้าร่วมสำเร็จ!');
       fetchRegistrations();
     } catch {
       toast.error('เกิดข้อผิดพลาดในการยืนยัน');

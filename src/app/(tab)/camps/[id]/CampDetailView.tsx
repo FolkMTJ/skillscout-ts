@@ -125,14 +125,30 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                         <FaArrowLeft />
                                         ย้อนกลับ
                                     </button>
-                                    <Chip
+                                    {/* <Chip
                                         size="md"
                                         variant="flat"
                                         className="bg-[#F2B33D] font-bold"
                                         classNames={{ content: "text-[#2C2C2C]" }}
                                     >
                                         {camp.category}
-                                    </Chip>
+                                    </Chip> */}
+                                    {/* Display all tags */}
+                                    {camp.tags && camp.tags.length > 0 && (
+                                        <div className="flex flex-wrap gap-2">
+                                            {camp.tags.map((tag, index) => (
+                                                <Chip
+                                                    key={`${tag}-${index}`}
+                                                    size="sm"
+                                                    variant="flat"
+                                                    className="bg-gray-200 dark:bg-gray-700"
+                                                    classNames={{ content: "text-gray-700 dark:text-gray-300" }}
+                                                >
+                                                    {tag}
+                                                </Chip>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                                 <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white leading-tight">
                                     {camp.name}
@@ -321,11 +337,14 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                         <InfoCard title="สถานที่จัด" icon={<FaMapMarkerAlt className="text-lg text-[#F2B33D]" />}>
                             <p>{camp.location}</p>
                         </InfoCard>
-                        <LocationMap 
-                            location={camp.location}
-                            height="h-64"
-                            className="mt-6"
-                        />
+                        {/* Only show map if NOT Online */}
+                        {camp.activityFormat !== 'Online' && (
+                            <LocationMap 
+                                location={camp.location}
+                                height="h-64"
+                                className="mt-6"
+                            />
+                        )}
                     </div>
                 </section>
 

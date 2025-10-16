@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Button, Input, Spinner } from "@heroui/react";
+import { useRouter } from "next/navigation";
 import {
   FaSearch,
   FaStar,
@@ -9,7 +10,8 @@ import {
   FaTrophy,
   FaRocket,
   FaSmile,
-  FaChartLine
+  FaChartLine,
+  FaCampground
 } from "react-icons/fa";
 
 import CampCarousel from "@/components/(card)/CampCarousel";
@@ -29,8 +31,21 @@ function campToCampData(camp: Camp) {
   let daysLeft = 0;
   if (camp.deadline) {
     try {
-      const deadlineDate = new Date(camp.deadline);
+      // Parse Thai date format or ISO date
+      let deadlineDate: Date;
+      
+      if (camp.registrationDeadline) {
+        // Use registrationDeadline if available (ISO format)
+        deadlineDate = new Date(camp.registrationDeadline);
+      } else {
+        // Try to parse Thai format (e.g., "25 ธ.ค. 2567")
+        deadlineDate = new Date(camp.deadline);
+      }
+      
       const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time to start of day
+      deadlineDate.setHours(0, 0, 0, 0);
+      
       const diffTime = deadlineDate.getTime() - today.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       daysLeft = diffDays > 0 ? diffDays : 0;
@@ -54,9 +69,11 @@ function campToCampData(camp: Camp) {
 }
 
 export default function HomePage() {
-  const [urgentCamps, setUrgentCamps] = useState<CampCardData[]>([]);
-  const [trendingCamps, setTrendingCamps] = useState<CampCardData[]>([]);
+  const router = useRouter();
+  const [urgentCamps, setUrgentCamps] = useState<CampCardData[]>([]);
+  const [trendingCamps, setTrendingCamps] = useState<CampCardData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     async function fetchCamps() {
@@ -78,10 +95,10 @@ export default function HomePage() {
 
         // Sort by deadline (closest first) for urgent camps
         const urgent = [...availableCamps]
-          .filter(camp => camp.deadline) // Only camps with deadline
+          .filter(camp => camp.deadline || camp.registrationDeadline) // Only camps with deadline
           .sort((a, b) => {
-            const dateA = new Date(a.deadline).getTime();
-            const dateB = new Date(b.deadline).getTime();
+            const dateA = new Date(a.registrationDeadline || a.deadline).getTime();
+            const dateB = new Date(b.registrationDeadline || b.deadline).getTime();
             return dateA - dateB;
           })
           .slice(0, 6)
@@ -108,6 +125,19 @@ export default function HomePage() {
 
     fetchCamps();
   }, []);
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      // Navigate to allcamps page with search query
+      router.push(`/allcamps?search=${encodeURIComponent(searchQuery)}`);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   return (
     <div className="min-h-screen bg-2C2C2C dark:bg-zinc-900 overflow-x-hidden">
@@ -145,6 +175,9 @@ export default function HomePage() {
               <Input
                 size="md"
                 placeholder="ค้นหาค่าย เช่น Python, AI..."
+                value={searchQuery}
+                onValueChange={setSearchQuery}
+                onKeyPress={handleKeyPress}
                 classNames={{
                   base: "w-full",
                   inputWrapper: "bg-white h-11 shadow-2xl border-2 border-white hover:border-orange-300 transition-all",
@@ -155,6 +188,7 @@ export default function HomePage() {
             </div>
             <Button
               size="md"
+              onPress={handleSearch}
               className="h-11 px-6 font-bold text-sm shadow-2xl hover:shadow-orange-400/50 hover:scale-105 transition-all bg-white text-orange-600 border-2 border-white hover:bg-orange-50"
               endContent={<FaRocket size={16} />}
             >
@@ -232,7 +266,11 @@ export default function HomePage() {
       {!loading && urgentCamps.length === 0 && trendingCamps.length === 0 && (
         <section className="max-w-[1536px] mx-auto px-6 py-16">
           <div className="text-center">
-            <div className="text-6xl mb-4">🏕️</div>
+            <div className="flex justify-center mb-4">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center">
+                <FaCampground className="text-white" size={48} />
+              </div>
+            </div>
             <h3 className="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-2">ยังไม่มีค่ายในขณะนี้</h3>
             <p className="text-gray-600 dark:text-gray-400">กรุณารอสักครู่ หรือลองรีเฟรชหน้าใหม่</p>
           </div>

@@ -14,8 +14,9 @@ import {
   Divider,
   Image,
   Progress,
+  Card, // Add Card here
 } from '@heroui/react';
-import { FaCheckCircle, FaTag, FaQrcode, FaUpload, FaImage, FaClock } from 'react-icons/fa';
+import { FaCheckCircle, FaTag, FaQrcode, FaUpload, FaImage, FaClock, FaLightbulb, FaMobileAlt } from 'react-icons/fa';
 
 interface CampData {
   _id: string;
@@ -354,9 +355,10 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
                     <p className="text-sm text-center text-gray-600">กำลังอัปโหลด... {uploadProgress}%</p>
                   </div>
                 )}
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 flex items-start gap-2">
+                  <FaLightbulb className="text-blue-500 mt-0.5 flex-shrink-0" size={16} />
                   <p className="text-sm text-blue-800 dark:text-blue-200">
-                    <strong>💡 เคล็ดลับ:</strong> ตรวจสอบให้แน่ใจว่าสลิปแสดงยอดเงิน ฿{finalPrice.toLocaleString()} ชัดเจน
+                    <strong>เคล็ดลับ:</strong> ตรวจสอบให้แน่ใจว่าสลิปแสดงยอดเงิน ฿{finalPrice.toLocaleString()} ชัดเจน
                   </p>
                 </div>
               </div>
@@ -396,7 +398,10 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
                       <p className="text-5xl font-black text-orange-600 dark:text-orange-400">฿{finalPrice.toLocaleString()}</p>
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2 text-left bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                      <p className="font-bold text-gray-800 dark:text-gray-200 mb-2">📱 วิธีการชำระเงิน:</p>
+                      <p className="font-bold text-gray-800 dark:text-gray-200 mb-2 flex items-center gap-2">
+                        <FaMobileAlt className="text-blue-500" />
+                        วิธีการชำระเงิน:
+                      </p>
                       <p>1. เปิดแอพธนาคารของคุณ</p>
                       <p>2. เลือกเมนู สแกน QR Code</p>
                       <p>3. สแกน QR Code ด้านบน</p>
@@ -437,10 +442,10 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
                       <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
                     </div>
                   )}
-                  <Input label="ชื่อ - นามสกุล" placeholder="รชิต เมตตาจิต" value={formData.name} onValueChange={(v) => setFormData({...formData, name: v})} required size="lg" classNames={{inputWrapper: "border-2"}} />
-                  <Input type="email" label="อีเมล" placeholder="mettajit_t@silpakorn.edu" value={formData.email} onValueChange={(v) => setFormData({...formData, email: v})} required size="lg" classNames={{inputWrapper: "border-2"}} />
-                  <Input type="tel" label="เบอร์โทร" placeholder="0813259525" value={formData.phone} onValueChange={(v) => setFormData({...formData, phone: v})} required size="lg" classNames={{inputWrapper: "border-2"}} />
-                  <Input label="ที่อยู่" placeholder="7/135 สวนสยาม 24 กรุงเทพ 10230" value={formData.address} onValueChange={(v) => setFormData({...formData, address: v})} required size="lg" classNames={{inputWrapper: "border-2"}} />
+                  <Input label="ชื่อ - นามสกุล" placeholder="ชื่อ - นามสกุล" value={formData.name} onValueChange={(v) => setFormData({...formData, name: v})} required size="lg" classNames={{inputWrapper: "border-2"}} />
+                  <Input type="email" label="อีเมล" placeholder="yourmail@mail.com" value={formData.email} onValueChange={(v) => setFormData({...formData, email: v})} required size="lg" classNames={{inputWrapper: "border-2"}} />
+                  <Input type="tel" label="เบอร์โทร" placeholder="0812345678" value={formData.phone} onValueChange={(v) => setFormData({...formData, phone: v})} required size="lg" classNames={{inputWrapper: "border-2"}} />
+                  <Input label="ที่อยู่" placeholder="ที่อยู่ของคุณ" value={formData.address} onValueChange={(v) => setFormData({...formData, address: v})} required size="lg" classNames={{inputWrapper: "border-2"}} />
                   <Input label="มหาวิทยาลัย/สถาบัน" placeholder="มหาวิทยาลัยศิลปากร" value={formData.university} onValueChange={(v) => setFormData({...formData, university: v})} required size="lg" classNames={{inputWrapper: "border-2"}} />
                   <Textarea label="เหตุผลที่ต้องการเข้าร่วม" placeholder="บอกเราว่าทำไมคุณถึงสนใจค่ายนี้..." value={formData.reason} onValueChange={(v) => setFormData({...formData, reason: v})} required minRows={3} classNames={{inputWrapper: "border-2"}} />
                 </div>
@@ -457,40 +462,72 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
                   <Divider />
                   <div>
                     <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2 flex items-center gap-2">
-                      <FaTag className="text-orange-500" />มีรหัสโปรโมชั่นหรือไม่?
+                      <FaTag className="text-orange-500" />
+                      มีรหัสโปรโมชั่นหรือไม่?
                     </h3>
                     <div className="flex gap-2">
-                      <Input placeholder="กรอกรหัสโปรโมชั่น" value={promoCode} onValueChange={setPromoCode} disabled={promoApplied} classNames={{inputWrapper: "border-2"}} />
-                      <Button color="warning" className="font-bold" onPress={handleValidatePromo} isLoading={isValidatingPromo} isDisabled={promoApplied || !promoCode.trim()}>ตรวจสอบ</Button>
+                      <Input 
+                        placeholder="กรอกรหัสโปรโมชั่น" 
+                        value={promoCode} 
+                        onValueChange={setPromoCode} 
+                        disabled={promoApplied} 
+                        classNames={{inputWrapper: "border-2"}}
+                        size="sm" 
+                      />
+                      <Button 
+                        color="warning" 
+                        className="font-bold" 
+                        onPress={handleValidatePromo} 
+                        isLoading={isValidatingPromo} 
+                        isDisabled={promoApplied || !promoCode.trim()}
+                        size="sm"
+                      >
+                        ตรวจสอบ
+                      </Button>
                     </div>
-                    {promoMessage && <p className={`text-sm mt-2 font-semibold ${promoApplied ? 'text-green-600' : 'text-red-600'}`}>{promoMessage}</p>}
+                    {promoMessage && (
+                      <p className={`text-sm mt-2 font-semibold ${
+                        promoApplied ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {promoApplied && <FaCheckCircle className="inline mr-1" />}
+                        {promoMessage}
+                      </p>
+                    )}
                   </div>
+
                   <Divider />
-                  <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-xl p-4 border-2 border-orange-200 dark:border-orange-800">
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">ค่าค่าย ({basePrice.toLocaleString()} × 1)</span>
+
+                  <Card className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-2 border-orange-200 dark:border-orange-800 shadow-lg">
+                    <div className="space-y-3 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600 dark:text-gray-400">ค่าค่าย</span>
                         <span className="font-semibold text-gray-800 dark:text-gray-200">฿{basePrice.toLocaleString()}</span>
                       </div>
                       {discount > 0 && (
-                        <div className="flex justify-between text-green-600 dark:text-green-400">
-                          <span>ค่าส่วนลดเชียบการชำระเงิน</span>
+                        <div className="flex justify-between items-center text-green-600 dark:text-green-400">
+                          <span>ส่วนลด</span>
                           <span className="font-semibold">-฿{discount.toLocaleString()}</span>
                         </div>
                       )}
                       <Divider />
-                      <div className="flex justify-between text-lg pt-2">
-                        <span className="font-bold text-gray-800 dark:text-gray-200">รวม</span>
+                      <div className="flex justify-between items-center pt-2">
+                        <span className="font-bold text-gray-800 dark:text-gray-200 text-base">รวมทั้งหมด</span>
                         <span className="font-black text-orange-600 dark:text-orange-400 text-2xl">฿{finalPrice.toLocaleString()}</span>
                       </div>
                     </div>
-                  </div>
+                  </Card>
                 </div>
               </div>
             </ModalBody>
             <ModalFooter>
               <Button color="danger" variant="light" onPress={handleClose}>ยกเลิก</Button>
-              <Button type="submit" className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold" endContent={<FaQrcode />}>ยืนยันชำระเงิน</Button>
+              <Button 
+                type="submit" 
+                className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold shadow-lg" 
+                endContent={<FaQrcode />}
+              >
+                ยืนยันและชำระเงิน
+              </Button>
             </ModalFooter>
           </form>
         )}

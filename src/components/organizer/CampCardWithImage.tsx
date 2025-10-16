@@ -55,17 +55,15 @@ export default function CampCardWithImage({
             color="primary"
             variant="shadow"
             onPress={onView}
-            className="bg-white/90 backdrop-blur-sm"
           >
-            <FiEye className="w-4 h-4 text-primary" />
+            <FiEye className="w-4 h-4" />
           </Button>
           <Button
             isIconOnly
             size="sm"
-            color="default"
+            color="warning"
             variant="shadow"
             onPress={onEdit}
-            className="bg-white/90 backdrop-blur-sm"
           >
             <FiEdit2 className="w-4 h-4" />
           </Button>
@@ -75,7 +73,6 @@ export default function CampCardWithImage({
             color="danger"
             variant="shadow"
             onPress={onDelete}
-            className="bg-white/90 backdrop-blur-sm"
           >
             <FiTrash2 className="w-4 h-4" />
           </Button>
