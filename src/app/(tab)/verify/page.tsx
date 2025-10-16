@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardBody, Spinner } from '@heroui/react';
-import { FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaTicketAlt, FaPartyHorn } from 'react-icons/fa';
+import { FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaTicketAlt } from 'react-icons/fa';
 
 interface TicketData {
   success: boolean;
@@ -124,7 +124,7 @@ function VerifyContent() {
             </div>
 
             <p className="mt-6 text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center gap-2">
-              ขอให้สนุกกับกิจกรรม! <FaPartyHorn className="text-orange-500" />
+              ขอให้สนุกกับกิจกรรม! 
             </p>
           </CardBody>
         </Card>
