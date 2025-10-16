@@ -2,19 +2,12 @@ import { notFound } from "next/navigation";
 import CampDetailView from "./CampDetailView";
 
 async function getCampById(id: string) {
-  try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/camps/${id}?incrementView=true`,
-      { 
-        cache: 'no-store'
-      }
-    );
-    
-    if (!response.ok) {
-      return null;
-    }
-    
+try {
+    // Creates an unnecessary HTTP call to itself
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/camps/${id}`);
+    if (!response.ok) return null;
     return response.json();
+    
   } catch (error) {
     console.error('Error fetching camp:', error);
     return null;
