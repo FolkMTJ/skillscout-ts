@@ -127,7 +127,7 @@ export default function MyCampsPage() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">
-            🎯 ค่ายของฉัน
+            ค่ายของฉัน
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
             จัดการและยืนยันการเข้าร่วมค่าย

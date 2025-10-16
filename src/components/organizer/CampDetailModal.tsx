@@ -119,7 +119,7 @@ export default function CampDetailModal({
 
       if (!response.ok) throw new Error('Failed to approve');
 
-      toast.success('✅ อนุมัติสลิปสำเร็จ!');
+      toast.success('อนุมัติสลิปสำเร็จ!');
       onSlipModalClose();
       fetchPayments();
       if (onRefresh) onRefresh();
@@ -142,7 +142,7 @@ export default function CampDetailModal({
 
       if (!response.ok) throw new Error('Failed to reject');
 
-      toast.success('✅ ปฏิเสธสลิปสำเร็จ');
+      toast.success('ปฏิเสธสลิปสำเร็จ');
       onSlipModalClose();
       fetchPayments();
       if (onRefresh) onRefresh();
@@ -564,11 +564,11 @@ export default function CampDetailModal({
                   <p className="text-sm font-semibold">สถานะ:</p>
                   {viewingSlip.slipVerified ? (
                     <Chip color="success" variant="flat">
-                      ✅ อนุมัติแล้ว
+                      อนุมัติแล้ว
                     </Chip>
                   ) : (
                     <Chip color="warning" variant="flat">
-                      ⏳ รอตรวจสอบ
+                      รอตรวจสอบ
                     </Chip>
                   )}
                 </div>

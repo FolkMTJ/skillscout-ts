@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { Card, Button, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Tabs, Tab } from '@heroui/react';
-import { FiCheck, FiX, FiEye, FiClock, FiCheckCircle } from 'react-icons/fi';
+import { FiCheck, FiX, FiEye, FiClock, FiCheckCircle, FiCreditCard } from 'react-icons/fi';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 
@@ -66,7 +66,7 @@ export default function PaymentsPage() {
 
       if (!response.ok) throw new Error('Failed to approve');
 
-      toast.success('✅ อนุมัติสลิปสำเร็จ!');
+      toast.success('อนุมัติสลิปสำเร็จ!');
       setViewingPayment(null);
       fetchPayments();
     } catch (err) {
@@ -88,7 +88,7 @@ export default function PaymentsPage() {
 
       if (!response.ok) throw new Error('Failed to reject');
 
-      toast.success('✅ ปฏิเสธสลิปสำเร็จ');
+      toast.success('ปฏิเสธสลิปสำเร็จ');
       setViewingPayment(null);
       fetchPayments();
     } catch (err) {
@@ -128,8 +128,9 @@ export default function PaymentsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">
-            💳 ตรวจสอบสลิปการชำระเงิน
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-3">
+            <FiCreditCard className="text-blue-500" />
+            ตรวจสอบสลิปการชำระเงิน
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
             จัดการและอนุมัติสลิปการชำระเงินของผู้สมัคร
@@ -276,11 +277,11 @@ export default function PaymentsPage() {
                   <p className="text-sm font-semibold">สถานะ:</p>
                   {viewingPayment.slipVerified ? (
                     <Chip color="success" variant="flat">
-                      ✅ อนุมัติแล้ว
+                      อนุมัติแล้ว
                     </Chip>
                   ) : (
                     <Chip color="warning" variant="flat">
-                      ⏳ รอตรวจสอบ
+                      รอตรวจสอบ
                     </Chip>
                   )}
                 </div>

@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Card, Button, useDisclosure, Chip } from '@heroui/react';
-import { FiCalendar, FiUsers, FiCheckCircle, FiPlus, FiClock, FiUserCheck, FiCreditCard } from 'react-icons/fi';
+import { FiCalendar, FiUsers, FiCheckCircle, FiPlus, FiClock, FiUserCheck, FiCreditCard, FiTarget, FiZap, FiBook } from 'react-icons/fi';
 import { Camp, Registration, RegistrationStatus } from '@/types';
 import { 
   CampFormModal, CampDetailModal, CampCardWithImage, StatCard, EmptyState 
@@ -141,7 +141,7 @@ export default function OrganizerDashboard() {
         throw new Error(errorData.message || errorData.error || 'Failed to create camp');
       }
 
-      toast.success('✅ สร้างค่ายสำเร็จ!');
+      toast.success('สร้างค่ายสำเร็จ!');
       onFormModalClose();
       resetForm();
       fetchData();
@@ -193,7 +193,7 @@ export default function OrganizerDashboard() {
 
       if (!response.ok) throw new Error((await response.json()).error || 'Failed to update camp');
 
-      toast.success('✅ อัพเดทค่ายสำเร็จ!');
+      toast.success('อัพเดทค่ายสำเร็จ!');
       onFormModalClose();
       setEditingCamp(null);
       resetForm();
@@ -205,11 +205,11 @@ export default function OrganizerDashboard() {
   };
 
   const handleDeleteCamp = async (campId: string) => {
-    if (!confirm('⚠️ คุณต้องการลบค่ายนี้หรือไม่?')) return;
+    if (!confirm('คุณต้องการลบค่ายนี้หรือไม่?')) return;
     try {
       const response = await fetch(`/api/camps/${campId}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Failed to delete');
-      toast.success('✅ ลบค่ายสำเร็จ!');
+      toast.success('ลบค่ายสำเร็จ!');
       fetchData();
     } catch {
       toast.error('เกิดข้อผิดพลาดในการลบค่าย');
@@ -217,7 +217,7 @@ export default function OrganizerDashboard() {
   };
 
   const handleCompleteCamp = async (campId: string, campName: string) => {
-    const message = '🎯 ยืนยันจบค่าย "' + campName + '" หรือไม่?\n\nหมายเหตุ: ค่ายจะถูกตั้งเป็นสถานะ "จบแล้ว" และไม่สามารถรับสมัครเพิ่มได้';
+    const message = 'ยืนยันจบค่าย "' + campName + '" หรือไม่?\n\nหมายเหตุ: ค่ายจะถูกตั้งเป็นสถานะ "จบแล้ว" และไม่สามารถรับสมัครเพิ่มได้';
     if (!confirm(message)) return;
     
     try {
@@ -232,7 +232,7 @@ export default function OrganizerDashboard() {
 
       if (!response.ok) throw new Error('Failed to complete camp');
       
-      toast.success('✅ จบค่ายสำเร็จ!');
+      toast.success('จบค่ายสำเร็จ!');
       fetchData();
     } catch (completeError) {
       console.error('Error completing camp:', completeError);
@@ -320,7 +320,10 @@ export default function OrganizerDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">🎯 Organizer Dashboard</h1>
+          <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center gap-3">
+            <FiTarget className="text-orange-500" />
+            Organizer Dashboard
+          </h1>
           <p className="text-gray-600">จัดการค่ายและผู้สมัครของคุณ</p>
         </div>
 
@@ -335,7 +338,10 @@ export default function OrganizerDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 space-y-6">
             <Card className="p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">⚡ Quick Actions</h2>
+              <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <FiZap className="text-yellow-500" />
+                Quick Actions
+              </h2>
               <div className="space-y-3">
                 <Button color="primary" size="lg" startContent={<FiPlus className="w-5 h-5" />} onPress={handleOpenCreateModal} className="w-full">
                   สร้างค่ายใหม่
@@ -347,7 +353,10 @@ export default function OrganizerDashboard() {
             </Card>
 
             <Card className="p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">⏳ ค่ายรอตรวจสอบ</h2>
+              <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <FiClock className="text-orange-500" />
+                ค่ายรอตรวจสอบ
+              </h2>
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {pendingCamps.map(camp => (
                   <Card key={camp._id} className="p-4 border-2 border-orange-200 bg-orange-50">
@@ -379,7 +388,10 @@ export default function OrganizerDashboard() {
           <div className="lg:col-span-2">
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-800">📚 ค่ายของฉัน</h2>
+                <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                  <FiBook className="text-blue-500" />
+                  ค่ายของฉัน
+                </h2>
                 {camps.length > 0 && <p className="text-sm text-gray-500">{camps.length} ค่าย</p>}
               </div>
 
