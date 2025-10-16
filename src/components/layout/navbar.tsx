@@ -33,7 +33,7 @@ const navLinks = [
     { name: "Path Finder", href: "/path-finder" },
 ];
 
-export default function Component(props: NavbarProps) {
+export default function NavBar(props: NavbarProps) {
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     const [mounted, setMounted] = useState(false);
     const { theme } = useTheme();
