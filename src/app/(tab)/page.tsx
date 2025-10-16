@@ -21,6 +21,7 @@ import { categories } from "@/data/categories";
 import HeroSection from '@/components/HeroSection';
 import { Camp } from "@/types/camp";
 
+
 type CampCardData = ReturnType<typeof campToCampData>;
 
 // Helper function to convert Camp to CampData format for CampCard

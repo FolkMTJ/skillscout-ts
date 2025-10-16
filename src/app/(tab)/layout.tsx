@@ -1,6 +1,7 @@
 import Footer from "@/components/layout/Footer";
 import type { Metadata } from "next";
 import React from "react";
+import { NavBar } from "@/components";
 
 export const metadata: Metadata = {
   title: "เข้าสู่ระบบ | SkillScout",
@@ -14,6 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <div>
+        <NavBar/>
         {children}
         <Footer/>
     </div>

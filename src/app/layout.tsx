@@ -2,7 +2,6 @@ import { Noto_Sans_Thai } from "next/font/google";
 import "@/styles/globals.css";
 import { Providers as UIProviders } from "./provider";
 import { Providers } from "@/components/Providers";
-import { NavBar } from "@/components";
 import { ThemeProvider } from "next-themes";
 import type { Metadata } from "next";
 
@@ -27,7 +26,6 @@ export default function RootLayout({
         <Providers>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <UIProviders>
-              <NavBar/>
               {children}
             </UIProviders>
           </ThemeProvider>
