@@ -7,7 +7,6 @@ import { Mail, User, Phone, Building, CreditCard, MapPin, FileText } from 'lucid
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { UserRole } from '@/types';
-import Image from 'next/image';
 
 const provinces = [
   'กรุงเทพมหานคร', 'กระบี่', 'กาญจนบุรี', 'กาฬสินธุ์', 'กำแพงเพชร', 'ขอนแก่น', 'จันทบุรี', 'ฉะเชิงเทรา',

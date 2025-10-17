@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Card, Input, Button } from '@heroui/react';
-import { FaEnvelope, FaLock, FaArrowLeft, FaKey } from 'react-icons/fa';
+import { FaEnvelope,FaArrowLeft} from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import Image from 'next/image';
