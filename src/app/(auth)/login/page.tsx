@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Card, Input, Button } from '@heroui/react';
-import { FaEnvelope,FaArrowLeft} from 'react-icons/fa';
+import { FaEnvelope, FaArrowLeft } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -72,7 +72,7 @@ export default function LoginPage() {
       {/* Decorative Background Elements */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-orange-200/30 dark:bg-orange-500/10 rounded-full blur-3xl" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-200/30 dark:bg-amber-500/10 rounded-full blur-3xl" />
-      
+
       <Card className="w-full max-w-md p-8 shadow-2xl border-2 border-orange-200 dark:border-orange-900/30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl relative z-10">
         {step === 'otp' && (
           <button
@@ -87,24 +87,23 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           {/* Logo */}
           <div className="flex justify-center mb-4">
-            <div className="p-4 bg-white dark:bg-white/95 rounded-2xl ">
+            <div className="p-4 rounded-2xl">
               <Image
                 width={150}
                 height={40}
                 src="/skillscoutLogo-black.png"
                 alt="SkillScout"
+                className="block dark:hidden"
+              />
+              <Image
+                width={150}
+                height={40}
+                src="/skillscoutLogo.png"
+                alt="SkillScout"
+                className="hidden dark:block"
               />
             </div>
           </div>
-
-          {/* Icon */}
-          {/* <div className="inline-block p-4 bg-gradient-to-br from-orange-500 to-amber-500 rounded-2xl mb-4 shadow-xl">
-            {step === 'email' ? (
-              <FaLock className="w-8 h-8 text-white" />
-            ) : (
-              <FaKey className="w-8 h-8 text-white" />
-            )}
-          </div> */}
 
           <h1 className="text-3xl font-black text-gray-900 dark:text-white mb-2">
             {step === 'email' ? 'เข้าสู่ระบบ' : 'ยืนยัน OTP'}
@@ -124,7 +123,7 @@ export default function LoginPage() {
               placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              startContent={<FaEnvelope className="w-4 h-4 text-gray-400" />}
+              startContent={<FaEnvelope className="w-4 h-4 text-black-400" />}
               required
               size="lg"
               classNames={{

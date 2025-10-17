@@ -364,7 +364,7 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
               </div>
             </ModalBody>
             <ModalFooter>
-              <Button color="danger" variant="light" onPress={() => setStep(2)} isDisabled={isUploading}>ย้อนกลับ</Button>
+              {/* <Button color="danger" variant="light" onPress={() => setStep(2)} isDisabled={isUploading}>ย้อนกลับ</Button> */}
               <Button color="warning" className="bg-orange-500 font-bold text-white" onPress={handleUploadSlip} isLoading={isUploading} isDisabled={!slipFile} endContent={<FaImage />}>
                 {isUploading ? 'กำลังอัปโหลด...' : 'ยืนยันและอัปโหลด'}
               </Button>
@@ -416,7 +416,7 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
               </div>
             </ModalBody>
             <ModalFooter>
-              <Button color="danger" variant="light" onPress={() => setStep(1)} isDisabled={isSubmitting}>ย้อนกลับ</Button>
+              {/* <Button color="danger" variant="light" onPress={() => setStep(1)} isDisabled={isSubmitting}>ย้อนกลับ</Button> */}
               <Button color="warning" className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold" onPress={handleProceedToUpload} isLoading={isSubmitting} isDisabled={!qrCodeUrl} endContent={<FaUpload />}>
                 {isSubmitting ? 'กำลังดำเนินการ...' : 'โอนเงินแล้ว - อัปโหลดสลิป'}
               </Button>
