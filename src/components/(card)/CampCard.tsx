@@ -142,7 +142,7 @@ export default function CampCard({ camp, variant = "compact", className = "" }: 
 
                         {/* Overlays - Mobile แสดง dark overlay ค้างไว้ */}
                         <div className="absolute inset-0 bg-gradient-to-t from-[#2C2C2C]/95 via-[#2C2C2C]/50 to-transparent md:via-[#2C2C2C]/40" />
-                        <div className="absolute inset-0 bg-[#2C2C2C]/60 md:bg-[#2C2C2C]/0 md:group-hover:bg-[#2C2C2C]/70 transition-all duration-300 backdrop-blur-[2px] md:backdrop-brightness-70 md:group-hover:backdrop-blur-sm z-10" />
+                        <div className="absolute inset-0 bg-[#2C2C2C]/80 md:bg-[#2C2C2C]/0 md:group-hover:bg-[#2C2C2C]/70 transition-all duration-300 md:backdrop-brightness-70 md:group-hover:backdrop-blur-sm z-10" />
                         <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#F2B33D] to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 z-20" />
 
                         {/* Badges - Mobile Optimized */}
