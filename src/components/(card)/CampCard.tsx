@@ -32,7 +32,7 @@ export default function CampCard({ camp, variant = "compact", className = "" }: 
             <Link href={`/camps/${camp.id}`} className="block">
                 <Card
                     isPressable
-                    className={`w-full bg-white dark:bg-[#1a1a1a] backdrop-blur-md border-2 border-zinc-200 dark:border-zinc-800 hover:border-[#F2B33D] hover:shadow-xl hover:shadow-[#F2B33D]/20 transition-all duration-300 hover:-translate-y-1 ${className}`}
+                    className={`w-xl bg-white dark:bg-[#1a1a1a] backdrop-blur-md border-2 border-zinc-200 dark:border-zinc-800 hover:border-[#F2B33D] hover:shadow-xl hover:shadow-[#F2B33D]/20 transition-all duration-300 hover:-translate-y-1 ${className}`}
                 >
                     <CardBody className="p-0 overflow-hidden">
                         <div className="grid grid-cols-1 md:grid-cols-5 gap-0">
@@ -125,7 +125,7 @@ export default function CampCard({ camp, variant = "compact", className = "" }: 
         );
     }
 
-    // Card compact - แก้ไขเพื่อรองรับ mobile
+    // Card เส้นเล็กไม่ผัก
     return (
         <div className="w-full h-[380px]">
             <Link href={`/camps/${camp.id}`} className="block w-full h-full">

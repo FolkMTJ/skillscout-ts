@@ -3,17 +3,48 @@ import { NextRequest, NextResponse } from 'next/server';
 import { RegistrationModel } from '@/lib/db/models/Registration';
 import { CampModel } from '@/lib/db/models/Camp';
 import { RegistrationStatus } from '@/types';
+import { createRegistrationSchema } from '@/lib/validation/schemas';
+import { sanitizeEmail, sanitizePhone, sanitizeString } from '@/lib/utils/sanitize';
+import { rateLimit, getRateLimitKey } from '@/lib/middleware/rateLimit';
 
 // POST /api/registrations - Create new registration
 export async function POST(request: NextRequest) {
+  // Rate limiting: 5 requests per minute
+  const rateLimitKey = getRateLimitKey(request);
+  const { allowed, remaining } = rateLimit(rateLimitKey, 5, 60000);
+  
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: { 'X-RateLimit-Remaining': '0' } }
+    );
+  }
+
   try {
     const body = await request.json();
     
     console.log('=== CREATE REGISTRATION REQUEST ===');
     console.log('Received data:', JSON.stringify(body, null, 2));
 
+    // Sanitize inputs
+    const sanitizedData = {
+      campId: body.campId,
+      userName: sanitizeString(body.userName || ''),
+      userEmail: sanitizeEmail(body.userEmail || ''),
+      userPhone: body.userPhone ? sanitizePhone(body.userPhone) : undefined,
+    };
+
+    // Validate with Zod
+    const validation = createRegistrationSchema.safeParse(sanitizedData);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', issues: validation.error.issues },
+        { status: 400 }
+      );
+    }
+
     // Validate required fields
-    if (!body.campId || !body.userName || !body.userEmail) {
+    if (!sanitizedData.campId || !sanitizedData.userName || !sanitizedData.userEmail) {
       console.error('Validation failed: Missing required fields');
       console.error('campId:', body.campId);
       console.error('userName:', body.userName);
@@ -22,9 +53,9 @@ export async function POST(request: NextRequest) {
         { 
           error: 'Missing required fields: campId, userName, userEmail',
           received: {
-            campId: !!body.campId,
-            userName: !!body.userName,
-            userEmail: !!body.userEmail
+            campId: !!sanitizedData.campId,
+            userName: !!sanitizedData.userName,
+            userEmail: !!sanitizedData.userEmail
           }
         },
         { status: 400 }
@@ -108,11 +139,11 @@ export async function POST(request: NextRequest) {
 
     // Create registration with additional data
     const registrationData = {
-      campId: body.campId,
+      campId: sanitizedData.campId,
       userId: userId,
-      userName: body.userName,
-      userEmail: body.userEmail,
-      userPhone: body.userPhone,
+      userName: sanitizedData.userName,
+      userEmail: sanitizedData.userEmail,
+      userPhone: sanitizedData.userPhone,
       answers: body.answers || [
         { question: 'ที่อยู่', answer: body.university || '' },
         { question: 'มหาวิทยาลัย/สถาบัน', answer: body.year || '' },

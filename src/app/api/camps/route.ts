@@ -2,6 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CampModel } from '@/lib/db/models/Camp';
 import { Camp } from '@/types';
+import { createCampSchema } from '@/lib/validation/schemas';
+import { sanitizeString } from '@/lib/utils/sanitize';
+import { rateLimit, getRateLimitKey } from '@/lib/middleware/rateLimit';
 
 // GET /api/camps
 export async function GET(request: NextRequest) {
@@ -41,25 +44,47 @@ export async function GET(request: NextRequest) {
 
 // POST /api/camps
 export async function POST(request: NextRequest) {
+  // Rate limiting: 3 camps per 5 minutes
+  const rateLimitKey = getRateLimitKey(request);
+  const { allowed } = rateLimit(rateLimitKey, 3, 300000);
+  
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Too many camp creation requests. Please try again later.' },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = await request.json();
     
     console.log('=== CREATE CAMP REQUEST ===');
     console.log('Received camp data:', JSON.stringify(body, null, 2));
 
-    if (!body.name || !body.description || !body.location) {
-      console.error('Validation failed: Missing required fields');
+    // Sanitize inputs
+    const sanitizedData = {
+      name: sanitizeString(body.name || ''),
+      description: sanitizeString(body.description || ''),
+      location: sanitizeString(body.location || ''),
+      fee: body.fee,
+      capacity: body.capacity,
+    };
+
+    // Validate with Zod
+    const validation = createCampSchema.safeParse(sanitizedData);
+    if (!validation.success) {
+      console.error('Validation failed:', validation.error.issues);
       return NextResponse.json(
-        { error: 'Missing required fields: name, description, location' },
+        { error: 'Validation failed', issues: validation.error.issues },
         { status: 400 }
       );
     }
 
     const campData = {
-      name: body.name,
-      category: body.category || 'General',
+      name: sanitizedData.name,
+      category: sanitizeString(body.category || 'General'),
       date: body.date || '',
-      location: body.location,
+      location: sanitizedData.location,
       price: body.price || '฿0',
       image: body.image || '/api/placeholder/800/600',
       galleryImages: body.galleryImages || [],
