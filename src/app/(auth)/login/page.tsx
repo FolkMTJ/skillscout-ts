@@ -87,9 +87,9 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           {/* Logo */}
           <div className="flex justify-center mb-4">
-            <div className="p-4 bg-white dark:bg-white/95 rounded-2xl shadow-lg">
+            <div className="p-4 bg-white dark:bg-white/95 rounded-2xl ">
               <Image
-                width={100}
+                width={150}
                 height={40}
                 src="/skillscoutLogo-black.png"
                 alt="SkillScout"
@@ -98,13 +98,13 @@ export default function LoginPage() {
           </div>
 
           {/* Icon */}
-          <div className="inline-block p-4 bg-gradient-to-br from-orange-500 to-amber-500 rounded-2xl mb-4 shadow-xl">
+          {/* <div className="inline-block p-4 bg-gradient-to-br from-orange-500 to-amber-500 rounded-2xl mb-4 shadow-xl">
             {step === 'email' ? (
               <FaLock className="w-8 h-8 text-white" />
             ) : (
               <FaKey className="w-8 h-8 text-white" />
             )}
-          </div>
+          </div> */}
 
           <h1 className="text-3xl font-black text-gray-900 dark:text-white mb-2">
             {step === 'email' ? 'เข้าสู่ระบบ' : 'ยืนยัน OTP'}

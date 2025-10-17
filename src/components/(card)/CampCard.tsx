@@ -27,6 +27,7 @@ interface CampCardProps {
 
 export default function CampCard({ camp, variant = "compact", className = "" }: CampCardProps) {
     if (variant === "detailed") {
+        // Card หย่ายยย
         return (
             <Link href={`/camps/${camp.id}`} className="block">
                 <Card
@@ -124,7 +125,7 @@ export default function CampCard({ camp, variant = "compact", className = "" }: 
         );
     }
 
-    // Compact Card - ลดขนาดลง
+    // Card compact - แก้ไขเพื่อรองรับ mobile
     return (
         <div className="w-full h-[380px]">
             <Link href={`/camps/${camp.id}`} className="block w-full h-full">
@@ -142,11 +143,11 @@ export default function CampCard({ camp, variant = "compact", className = "" }: 
                         {/* Base Overlay */}
                         <div className="absolute inset-0 bg-gradient-to-t from-[#2C2C2C]/90 via-[#2C2C2C]/30 to-transparent" />
 
-                        {/* Hover Overlay */}
-                        <div className="absolute inset-0 bg-[#2C2C2C]/0 group-hover:bg-[#2C2C2C]/70 transition-all duration-300 backdrop-blur-[2px] group-hover:backdrop-blur-sm z-10" />
+                        {/* Hover Overlay - แสดงบน desktop เท่านั้น */}
+                        <div className="absolute inset-0 bg-[#2C2C2C]/0 md:group-hover:bg-[#2C2C2C]/70 transition-all duration-300 backdrop-brightness-70 md:group-hover:backdrop-blur-sm z-10" />
 
                         {/* Yellow accent line */}
-                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#F2B33D] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20" />
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#F2B33D] to-transparent opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 z-20" />
 
                         {/* Category Badge */}
                         <Chip
@@ -171,8 +172,8 @@ export default function CampCard({ camp, variant = "compact", className = "" }: 
                             </Chip>
                         )}
 
-                        {/* Content - Default State */}
-                        <div className="absolute inset-x-0 bottom-0 p-5 z-20 opacity-100 group-hover:opacity-0 transition-opacity duration-200">
+                        {/* Content - แสดงเสมอบน mobile, ซ่อนเมื่อ hover บน desktop */}
+                        <div className="absolute inset-x-0 bottom-0 p-5 z-20 md:opacity-100 md:group-hover:opacity-0 transition-opacity duration-200">
                             <h3 className="text-xl font-bold text-white mb-2 line-clamp-2 drop-shadow-lg">
                                 {camp.name}
                             </h3>
@@ -198,14 +199,14 @@ export default function CampCard({ camp, variant = "compact", className = "" }: 
                             </div>
                         </div>
 
-                        {/* Hover Details */}
-                        <div className="absolute inset-0 p-5 flex flex-col justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
+                        {/* Hover Details - แสดงเฉพาะบน desktop เมื่อ hover, แสดงเสมอบน mobile */}
+                        <div className="absolute inset-0 p-5 flex flex-col justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 z-20 pointer-events-none md:pointer-events-auto">
                             <div className="space-y-3">
                                 <h3 className="text-xl font-bold text-white drop-shadow-lg line-clamp-2">
                                     {camp.name}
                                 </h3>
 
-                                <p className="text-white/90 text-s line-clamp-3 leading-relaxed drop-shadow">
+                                <p className="text-white/90 text-sm line-clamp-3 leading-relaxed drop-shadow">
                                     {camp.description}
                                 </p>
 

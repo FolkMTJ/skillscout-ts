@@ -30,8 +30,9 @@ const FooterBody = () => {
   const quickLinks = [
     { label: 'หน้าแรก', href: "/" },
     { label: 'ค่ายทั้งหมด', href: "/allcamps" },
-    { label: 'แบบทดสอบ', href: "/quiz" },
-    { label: 'บล็อก', href: "/blog" },
+    { label: 'แบบทดสอบ', href: "#" },
+    { label: 'Discovery Path', href: "#" },
+    { label: 'Path Finder', href: "#" },
   ];
 
   const supportLinks = [
@@ -56,11 +57,11 @@ const FooterBody = () => {
         {/* Column 1 - Brand */}
         <div className="lg:col-span-1">
           <Link href="/" className="inline-block mb-4">
-            <div className="bg-white dark:bg-white/95 rounded-xl p-3 shadow-lg hover:shadow-xl transition-all hover:scale-105">
+            <div className="rounded-xl p-3 transition-all hover:scale-105">
               <Image
                 width={100}
                 height={40}
-                src="/skillscoutLogo-black.png"
+                src="/skillscoutLogo.png"
                 alt="SkillScout"
               />
             </div>

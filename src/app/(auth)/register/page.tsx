@@ -92,11 +92,11 @@ export default function RegisterPage() {
               onClick={() => setRole('user')}
               className={`p-6 rounded-xl border-2 transition-all ${
                 role === 'user'
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                  ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20'
                   : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
               }`}
             >
-              <User className={`w-8 h-8 mx-auto mb-2 ${role === 'user' ? 'text-blue-500' : 'text-gray-400'}`} />
+              <User className={`w-8 h-8 mx-auto mb-2 ${role === 'user' ? 'text-orange-500' : 'text-gray-400'}`} />
               <div className="font-semibold">ผู้ใช้ทั่วไป</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">สมัครเข้าร่วมค่าย</div>
             </button>
@@ -106,11 +106,11 @@ export default function RegisterPage() {
               onClick={() => setRole('organizer')}
               className={`p-6 rounded-xl border-2 transition-all ${
                 role === 'organizer'
-                  ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                  ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20'
                   : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
               }`}
             >
-              <Building className={`w-8 h-8 mx-auto mb-2 ${role === 'organizer' ? 'text-purple-500' : 'text-gray-400'}`} />
+              <Building className={`w-8 h-8 mx-auto mb-2 ${role === 'organizer' ? 'text-orange-500' : 'text-gray-400'}`} />
               <div className="font-semibold">ผู้จัดค่าย</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">สร้างและจัดการค่าย</div>
             </button>
@@ -145,13 +145,6 @@ export default function RegisterPage() {
               <>
                 <div className="border-t pt-6">
                   <div className="flex items-center gap-2 mb-4">
-                    <Image
-                      src="/api/placeholder/100/100"
-                      alt="Organizer"
-                      width={60}
-                      height={60}
-                      className="rounded-full"
-                    />
                     <div>
                       <h3 className="font-semibold text-lg">ข้อมูลผู้จัดค่าย</h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -275,11 +268,11 @@ export default function RegisterPage() {
             <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 การสมัครสมาชิก คุณยอมรับ{' '}
-                <Link href="/terms" className="text-blue-600 hover:underline">
+                <Link href="/terms" className="text-orange-600 hover:underline">
                   ข้อกำหนดการใช้งาน
                 </Link>{' '}
                 และ{' '}
-                <Link href="/privacy" className="text-blue-600 hover:underline">
+                <Link href="/privacy" className="text-orange-600 hover:underline">
                   นโยบายความเป็นส่วนตัว
                 </Link>
               </p>
@@ -287,7 +280,7 @@ export default function RegisterPage() {
 
             <Button
               type="submit"
-              color={role === 'organizer' ? 'secondary' : 'primary'}
+              color={role === 'organizer' ? 'warning' : 'warning'}
               className="w-full"
               size="lg"
               isLoading={loading}
@@ -299,7 +292,7 @@ export default function RegisterPage() {
           <div className="mt-6 text-center">
             <p className="text-gray-600 dark:text-gray-400">
               มีบัญชีอยู่แล้ว?{' '}
-              <Link href="/login" className="text-blue-600 hover:underline font-semibold">
+              <Link href="/login" className="text-orange-600 hover:underline font-semibold">
                 เข้าสู่ระบบ
               </Link>
             </p>

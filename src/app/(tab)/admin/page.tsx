@@ -22,8 +22,9 @@ import {
   ModalFooter,
   useDisclosure,
   Input,
+  Textarea,
 } from '@heroui/react';
-import { FiUsers, FiCalendar, FiShield, FiTrash2, FiEye, FiSearch, FiAlertCircle, FiXCircle, FiAlertTriangle } from 'react-icons/fi';
+import { FiUsers, FiCalendar, FiShield, FiTrash2, FiEye, FiSearch, FiAlertCircle, FiXCircle, FiAlertTriangle, FiCheck, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 interface User {
@@ -55,12 +56,16 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedCamp, setSelectedCamp] = useState<Camp | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  
   const { isOpen: isBanModalOpen, onOpen: onBanModalOpen, onClose: onBanModalClose } = useDisclosure();
   const { isOpen: isDeleteModalOpen, onOpen: onDeleteModalOpen, onClose: onDeleteModalClose } = useDisclosure();
+  const { isOpen: isApproveModalOpen, onOpen: onApproveModalOpen, onClose: onApproveModalClose } = useDisclosure();
+  const { isOpen: isRejectModalOpen, onOpen: onRejectModalOpen, onClose: onRejectModalClose } = useDisclosure();
 
   useEffect(() => {
     if (status === 'authenticated') {
-      // เฉพาะ Admin เท่านั้นที่เข้าหน้า Admin Dashboard ได้
       if (session?.user?.role !== 'admin') {
         router.push('/');
         return;
@@ -73,12 +78,10 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
       
-      // Fetch users
       const usersRes = await fetch('/api/admin/users');
       const usersData = await usersRes.json();
       if (usersData.users) setUsers(usersData.users);
 
-      // Fetch camps
       const campsRes = await fetch('/api/camps?includeAll=true');
       const campsData = await campsRes.json();
       setCamps(Array.isArray(campsData) ? campsData : campsData.camps || []);
@@ -99,6 +102,17 @@ export default function AdminDashboard() {
   const handleDeleteUser = (user: User) => {
     setSelectedUser(user);
     onDeleteModalOpen();
+  };
+
+  const handleApproveCamp = (camp: Camp) => {
+    setSelectedCamp(camp);
+    onApproveModalOpen();
+  };
+
+  const handleRejectCamp = (camp: Camp) => {
+    setSelectedCamp(camp);
+    setRejectReason('');
+    onRejectModalOpen();
   };
 
   const confirmBanUser = async () => {
@@ -136,6 +150,76 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error('Error deleting user:', err);
       toast.error('เกิดข้อผิดพลาด');
+    }
+  };
+
+  const confirmApproveCamp = async () => {
+    if (!selectedCamp || !session?.user?.id) return;
+
+    try {
+      const response = await fetch(`/api/camps/${selectedCamp._id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adminId: session.user.id,
+          action: 'approve'
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to approve camp');
+      }
+
+      const result = await response.json();
+      
+      toast.success('อนุมัติค่ายสำเร็จ!');
+      
+      if (result.issues && result.issues.length > 0) {
+        toast(`คะแนนการตรวจสอบ: ${result.verificationScore}/100`, {
+          icon: '⚠️',
+        });
+      }
+      
+      onApproveModalClose();
+      fetchData();
+    } catch (err) {
+      console.error('Error approving camp:', err);
+      toast.error(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการอนุมัติ');
+    }
+  };
+
+  const confirmRejectCamp = async () => {
+    if (!selectedCamp || !session?.user?.id) return;
+    
+    if (!rejectReason.trim()) {
+      toast.error('กรุณาระบุเหตุผลในการปฏิเสธ');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/camps/${selectedCamp._id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adminId: session.user.id,
+          action: 'reject',
+          reason: rejectReason
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to reject camp');
+      }
+
+      toast.success('ปฏิเสธค่ายสำเร็จ!');
+      onRejectModalClose();
+      setRejectReason('');
+      fetchData();
+    } catch (err) {
+      console.error('Error rejecting camp:', err);
+      toast.error(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการปฏิเสธ');
     }
   };
 
@@ -365,7 +449,11 @@ export default function AdminDashboard() {
                   <TableBody>
                     {camps.map((camp) => (
                       <TableRow key={camp._id}>
-                        <TableCell>{camp.name}</TableCell>
+                        <TableCell>
+                          <div className="max-w-xs">
+                            <p className="font-medium truncate">{camp.name}</p>
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <div>
                             <p className="font-medium">{camp.organizerName}</p>
@@ -377,7 +465,9 @@ export default function AdminDashboard() {
                             size="sm"
                             color={
                               camp.status === 'active' ? 'success' :
-                              camp.status === 'pending' ? 'warning' : 'default'
+                              camp.status === 'pending' ? 'warning' :
+                              camp.status === 'rejected' ? 'danger' :
+                              'default'
                             }
                           >
                             {camp.status}
@@ -390,14 +480,38 @@ export default function AdminDashboard() {
                           {new Date(camp.createdAt).toLocaleDateString('th-TH')}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            size="sm"
-                            variant="flat"
-                            startContent={<FiEye />}
-                            onPress={() => router.push(`/camps/${camp._id}`)}
-                          >
-                            ดู
-                          </Button>
+                          <div className="flex gap-2 flex-wrap">
+                            <Button
+                              size="sm"
+                              variant="flat"
+                              startContent={<FiEye />}
+                              onPress={() => router.push(`/camps/${camp._id}`)}
+                            >
+                              ดู
+                            </Button>
+                            {camp.status === 'pending' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  color="success"
+                                  variant="flat"
+                                  startContent={<FiCheck />}
+                                  onPress={() => handleApproveCamp(camp)}
+                                >
+                                  อนุมัติ
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  color="danger"
+                                  variant="flat"
+                                  startContent={<FiX />}
+                                  onPress={() => handleRejectCamp(camp)}
+                                >
+                                  ปฏิเสธ
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -484,6 +598,111 @@ export default function AdminDashboard() {
               startContent={<FiTrash2 />}
             >
               ลบ User
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Approve Camp Modal */}
+      <Modal isOpen={isApproveModalOpen} onClose={onApproveModalClose}>
+        <ModalContent>
+          <ModalHeader>
+            <h3 className="text-xl font-bold text-green-600 flex items-center gap-2">
+              <FiCheck />
+              อนุมัติค่าย
+            </h3>
+          </ModalHeader>
+          <ModalBody>
+            {selectedCamp && (
+              <div className="space-y-4">
+                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border-2 border-green-200">
+                  <p className="font-semibold text-lg">{selectedCamp.name}</p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    โดย: {selectedCamp.organizerName}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {selectedCamp.organizerEmail}
+                  </p>
+                </div>
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    <strong>ข้อมูล:</strong> ระบบจะทำการตรวจสอบความถูกต้องของข้อมูลค่ายอัตโนมัติ
+                    และให้คะแนนการตรวจสอบ
+                  </p>
+                </div>
+                <p className="text-gray-700 font-semibold">
+                  คุณต้องการอนุมัติค่ายนี้หรือไม่? ค่ายจะถูกเปิดให้ผู้ใช้สมัครได้ทันที
+                </p>
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onApproveModalClose}>
+              ยกเลิก
+            </Button>
+            <Button
+              color="success"
+              onPress={confirmApproveCamp}
+              startContent={<FiCheck />}
+            >
+              อนุมัติค่าย
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Reject Camp Modal */}
+      <Modal isOpen={isRejectModalOpen} onClose={onRejectModalClose}>
+        <ModalContent>
+          <ModalHeader>
+            <h3 className="text-xl font-bold text-red-600 flex items-center gap-2">
+              <FiX />
+              ปฏิเสธค่าย
+            </h3>
+          </ModalHeader>
+          <ModalBody>
+            {selectedCamp && (
+              <div className="space-y-4">
+                <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border-2 border-red-200">
+                  <p className="font-semibold text-lg">{selectedCamp.name}</p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    โดย: {selectedCamp.organizerName}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {selectedCamp.organizerEmail}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    เหตุผลในการปฏิเสธ <span className="text-red-500">*</span>
+                  </label>
+                  <Textarea
+                    placeholder="กรุณาระบุเหตุผลที่ปฏิเสธค่ายนี้..."
+                    value={rejectReason}
+                    onValueChange={setRejectReason}
+                    minRows={4}
+                    variant="bordered"
+                  />
+                </div>
+                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                    <strong>หมายเหตุ:</strong> เหตุผลนี้จะถูกส่งให้ Organizer ทราบ
+                  </p>
+                </div>
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onRejectModalClose}>
+              ยกเลิก
+            </Button>
+            <Button
+              color="danger"
+              onPress={confirmRejectCamp}
+              startContent={<FiX />}
+              isDisabled={!rejectReason.trim()}
+            >
+              ปฏิเสธค่าย
             </Button>
           </ModalFooter>
         </ModalContent>
