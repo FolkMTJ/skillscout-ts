@@ -9,7 +9,7 @@ export default function AllCampsPage() {
       {/* Header */}
       <PageHeader
         title="All Camps"
-        subtitle="Explore various IT camps and find the one that suits you."
+        subtitle="ค่ายทั้งหมดที่เราคัดสรรมาเพื่อคุณโดยเฉพาะ"
         category="EXPLORE"
       />
       
