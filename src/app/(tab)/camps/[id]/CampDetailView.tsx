@@ -202,7 +202,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                     )}
                                     <div className="flex items-center justify-between pt-6">
                                         <p className="text-5xl font-black bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
-                                            {camp.price}
+                                            <p>{camp.price === '฿0' ? 'ฟรี' : camp.price}</p>
                                         </p>
                                         
                                         {checkingRegistration ? (

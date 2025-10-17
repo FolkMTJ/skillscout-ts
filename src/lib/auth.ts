@@ -37,6 +37,10 @@ export const authOptions: NextAuthOptions = {
           throw new Error('ไม่พบผู้ใช้ในระบบ');
         }
 
+        // เพิ่มส่วนนี้
+        if (user.isBanned) {
+          throw new Error('บัญชีของคุณถูกระงับการใช้งาน');
+        }
         return {
           id: user._id?.toString() || '',
           email: user.email,

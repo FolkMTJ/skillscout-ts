@@ -37,7 +37,7 @@ interface BookingModalProps {
 
 export default function BookingModal({ isOpen, onClose, camp }: BookingModalProps) {
   const { data: session } = useSession();
-  
+
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
@@ -61,10 +61,10 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
   const [slipPreview, setSlipPreview] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  
+
   const [paymentId, setPaymentId] = useState('');
   // const [registrationId, setRegistrationId] = useState('');
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -85,7 +85,7 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
     if (!promoCode.trim()) return;
     setIsValidatingPromo(true);
     setPromoMessage('');
-    
+
     try {
       const response = await fetch('/api/payment/validate-promo', {
         method: 'POST',
@@ -169,14 +169,21 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
           reason: formData.reason,
         }),
       });
-      
+
       if (!regResponse.ok) {
         const errorData = await regResponse.json();
         throw new Error(errorData.error || 'Failed to create registration');
       }
-      
+
       const registration = await regResponse.json();
       // setRegistrationId(registration.registration._id);
+      if (finalPrice === 0) {
+        // อัปเดตสถานะเป็น Approved เลย
+        await fetch(`/api/registrations/${registration.registration._id}/confirm`, { method: 'POST' });
+        setStep(4); // ไปหน้า Success
+        setTimeout(() => handleClose(), 3000);
+        return;
+      }
 
       const paymentResponse = await fetch('/api/payment', {
         method: 'POST',
@@ -442,12 +449,12 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
                       <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
                     </div>
                   )}
-                  <Input label="ชื่อ - นามสกุล" placeholder="ชื่อ - นามสกุล" value={formData.name} onValueChange={(v) => setFormData({...formData, name: v})} required size="lg" classNames={{inputWrapper: "border-2"}} />
-                  <Input type="email" label="อีเมล" placeholder="yourmail@mail.com" value={formData.email} onValueChange={(v) => setFormData({...formData, email: v})} required size="lg" classNames={{inputWrapper: "border-2"}} />
-                  <Input type="tel" label="เบอร์โทร" placeholder="0812345678" value={formData.phone} onValueChange={(v) => setFormData({...formData, phone: v})} required size="lg" classNames={{inputWrapper: "border-2"}} />
-                  <Input label="ที่อยู่" placeholder="ที่อยู่ของคุณ" value={formData.address} onValueChange={(v) => setFormData({...formData, address: v})} required size="lg" classNames={{inputWrapper: "border-2"}} />
-                  <Input label="มหาวิทยาลัย/สถาบัน" placeholder="มหาวิทยาลัยศิลปากร" value={formData.university} onValueChange={(v) => setFormData({...formData, university: v})} required size="lg" classNames={{inputWrapper: "border-2"}} />
-                  <Textarea label="เหตุผลที่ต้องการเข้าร่วม" placeholder="บอกเราว่าทำไมคุณถึงสนใจค่ายนี้..." value={formData.reason} onValueChange={(v) => setFormData({...formData, reason: v})} required minRows={3} classNames={{inputWrapper: "border-2"}} />
+                  <Input label="ชื่อ - นามสกุล" placeholder="ชื่อ - นามสกุล" value={formData.name} onValueChange={(v) => setFormData({ ...formData, name: v })} required size="lg" classNames={{ inputWrapper: "border-2" }} />
+                  <Input type="email" label="อีเมล" placeholder="yourmail@mail.com" value={formData.email} onValueChange={(v) => setFormData({ ...formData, email: v })} required size="lg" classNames={{ inputWrapper: "border-2" }} />
+                  <Input type="tel" label="เบอร์โทร" placeholder="0812345678" value={formData.phone} onValueChange={(v) => setFormData({ ...formData, phone: v })} required size="lg" classNames={{ inputWrapper: "border-2" }} />
+                  <Input label="ที่อยู่" placeholder="ที่อยู่ของคุณ" value={formData.address} onValueChange={(v) => setFormData({ ...formData, address: v })} required size="lg" classNames={{ inputWrapper: "border-2" }} />
+                  <Input label="มหาวิทยาลัย/สถาบัน" placeholder="มหาวิทยาลัยศิลปากร" value={formData.university} onValueChange={(v) => setFormData({ ...formData, university: v })} required size="lg" classNames={{ inputWrapper: "border-2" }} />
+                  <Textarea label="เหตุผลที่ต้องการเข้าร่วม" placeholder="บอกเราว่าทำไมคุณถึงสนใจค่ายนี้..." value={formData.reason} onValueChange={(v) => setFormData({ ...formData, reason: v })} required minRows={3} classNames={{ inputWrapper: "border-2" }} />
                 </div>
                 <div className="space-y-4">
                   <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border-2 border-gray-200 dark:border-gray-700">
@@ -466,19 +473,19 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
                       มีรหัสโปรโมชั่นหรือไม่?
                     </h3>
                     <div className="flex gap-2">
-                      <Input 
-                        placeholder="กรอกรหัสโปรโมชั่น" 
-                        value={promoCode} 
-                        onValueChange={setPromoCode} 
-                        disabled={promoApplied} 
-                        classNames={{inputWrapper: "border-2"}}
-                        size="sm" 
+                      <Input
+                        placeholder="กรอกรหัสโปรโมชั่น"
+                        value={promoCode}
+                        onValueChange={setPromoCode}
+                        disabled={promoApplied}
+                        classNames={{ inputWrapper: "border-2" }}
+                        size="sm"
                       />
-                      <Button 
-                        color="warning" 
-                        className="font-bold" 
-                        onPress={handleValidatePromo} 
-                        isLoading={isValidatingPromo} 
+                      <Button
+                        color="warning"
+                        className="font-bold"
+                        onPress={handleValidatePromo}
+                        isLoading={isValidatingPromo}
                         isDisabled={promoApplied || !promoCode.trim()}
                         size="sm"
                       >
@@ -486,9 +493,8 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
                       </Button>
                     </div>
                     {promoMessage && (
-                      <p className={`text-sm mt-2 font-semibold ${
-                        promoApplied ? 'text-green-600' : 'text-red-600'
-                      }`}>
+                      <p className={`text-sm mt-2 font-semibold ${promoApplied ? 'text-green-600' : 'text-red-600'
+                        }`}>
                         {promoApplied && <FaCheckCircle className="inline mr-1" />}
                         {promoMessage}
                       </p>
@@ -521,9 +527,9 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
             </ModalBody>
             <ModalFooter>
               <Button color="danger" variant="light" onPress={handleClose}>ยกเลิก</Button>
-              <Button 
-                type="submit" 
-                className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold shadow-lg" 
+              <Button
+                type="submit"
+                className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold shadow-lg"
                 endContent={<FaQrcode />}
               >
                 ยืนยันและชำระเงิน
