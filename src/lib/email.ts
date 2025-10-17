@@ -15,7 +15,7 @@ export async function sendOTPEmail(email: string, otp: string) {
   const mailOptions = {
     from: `"SkillScout" <${process.env.EMAIL_USER}>`,
     to: email,
-    subject: 'รหัส OTP สำหรับเข้าสู่ระบบ SkillScout',
+    subject: `OTP เพื่อเข้าสู่ระบบ SkillScout <${otp}>`,
     html: `
 <!DOCTYPE html>
       <html>
@@ -39,7 +39,7 @@ export async function sendOTPEmail(email: string, otp: string) {
             </div>
             <div class="content">
               <p>สวัสดีค่ะ,</p>
-              <p>คุณได้ขอรหัส OTP เพื่อเข้าสู่ระบบ SkillScout</p>
+              <p>คุณได้ขอรหัส OTP เพื่อเข้าสู่ระบบ SkillScout </p>
               
               <div class="otp-box">
                 <p style="margin: 0; color: #666;">รหัส OTP ของคุณคือ:</p>
