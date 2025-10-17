@@ -52,6 +52,7 @@ export default function ImageUploader({ value, onChange, label, description }: I
               onChange(result.info.secure_url);
               toast.success('อัปโหลดรูปภาพสำเร็จ!');
             }
+
             setIsUploading(false);
           }}
           onError={() => {
