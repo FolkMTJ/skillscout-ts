@@ -11,7 +11,7 @@ import { rateLimit, getRateLimitKey } from '@/lib/middleware/rateLimit';
 export async function POST(request: NextRequest) {
   // Rate limiting: 5 requests per minute
   const rateLimitKey = getRateLimitKey(request);
-  const { allowed, remaining } = rateLimit(rateLimitKey, 5, 60000);
+  const { allowed } = rateLimit(rateLimitKey, 5, 60000);
   
   if (!allowed) {
     return NextResponse.json(
