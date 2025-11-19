@@ -29,8 +29,8 @@ import { LogOut, Settings, LayoutDashboard, Calendar, Shield } from 'lucide-reac
 const navLinks = [
     { name: "หน้าหลัก", href: "/" },
     { name: "ค่ายทั้งหมด", href: "/allcamps" },
-    { name: "Discovery Path", href: "/discovery-path" },
-    { name: "Path Finder", href: "/path-finder" },
+    { name: "Discovery Path", href: "/discovery" },
+    { name: "Path Finder", href: "/pathfinder" },
 ];
 
 export default function NavBar(props: NavbarProps) {

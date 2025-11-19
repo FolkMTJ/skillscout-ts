@@ -125,7 +125,7 @@ export class CampModel {
       enrolled: campData.enrolled || 0,
       fee: campData.fee,
       tags: campData.tags || [],
-      status: campData.status,
+      status: campData.status || CampStatus.PENDING,
     };
     
     const result = await collection.insertOne(campDoc);

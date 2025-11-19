@@ -14,9 +14,9 @@ import {
   Divider,
   Image,
   Progress,
-  Card, // Add Card here
+  Card,
 } from '@heroui/react';
-import { FaCheckCircle, FaTag, FaQrcode, FaUpload, FaImage, FaClock, FaLightbulb, FaMobileAlt } from 'react-icons/fa';
+import { FaCheckCircle, FaTag, FaQrcode, FaUpload, FaImage, FaClock, FaLightbulb, FaMobileAlt, FaGift } from 'react-icons/fa';
 
 interface CampData {
   _id: string;
@@ -63,13 +63,14 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const [paymentId, setPaymentId] = useState('');
-  // const [registrationId, setRegistrationId] = useState('');
+  const [registrationId, setRegistrationId] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const basePrice = camp.fee || parseFloat(camp.price.replace(/[^0-9]/g, '')) || 0;
   const finalPrice = basePrice - discount;
+  const isFree = finalPrice === 0;
 
   useEffect(() => {
     if (session?.user) {
@@ -109,10 +110,59 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
     }
   };
 
+  // 🔧 FIX BUG 1: ค่าย 0 บาท = ฟรี และข้ามขั้นตอนชำระเงิน
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // ถ้าเป็นค่ายฟรี (0 บาท) ให้ข้ามขั้นตอนชำระเงินไปเลย
+    if (isFree) {
+      await handleFreeRegistration();
+      return;
+    }
+    
     setStep(2);
     await generateQRCode();
+  };
+
+  const handleFreeRegistration = async () => {
+    setIsSubmitting(true);
+    setError('');
+    try {
+      const regResponse = await fetch('/api/registrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          campId: camp._id,
+          userName: formData.name,
+          userEmail: formData.email,
+          userPhone: formData.phone,
+          answers: [
+            { question: 'ที่อยู่', answer: formData.address },
+            { question: 'มหาวิทยาลัย/สถาบัน', answer: formData.university },
+            { question: 'เหตุผลที่ต้องการเข้าร่วม', answer: formData.reason },
+          ],
+        }),
+      });
+
+      if (!regResponse.ok) {
+        const errorData = await regResponse.json();
+        throw new Error(errorData.error || 'Failed to create registration');
+      }
+
+      const registration = await regResponse.json();
+      
+      // อัปเดตสถานะเป็น Approved เลยสำหรับค่ายฟรี
+      await fetch(`/api/registrations/${registration.registration._id}/confirm`, { 
+        method: 'POST' 
+      });
+      
+      setStep(4); // ไปหน้า Success
+      setTimeout(() => handleClose(), 3000);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'เกิดข้อผิดพลาด');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const generateQRCode = async () => {
@@ -152,7 +202,14 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
     }
   };
 
+  // 🔧 FIX BUG 2 & 4: บันทึก registrationId และ paymentId ไว้ให้สามารถ upload ซ้ำได้
   const handleProceedToUpload = async () => {
+    // ถ้ามี registration และ payment อยู่แล้ว ให้ข้ามไปขั้นตอนอัปโหลดเลย
+    if (registrationId && paymentId) {
+      setStep(3);
+      return;
+    }
+
     setIsSubmitting(true);
     setError('');
     try {
@@ -164,9 +221,11 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
           userName: formData.name,
           userEmail: formData.email,
           userPhone: formData.phone,
-          university: formData.address,
-          year: formData.university,
-          reason: formData.reason,
+          answers: [
+            { question: 'ที่อยู่', answer: formData.address },
+            { question: 'มหาวิทยาลัย/สถาบัน', answer: formData.university },
+            { question: 'เหตุผลที่ต้องการเข้าร่วม', answer: formData.reason },
+          ],
         }),
       });
 
@@ -176,14 +235,7 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
       }
 
       const registration = await regResponse.json();
-      // setRegistrationId(registration.registration._id);
-      if (finalPrice === 0) {
-        // อัปเดตสถานะเป็น Approved เลย
-        await fetch(`/api/registrations/${registration.registration._id}/confirm`, { method: 'POST' });
-        setStep(4); // ไปหน้า Success
-        setTimeout(() => handleClose(), 3000);
-        return;
-      }
+      setRegistrationId(registration.registration._id);
 
       const paymentResponse = await fetch('/api/payment', {
         method: 'POST',
@@ -192,8 +244,8 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
           registrationId: registration.registration._id,
           campId: camp._id,
           userId: session?.user?.email || formData.email,
-          userEmail: formData.email, // เพิ่ม
-          userName: formData.name, // เพิ่ม
+          userEmail: formData.email,
+          userName: formData.name,
           organizerId: camp.organizerId || 'default-organizer',
           amount: basePrice,
           discount: discount,
@@ -222,9 +274,9 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
     setUploadProgress(0);
 
     try {
-      const formData = new FormData();
-      formData.append('file', slipFile);
-      formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'skillscout');
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', slipFile);
+      formDataUpload.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'skillscout');
 
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
@@ -232,7 +284,7 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
 
       const uploadResponse = await fetch(
         `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-        { method: 'POST', body: formData }
+        { method: 'POST', body: formDataUpload }
       );
 
       clearInterval(progressInterval);
@@ -245,7 +297,7 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
       const updateResponse = await fetch(`/api/payment/${paymentId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slipUrl: slipUrl, status: 'completed' }),
+        body: JSON.stringify({ slipUrl: slipUrl, status: 'pending' }),
       });
       if (!updateResponse.ok) throw new Error('Failed to update payment');
 
@@ -278,7 +330,7 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
       setSlipFile(null);
       setSlipPreview('');
       setPaymentId('');
-      // setRegistrationId('');
+      setRegistrationId('');
       setUploadProgress(0);
       setError('');
       onClose();
@@ -308,20 +360,28 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
                 <FaCheckCircle className="text-green-500 text-5xl" />
               </div>
             </div>
-            <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-3">อัปโหลดสลิปสำเร็จ!</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-2">เรากำลังตรวจสอบการชำระเงินของคุณ</p>
-            <p className="text-sm text-gray-500">คุณจะได้รับอีเมลยืนยันภายใน 24 ชั่วโมง</p>
-            <div className="mt-6 p-4 bg-amber-100 dark:bg-amber-900/20 rounded-lg">
-              <div className="flex items-start gap-3 text-left">
-                <FaClock className="text-amber-600 mt-1 flex-shrink-0" />
-                <div className="text-sm text-amber-800 dark:text-amber-200">
-                  <p className="font-bold mb-1">ระบบ Escrow Protection</p>
-                  <p>เงินจะถูกโอนให้ผู้จัดค่ายหลังจาก:</p>
-                  <p>• คุณยืนยันการเข้าร่วมค่ายเสร็จสิ้น หรือ</p>
-                  <p>• 15 วันนับจากวันจบค่าย (อัตโนมัติ)</p>
+            <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-3">
+              {isFree ? 'สมัครสำเร็จ!' : 'อัปโหลดสลิปสำเร็จ!'}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-2">
+              {isFree ? 'คุณได้ลงทะเบียนเข้าร่วมค่ายเรียบร้อยแล้ว' : 'เรากำลังตรวจสอบการชำระเงินของคุณ'}
+            </p>
+            <p className="text-sm text-gray-500">
+              {isFree ? 'คุณจะได้รับอีเมลยืนยันในไม่ช้า' : 'คุณจะได้รับอีเมลยืนยันภายใน 24 ชั่วโมง'}
+            </p>
+            {!isFree && (
+              <div className="mt-6 p-4 bg-amber-100 dark:bg-amber-900/20 rounded-lg">
+                <div className="flex items-start gap-3 text-left">
+                  <FaClock className="text-amber-600 mt-1 flex-shrink-0" />
+                  <div className="text-sm text-amber-800 dark:text-amber-200">
+                    <p className="font-bold mb-1">ระบบ Escrow Protection</p>
+                    <p>เงินจะถูกโอนให้ผู้จัดค่ายหลังจาก:</p>
+                    <p>• คุณยืนยันการเข้าร่วมค่ายเสร็จสิ้น หรือ</p>
+                    <p>• 15 วันนับจากวันจบค่าย (อัตโนมัติ)</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -371,8 +431,15 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
               </div>
             </ModalBody>
             <ModalFooter>
-              {/* <Button color="danger" variant="light" onPress={() => setStep(2)} isDisabled={isUploading}>ย้อนกลับ</Button> */}
-              <Button color="warning" className="bg-orange-500 font-bold text-white" onPress={handleUploadSlip} isLoading={isUploading} isDisabled={!slipFile} endContent={<FaImage />}>
+              <Button color="danger" variant="light" onPress={() => setStep(2)} isDisabled={isUploading}>ย้อนกลับ</Button>
+              <Button 
+                color="warning" 
+                className="bg-orange-500 font-bold text-white" 
+                onPress={handleUploadSlip} 
+                isLoading={isUploading} 
+                isDisabled={!slipFile} 
+                endContent={<FaImage />}
+              >
                 {isUploading ? 'กำลังอัปโหลด...' : 'ยืนยันและอัปโหลด'}
               </Button>
             </ModalFooter>
@@ -423,8 +490,15 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
               </div>
             </ModalBody>
             <ModalFooter>
-              {/* <Button color="danger" variant="light" onPress={() => setStep(1)} isDisabled={isSubmitting}>ย้อนกลับ</Button> */}
-              <Button color="warning" className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold" onPress={handleProceedToUpload} isLoading={isSubmitting} isDisabled={!qrCodeUrl} endContent={<FaUpload />}>
+              <Button color="danger" variant="light" onPress={() => setStep(1)} isDisabled={isSubmitting}>ย้อนกลับ</Button>
+              <Button 
+                color="warning" 
+                className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold" 
+                onPress={handleProceedToUpload} 
+                isLoading={isSubmitting} 
+                isDisabled={!qrCodeUrl} 
+                endContent={<FaUpload />}
+              >
                 {isSubmitting ? 'กำลังดำเนินการ...' : 'โอนเงินแล้ว - อัปโหลดสลิป'}
               </Button>
             </ModalFooter>
@@ -493,8 +567,7 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
                       </Button>
                     </div>
                     {promoMessage && (
-                      <p className={`text-sm mt-2 font-semibold ${promoApplied ? 'text-green-600' : 'text-red-600'
-                        }`}>
+                      <p className={`text-sm mt-2 font-semibold ${promoApplied ? 'text-green-600' : 'text-red-600'}`}>
                         {promoApplied && <FaCheckCircle className="inline mr-1" />}
                         {promoMessage}
                       </p>
@@ -507,7 +580,16 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
                     <div className="space-y-3 text-sm">
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600 dark:text-gray-400">ค่าค่าย</span>
-                        <span className="font-semibold text-gray-800 dark:text-gray-200">฿{basePrice.toLocaleString()}</span>
+                        <span className="font-semibold text-gray-800 dark:text-gray-200">
+                          {isFree ? (
+                            <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                              <FaGift />
+                              ฟรี!
+                            </span>
+                          ) : (
+                            `฿${basePrice.toLocaleString()}`
+                          )}
+                        </span>
                       </div>
                       {discount > 0 && (
                         <div className="flex justify-between items-center text-green-600 dark:text-green-400">
@@ -518,7 +600,16 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
                       <Divider />
                       <div className="flex justify-between items-center pt-2">
                         <span className="font-bold text-gray-800 dark:text-gray-200 text-base">รวมทั้งหมด</span>
-                        <span className="font-black text-orange-600 dark:text-orange-400 text-2xl">฿{finalPrice.toLocaleString()}</span>
+                        <span className="font-black text-orange-600 dark:text-orange-400 text-2xl">
+                          {isFree ? (
+                            <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                              <FaGift />
+                              ฟรี!
+                            </span>
+                          ) : (
+                            `฿${finalPrice.toLocaleString()}`
+                          )}
+                        </span>
                       </div>
                     </div>
                   </Card>
@@ -530,9 +621,10 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
               <Button
                 type="submit"
                 className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold shadow-lg"
-                endContent={<FaQrcode />}
+                endContent={isFree ? <FaGift /> : <FaQrcode />}
+                isLoading={isSubmitting}
               >
-                ยืนยันและชำระเงิน
+                {isSubmitting ? 'กำลังดำเนินการ...' : (isFree ? 'ยืนยันการสมัคร (ฟรี)' : 'ยืนยันและชำระเงิน')}
               </Button>
             </ModalFooter>
           </form>

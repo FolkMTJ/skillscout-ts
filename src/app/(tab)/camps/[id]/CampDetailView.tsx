@@ -7,13 +7,14 @@ import {
     FaMapMarkerAlt, FaCalendarAlt, FaClock, FaArrowLeft, FaUsers, FaGraduationCap, FaPaintBrush, FaCheckCircle, FaTicketAlt
 } from "react-icons/fa";
 import { Chip, Progress } from "@heroui/react";
-import { Camp, Organizer, Review } from "@/types";
+import { Camp, Organizer } from "@/types";
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@heroui/react";
 import BookingModal from '@/components/camps/BookingModal';
 import TicketModal from '@/components/ticket/TicketModal';
 import LocationMap from '@/components/maps/LocationMap';
+import { ReviewForm, ReviewList } from '@/components/reviews';
 
 interface TicketData {
     _id: string;
@@ -43,19 +44,7 @@ const InfoCard: React.FC<{ title: string; icon: React.ReactNode; children: React
     </div>
 );
 
-const ReviewCard: React.FC<{ review: Review }> = ({ review }) => (
-    <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-3 mb-2">
-            <span className="font-bold text-gray-800 dark:text-white">{review.author}</span>
-        </div>
-        <div className="flex items-center gap-1 mb-3">
-            {Array.from({ length: 5 }, (_, i) => (
-                <span key={i} className={i < review.rating ? "text-amber-400" : "text-gray-300"}>★</span>
-            ))}
-        </div>
-        <p className="text-gray-600 dark:text-gray-300 text-sm">{review.comment}</p>
-    </div>
-);
+
 
 export default function CampDetailView({ camp }: { camp: Camp }) {
     const router = useRouter();
@@ -67,6 +56,8 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
     const [isRegistered, setIsRegistered] = useState(false);
     const [ticketData, setTicketData] = useState<TicketData | null>(null);
     const [checkingRegistration, setCheckingRegistration] = useState(true);
+    const [currentCamp, setCurrentCamp] = useState(camp);
+    const [showReviewForm, setShowReviewForm] = useState(false);
 
     useEffect(() => {
         const checkRegistration = async () => {
@@ -98,6 +89,17 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
     const handleTicketClick = () => {
         if (ticketData) {
             setIsTicketModalOpen(true);
+        }
+    };
+
+    const handleReviewSubmitted = async () => {
+        try {
+            const response = await fetch(`/api/camps/${camp._id}`);
+            const updatedCamp = await response.json();
+            setCurrentCamp(updatedCamp);
+            setShowReviewForm(false);
+        } catch (error) {
+            console.error('Error refreshing camp data:', error);
         }
     };
     
@@ -354,50 +356,61 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                         <div className="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
                             <div className="flex items-center gap-4 mb-4">
                                 <p className="text-5xl font-bold text-gray-800 dark:text-white">
-                                    {camp.avgRating.toFixed(1)}
+                                    {currentCamp.avgRating.toFixed(1)}
                                 </p>
                                 <div>
                                     <div className="flex items-center">
                                         {Array.from({ length: 5 }, (_, i) => (
-                                            <span key={i} className={i < Math.round(camp.avgRating) ? "text-amber-400" : "text-gray-300"}>
+                                            <span key={i} className={i < Math.round(currentCamp.avgRating) ? "text-amber-400" : "text-gray-300"}>
                                                 ★
                                             </span>
                                         ))}
                                     </div>
-                                    <p className="text-sm text-gray-500">{camp.reviews.length} รีวิว</p>
+                                    <p className="text-sm text-gray-500">{currentCamp.reviews.length} รีวิว</p>
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                {Object.entries(camp.ratingBreakdown).reverse().map(([stars, count]) => (
+                                {Object.entries(currentCamp.ratingBreakdown).reverse().map(([stars, count]) => (
                                     <div key={stars} className="flex items-center gap-2">
                                         <span className="text-sm text-gray-500">{stars} ★</span>
                                         <Progress 
-                                            value={((count as number) / (camp.reviews.length || 1)) * 100} 
+                                            value={((count as number) / (currentCamp.reviews.length || 1)) * 100} 
                                             classNames={{ indicator: "bg-amber-400" }} 
                                         />
                                     </div>
                                 ))}
                             </div>
-                            <Button
-                                className="bg-gradient-to-tr from-pink-500 to-yellow-500 text-white shadow-lg mt-5 h-12"
-                                fullWidth
-                                isDisabled
-                                radius="full"
-                            >
-                                เขียนรีวิว
-                            </Button>
+                            {session?.user?.name && isRegistered ? (
+                                <Button
+                                    className="bg-gradient-to-tr from-pink-500 to-yellow-500 text-white shadow-lg mt-5 h-12"
+                                    fullWidth
+                                    radius="full"
+                                    onPress={() => setShowReviewForm(!showReviewForm)}
+                                >
+                                    {showReviewForm ? 'ซ่อนฟอร์ม' : 'เขียนรีวิว'}
+                                </Button>
+                            ) : (
+                                <Button
+                                    className="bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 mt-5 h-12"
+                                    fullWidth
+                                    radius="full"
+                                    isDisabled
+                                >
+                                    {!session ? 'เข้าสู่ระบบเพื่อเขียนรีวิว' : 'สมัครค่ายเพื่อเขียนรีวิว'}
+                                </Button>
+                            )}
                         </div>
 
-                        <div className="lg:col-span-2 space-y-4">
-                            {camp.reviews.length > 0 ? (
-                                camp.reviews.map((review: Review) => (
-                                    <ReviewCard key={review.id} review={review} />
-                                ))
-                            ) : (
-                                <div className="text-center text-gray-500 pt-10">
-                                    ยังไม่มีรีวิวสำหรับค่ายนี้
-                                </div>
+                        <div className="lg:col-span-2 space-y-6">
+                            {showReviewForm && session?.user?.name && isRegistered && (
+                                <ReviewForm
+                                    campId={currentCamp._id}
+                                    campName={currentCamp.name}
+                                    userName={session.user.name}
+                                    onReviewSubmitted={handleReviewSubmitted}
+                                />
                             )}
+                            <ReviewList reviews={currentCamp.reviews} />
                         </div>
                     </div>
                 </section>

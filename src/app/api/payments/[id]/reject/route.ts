@@ -1,11 +1,12 @@
+// src/app/api/payments/[id]/reject/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectDB } from '@/lib/mongodb';
 import { PaymentModel } from '@/lib/db/models/Payment';
-import { PaymentStatus, RegistrationStatus } from '@/types';
 import { RegistrationModel } from '@/lib/db/models';
 
+// 🔧 FIX BUG 3: เมื่อ Organizer ปฏิเสธ ต้องลบข้อมูลทั้งหมดออกจากระบบ
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -35,25 +36,16 @@ export async function POST(
       );
     }
 
-    // ปฏิเสธสลิป
-    await PaymentModel.updateStatus(id, PaymentStatus.CANCELLED, {
-      slipVerified: false,
-      rejectedAt: new Date(),
-      rejectedBy: session.user.email,
-      rejectionReason: reason,
-    });
+    // ลบ Payment
+    await PaymentModel.delete(id);
 
-    // อัปเดต Registration status เป็น rejected
-    await RegistrationModel.updateStatus(
-      payment.registrationId,
-      RegistrationStatus.REJECTED,
-      session.user.id || session.user.email,
-      `สลิปไม่ถูกต้อง: ${reason}`
-    );
+    // ลบ Registration ด้วย
+    await RegistrationModel.delete(payment.registrationId);
 
     return NextResponse.json({
       success: true,
-      message: 'Payment rejected successfully'
+      message: 'Payment and registration deleted successfully',
+      rejectionReason: reason
     });
 
   } catch (error) {

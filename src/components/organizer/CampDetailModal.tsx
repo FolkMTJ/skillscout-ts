@@ -70,7 +70,9 @@ export default function CampDetailModal({
   const [activeTab, setActiveTab] = useState('overview');
   const [payments, setPayments] = useState<Payment[]>([]);
   const [viewingSlip, setViewingSlip] = useState<Payment | null>(null);
+  const [viewingRegistration, setViewingRegistration] = useState<Registration | null>(null);
   const { isOpen: isSlipModalOpen, onOpen: onSlipModalOpen, onClose: onSlipModalClose } = useDisclosure();
+  const { isOpen: isRegModalOpen, onOpen: onRegModalOpen, onClose: onRegModalClose } = useDisclosure();
 
   useEffect(() => {
     const loadPayments = async () => {
@@ -413,32 +415,108 @@ export default function CampDetailModal({
 
                       <Tab key="all" title={`ทั้งหมด (${registrations.length})`}>
                         <div className="py-4">
-                          <Table aria-label="รายชื่อผู้สมัคร">
+                          <Table aria-label="รายชื่อผู้สมัคร" classNames={{
+                            wrapper: "shadow-md",
+                            th: "bg-gray-100 text-gray-700 font-semibold",
+                            td: "py-4",
+                          }}>
                             <TableHeader>
-                              <TableColumn>ชื่อ</TableColumn>
-                              <TableColumn>อีเมล</TableColumn>
+                              <TableColumn>ชื่อ-นามสกุล</TableColumn>
+                              <TableColumn>ข้อมูลติดต่อ</TableColumn>
+                              <TableColumn>ข้อมูลเพิ่มเติม</TableColumn>
                               <TableColumn>วันที่สมัคร</TableColumn>
                               <TableColumn>สถานะ</TableColumn>
+                              <TableColumn>การจัดการ</TableColumn>
                             </TableHeader>
-                            <TableBody emptyContent="ยังไม่มีผู้สมัคร">
+                            <TableBody emptyContent={
+                              <div className="text-center py-12">
+                                <FiUsers className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                                <p className="text-gray-500">ยังไม่มีผู้สมัคร</p>
+                              </div>
+                            }>
                               {registrations.map((reg) => (
                                 <TableRow key={reg._id}>
                                   <TableCell>
                                     <div className="flex items-center gap-2">
                                       {reg.status === 'attended' && (
-                                        <FiUserCheck className="text-purple-500" />
+                                        <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
                                       )}
-                                      {reg.userName}
+                                      <div>
+                                        <p className="font-semibold text-gray-800">{reg.userName}</p>
+                                        {reg.status === 'attended' && (
+                                          <p className="text-xs text-purple-600 flex items-center gap-1">
+                                            <FiUserCheck className="w-3 h-3" /> เช็คอินแล้ว
+                                          </p>
+                                        )}
+                                      </div>
                                     </div>
                                   </TableCell>
-                                  <TableCell>{reg.userEmail}</TableCell>
                                   <TableCell>
-                                    {new Date(reg.appliedAt).toLocaleDateString('th-TH')}
+                                    <div className="space-y-1">
+                                      <p className="text-sm text-gray-700">{reg.userEmail}</p>
+                                      {reg.userPhone && (
+                                        <p className="text-sm text-gray-500">{reg.userPhone}</p>
+                                      )}
+                                    </div>
                                   </TableCell>
                                   <TableCell>
-                                    <Chip size="sm" color={getStatusColor(reg.status as RegistrationStatus | 'attended')} variant="flat">
+                                    {reg.answers && reg.answers.length > 0 ? (
+                                      <div className="space-y-1">
+                                        {reg.answers.map((ans, idx) => (
+                                          <div key={idx} className="text-xs">
+                                            <span className="text-gray-500">{ans.question}:</span>
+                                            <span className="ml-1 text-gray-700 font-medium">
+                                              {ans.answer.length > 30 ? `${ans.answer.substring(0, 30)}...` : ans.answer}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <span className="text-xs text-gray-400">-</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="text-sm">
+                                      <p className="text-gray-700">
+                                        {new Date(reg.appliedAt).toLocaleDateString('th-TH', {
+                                          day: 'numeric',
+                                          month: 'short',
+                                          year: 'numeric'
+                                        })}
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        {new Date(reg.appliedAt).toLocaleTimeString('th-TH', {
+                                          hour: '2-digit',
+                                          minute: '2-digit'
+                                        })} น.
+                                      </p>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Chip 
+                                      size="sm" 
+                                      color={getStatusColor(reg.status as RegistrationStatus | 'attended')} 
+                                      variant="flat"
+                                      classNames={{
+                                        base: "font-medium",
+                                      }}
+                                    >
                                       {getStatusText(reg.status as RegistrationStatus | 'attended')}
                                     </Chip>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Button
+                                      size="sm"
+                                      variant="flat"
+                                      color="primary"
+                                      startContent={<FiEye />}
+                                      onPress={() => {
+                                        setViewingRegistration(reg);
+                                        onRegModalOpen();
+                                      }}
+                                    >
+                                      ดู
+                                    </Button>
                                   </TableCell>
                                 </TableRow>
                               ))}
@@ -598,6 +676,155 @@ export default function CampDetailModal({
             <Button
               variant="light"
               onPress={onSlipModalClose}
+            >
+              ปิด
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Registration Detail Modal */}
+      <Modal
+        isOpen={isRegModalOpen}
+        onClose={onRegModalClose}
+        size="2xl"
+        scrollBehavior="inside"
+      >
+        <ModalContent>
+          <ModalHeader className="border-b">
+            <h3 className="text-xl font-bold">ข้อมูลผู้สมัคร</h3>
+          </ModalHeader>
+          <ModalBody className="py-6">
+            {viewingRegistration && (
+              <div className="space-y-6">
+                {/* Header Card */}
+                <Card className="p-6 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h4 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">
+                        {viewingRegistration.userName}
+                      </h4>
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                          <FiUsers className="w-4 h-4" />
+                          {viewingRegistration.userEmail}
+                        </p>
+                        {viewingRegistration.userPhone && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                            <FiClock className="w-4 h-4" />
+                            {viewingRegistration.userPhone}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <Chip
+                      size="lg"
+                      color={getStatusColor(viewingRegistration.status as RegistrationStatus | 'attended')}
+                      variant="shadow"
+                      classNames={{
+                        base: "font-semibold",
+                      }}
+                    >
+                      {getStatusText(viewingRegistration.status as RegistrationStatus | 'attended')}
+                    </Chip>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <FiCalendar className="w-4 h-4" />
+                      <span>สมัครเมื่อ:</span>
+                      <span className="font-medium">
+                        {new Date(viewingRegistration.appliedAt).toLocaleDateString('th-TH', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Answers Section */}
+                {viewingRegistration.answers && viewingRegistration.answers.length > 0 && (
+                  <div className="space-y-4">
+                    <h5 className="font-semibold text-lg flex items-center gap-2">
+                      <FiCheckCircle className="text-blue-500" />
+                      ข้อมูลเพิ่มเติม
+                    </h5>
+                    <div className="space-y-3">
+                      {viewingRegistration.answers.map((ans, idx) => (
+                        <Card key={idx} className="p-4 hover:shadow-lg transition-shadow">
+                          <p className="text-sm font-semibold text-blue-600 mb-2">
+                            {ans.question}
+                          </p>
+                          <p className="text-gray-700 dark:text-gray-300">
+                            {ans.answer || '-'}
+                          </p>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Notes Section */}
+                {viewingRegistration.notes && (
+                  <Card className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400">
+                    <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-400 mb-2">
+                      หมายเหตุ:
+                    </p>
+                    <p className="text-gray-700 dark:text-gray-300">{viewingRegistration.notes}</p>
+                  </Card>
+                )}
+
+                {/* Timeline */}
+                <div className="space-y-3">
+                  <h5 className="font-semibold text-lg flex items-center gap-2">
+                    <FiClock className="text-purple-500" />
+                    ประวัติ
+                  </h5>
+                  <div className="space-y-2 pl-4 border-l-2 border-gray-200">
+                    <div className="flex items-start gap-3">
+                      <div className="w-2 h-2 rounded-full bg-blue-500 mt-2" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">สมัครเข้าค่าย</p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(viewingRegistration.appliedAt).toLocaleString('th-TH')}
+                        </p>
+                      </div>
+                    </div>
+                    {viewingRegistration.reviewedAt && (
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 rounded-full bg-green-500 mt-2" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">ตรวจสอบแล้ว</p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(viewingRegistration.reviewedAt).toLocaleString('th-TH')}
+                          </p>
+                          {viewingRegistration.reviewedBy && (
+                            <p className="text-xs text-gray-400">
+                              โดย: {viewingRegistration.reviewedBy}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {viewingRegistration.status === 'attended' && (
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 rounded-full bg-purple-500 mt-2 animate-pulse" />
+                        <div>
+                          <p className="text-sm font-medium text-purple-600">เช็คอินแล้ว</p>
+                          <p className="text-xs text-gray-500">เข้าร่วมค่ายเรียบร้อย</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter className="border-t">
+            <Button
+              variant="light"
+              onPress={onRegModalClose}
             >
               ปิด
             </Button>

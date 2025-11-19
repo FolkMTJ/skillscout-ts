@@ -139,74 +139,7 @@ export default function MyCampsPage() {
           onSelectionChange={(key) => setActiveTab(key as string)}
           className="mb-6"
         >
-          <Tab
-            key="attended"
-            title={
-              <div className="flex items-center gap-2">
-                <FiCheckCircle />
-                <span>เข้าร่วมแล้ว ({attendedCamps.length})</span>
-              </div>
-            }
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-              {attendedCamps.length === 0 ? (
-                <div className="col-span-full text-center py-12">
-                  <p className="text-gray-500">ยังไม่มีค่ายที่เข้าร่วม</p>
-                </div>
-              ) : (
-                attendedCamps.map((reg) => (
-                  <Card key={reg._id} className="overflow-hidden">
-                    <div className="relative h-48">
-                      <Image
-                        src={reg.campImage || '/api/placeholder/400/300'}
-                        alt={reg.campName || 'Camp'}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      />
-                      <div className="absolute top-2 right-2">
-                        <Chip size="sm" color="success" variant="shadow">
-                          เข้าร่วมแล้ว
-                        </Chip>
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-bold text-lg mb-2">{reg.campName}</h3>
-                      <div className="space-y-2 text-sm text-gray-600 mb-4">
-                        <div className="flex items-center gap-2">
-                          <FiMapPin />
-                          <span>{reg.campLocation}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <FiCalendar />
-                          <span>{reg.campDate}</span>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Button
-                          size="sm"
-                          color="primary"
-                          className="w-full"
-                          onPress={() => router.push(`/camps/${reg.campId}`)}
-                        >
-                          ดูรายละเอียด
-                        </Button>
-                        <Button
-                          size="sm"
-                          color="warning"
-                          variant="flat"
-                          className="w-full"
-                          startContent={<FiStar />}
-                        >
-                          เขียนรีวิว
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))
-              )}
-            </div>
-          </Tab>
+          
 
           <Tab
             key="upcoming"
@@ -269,6 +202,75 @@ export default function MyCampsPage() {
                           onPress={() => handleConfirmAttendance(reg._id, reg.campName || 'ค่าย')}
                         >
                           ยืนยันการเข้าร่วม
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+          </Tab>
+
+          <Tab
+            key="attended"
+            title={
+              <div className="flex items-center gap-2">
+                <FiCheckCircle />
+                <span>เข้าร่วมแล้ว ({attendedCamps.length})</span>
+              </div>
+            }
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+              {attendedCamps.length === 0 ? (
+                <div className="col-span-full text-center py-12">
+                  <p className="text-gray-500">ยังไม่มีค่ายที่เข้าร่วม</p>
+                </div>
+              ) : (
+                attendedCamps.map((reg) => (
+                  <Card key={reg._id} className="overflow-hidden">
+                    <div className="relative h-48">
+                      <Image
+                        src={reg.campImage || '/api/placeholder/400/300'}
+                        alt={reg.campName || 'Camp'}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      />
+                      <div className="absolute top-2 right-2">
+                        <Chip size="sm" color="success" variant="shadow">
+                          
+                        </Chip>
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-bold text-lg mb-2">{reg.campName}</h3>
+                      <div className="space-y-2 text-sm text-gray-600 mb-4">
+                        <div className="flex items-center gap-2">
+                          <FiMapPin />
+                          <span>{reg.campLocation}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <FiCalendar />
+                          <span>{reg.campDate}</span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Button
+                          size="sm"
+                          color="primary"
+                          className="w-full"
+                          onPress={() => router.push(`/camps/${reg.campId}`)}
+                        >
+                          ดูรายละเอียด
+                        </Button>
+                        <Button
+                          size="sm"
+                          color="warning"
+                          variant="flat"
+                          className="w-full"
+                          startContent={<FiStar />}
+                        >
+                          เขียนรีวิว
                         </Button>
                       </div>
                     </div>

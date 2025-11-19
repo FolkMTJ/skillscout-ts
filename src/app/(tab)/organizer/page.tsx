@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Card, Button, useDisclosure, Chip } from '@heroui/react';
-import { FiCalendar, FiUsers, FiCheckCircle, FiPlus, FiClock, FiUserCheck, FiCreditCard, FiTarget, FiZap, FiBook } from 'react-icons/fi';
+import { FiCalendar, FiUsers, FiCheckCircle, FiPlus, FiClock, FiUserCheck, FiCreditCard, FiTarget, FiZap, FiBook, FiAlertCircle } from 'react-icons/fi';
 import { Camp, Registration, RegistrationStatus } from '@/types';
 import { 
   CampFormModal, CampDetailModal, CampCardWithImage, StatCard, EmptyState 
@@ -45,6 +45,11 @@ export default function OrganizerDashboard() {
       const myCamps = session.user.role === 'admin' 
         ? allCamps 
         : allCamps.filter((c: Camp) => c.organizerId === session.user.id);
+      
+      console.log('=== ORGANIZER DASHBOARD ===');
+      console.log('Total camps loaded:', myCamps.length);
+      console.log('Camps with status:', myCamps.map(c => ({ name: c.name, status: c.status || 'NO STATUS' })));
+      console.log('==========================');
       
       setCamps(myCamps);
 
@@ -141,7 +146,10 @@ export default function OrganizerDashboard() {
         throw new Error(errorData.message || errorData.error || 'Failed to create camp');
       }
 
-      toast.success('สร้างค่ายสำเร็จ!');
+      toast.success('สร้างค่ายสำเร็จ! รอ Admin ตรวจสอบก่อนเปิดใช้งาน', {
+        duration: 4000,
+        icon: '⏳',
+      });
       onFormModalClose();
       resetForm();
       fetchData();
@@ -183,6 +191,8 @@ export default function OrganizerDashboard() {
         price: `฿${parseInt(formData.fee).toLocaleString()}`,
         qualifications: { level: formData.qualificationLevel, fields: qualificationInfo },
         additionalInfo, organizers: formData.organizers.length > 0 ? formData.organizers : editingCamp.organizers,
+        // ถ้าค่ายถูกปฏิเสธ เมื่อแก้ไขให้เปลี่ยน status เป็น pending อีกครั้ง
+        ...(editingCamp.status === 'rejected' && { status: 'pending' }),
       };
 
       const response = await fetch(`/api/camps/${editingCamp._id}`, {
@@ -193,7 +203,11 @@ export default function OrganizerDashboard() {
 
       if (!response.ok) throw new Error((await response.json()).error || 'Failed to update camp');
 
-      toast.success('อัพเดทค่ายสำเร็จ!');
+      if (editingCamp.status === 'rejected') {
+        toast.success('อัพเดทค่ายสำเร็จ! ค่ายถูกส่งไปตรวจสอบอีกครั้ง');
+      } else {
+        toast.success('อัพเดทค่ายสำเร็จ!');
+      }
       onFormModalClose();
       setEditingCamp(null);
       resetForm();
@@ -310,10 +324,26 @@ export default function OrganizerDashboard() {
   }
 
   const totalEnrolled = camps.reduce((sum, c) => sum + (c.enrolled || 0), 0);
+  
+  // กรองค่ายรอตรวจสอบ (status = pending หรือไม่มี status)
   const pendingCamps = camps.filter(c => c.status === 'pending');
+  
+  // กรองค่ายที่เปิดอยู่ (active หรือไม่มี status และยังไม่จบ)
+  const activeCamps = camps.filter(c => {
+    if (c.status === 'active') return true;
+    // ถ้าไม่มี status และยังไม่จบ ให้ถือว่าเป็น active
+    if (!c.status && c.endDate && new Date(c.endDate) > new Date()) return true;
+    return false;
+  });
+  
+  // กรองค่ายที่จบแล้ว
   const completedCamps = camps.filter(c => {
     return c.status === 'completed' || (c.endDate && new Date(c.endDate) < new Date());
   });
+  
+  // กรองค่ายที่ถูกปฏิเสธ
+  const rejectedCamps = camps.filter(c => c.status === 'rejected');
+  
   const attendedRegs = registrations.filter(r => r.status === RegistrationStatus.CONFIRMED).length;
 
   return (
@@ -362,7 +392,7 @@ export default function OrganizerDashboard() {
                   <Card key={camp._id} className="p-4 border-2 border-orange-200 bg-orange-50">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="font-bold text-gray-800">{camp.name}</h3>
+                        <h3 className="font-bold text-gray-800 line-clamp-1">{camp.name}</h3>
                         <p className="text-sm text-gray-600 mt-1">
                           <FiCalendar className="inline mr-1" />
                           {camp.date}
@@ -383,6 +413,45 @@ export default function OrganizerDashboard() {
                 )}
               </div>
             </Card>
+
+            {rejectedCamps.length > 0 && (
+              <Card className="p-6 border-2 border-red-200">
+                <h2 className="text-xl font-bold text-red-600 mb-4 flex items-center gap-2">
+                  <FiAlertCircle className="text-red-500" />
+                  ค่ายที่ถูกปฏิเสธ
+                </h2>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {rejectedCamps.map(camp => (
+                    <Card key={camp._id} className="p-4 border-2 border-red-200 bg-red-50">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-bold text-gray-800 line-clamp-1">{camp.name}</h3>
+                          <p className="text-sm text-gray-600 mt-1">
+                            <FiCalendar className="inline mr-1" />
+                            {camp.date}
+                          </p>
+                          <Chip size="sm" color="danger" variant="flat" className="mt-2">
+                            ถูกปฏิเสธ
+                          </Chip>
+                          <Button
+                            size="sm"
+                            color="primary"
+                            variant="flat"
+                            className="mt-3 w-full"
+                            onPress={() => {
+                              // แก้ไขและส่งใหม่
+                              handleEditCamp(camp);
+                            }}
+                          >
+                            แก้ไขและส่งใหม่
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </Card>
+            )}
           </div>
 
           <div className="lg:col-span-2">

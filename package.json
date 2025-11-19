@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "test:db": "tsx scripts/testConnection.ts",
-    "seed": "tsx scripts/seedCamps.ts"
+    "seed": "tsx scripts/seedCamps.ts",
+    "update-camp-status": "tsx scripts/update-camp-status.ts"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.11.0",

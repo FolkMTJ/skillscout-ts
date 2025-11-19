@@ -9,3 +9,4 @@ export { default as EmptyState } from './EmptyState';
 export { default as SimpleImageUpload } from './SimpleImageUpload';
 export { default as SimpleMultiImageUpload } from './SimpleMultiImageUpload';
 export { default as OrganizerImageUpload } from './OrganizerImageUpload';
+export { default as TagSelector } from './TagSelector';
