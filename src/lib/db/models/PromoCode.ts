@@ -34,6 +34,12 @@ export class PromoCodeModel {
   static async create(promoData: Omit<PromoCode, '_id' | 'usedCount' | 'createdAt'>): Promise<PromoCode> {
     const collection = await getCollection<PromoCodeDoc>(this.collectionName);
     
+    // Check if code already exists
+    const existing = await this.findByCode(promoData.code);
+    if (existing) {
+      throw new Error('รหัสโปรโมชั่นนี้มีอยู่แล้ว');
+    }
+    
     const promoDoc: Omit<PromoCodeDoc, '_id'> = {
       ...promoData,
       code: promoData.code.toUpperCase(),
@@ -53,6 +59,17 @@ export class PromoCodeModel {
     const collection = await getCollection<PromoCodeDoc>(this.collectionName);
     const filter: Filter<PromoCodeDoc> = { 
       code: code.toUpperCase() 
+    } as Filter<PromoCodeDoc>;
+    
+    const promo = await collection.findOne(filter);
+    if (!promo) return null;
+    return this.toPublic(promo);
+  }
+
+  static async findById(id: string): Promise<PromoCode | null> {
+    const collection = await getCollection<PromoCodeDoc>(this.collectionName);
+    const filter: Filter<PromoCodeDoc> = { 
+      _id: new ObjectId(id) 
     } as Filter<PromoCodeDoc>;
     
     const promo = await collection.findOne(filter);
@@ -94,6 +111,7 @@ export class PromoCodeModel {
       };
     }
 
+    // ตรวจสอบว่าโค้ดใช้ได้กับค่ายนี้หรือไม่
     if (campId && promo.applicableCamps && promo.applicableCamps.length > 0) {
       if (!promo.applicableCamps.includes(campId)) {
         return { valid: false, discount: 0, message: 'รหัสนี้ใช้ไม่ได้กับค่ายนี้' };
@@ -137,6 +155,69 @@ export class PromoCodeModel {
     const collection = await getCollection<PromoCodeDoc>(this.collectionName);
     const promos = await collection
       .find({})
+      .sort({ createdAt: -1 })
+      .toArray();
+    
+    return promos.map(doc => this.toPublic(doc));
+  }
+
+  static async findByCreator(creatorId: string): Promise<PromoCode[]> {
+    const collection = await getCollection<PromoCodeDoc>(this.collectionName);
+    const filter: Filter<PromoCodeDoc> = { 
+      createdBy: creatorId 
+    } as Filter<PromoCodeDoc>;
+    
+    const promos = await collection
+      .find(filter)
+      .sort({ createdAt: -1 })
+      .toArray();
+    
+    return promos.map(doc => this.toPublic(doc));
+  }
+
+  static async update(id: string, updates: Partial<Omit<PromoCode, '_id' | 'createdAt' | 'createdBy'>>): Promise<boolean> {
+    const collection = await getCollection<PromoCodeDoc>(this.collectionName);
+    const filter: Filter<PromoCodeDoc> = { 
+      _id: new ObjectId(id) 
+    } as Filter<PromoCodeDoc>;
+    
+    const updateDoc: any = { ...updates };
+    if (updateDoc.code) {
+      updateDoc.code = updateDoc.code.toUpperCase();
+    }
+    
+    const result = await collection.updateOne(
+      filter,
+      { $set: updateDoc }
+    );
+    
+    return result.modifiedCount > 0;
+  }
+
+  static async delete(id: string): Promise<boolean> {
+    const collection = await getCollection<PromoCodeDoc>(this.collectionName);
+    const filter: Filter<PromoCodeDoc> = { 
+      _id: new ObjectId(id) 
+    } as Filter<PromoCodeDoc>;
+    
+    const result = await collection.deleteOne(filter);
+    return result.deletedCount > 0;
+  }
+
+  static async findByCamp(campId: string): Promise<PromoCode[]> {
+    const collection = await getCollection<PromoCodeDoc>(this.collectionName);
+    
+    // หาโค้ดที่ใช้ได้กับค่ายนี้ (applicableCamps มี campId หรือ applicableCamps เป็น null/empty = ใช้ได้ทั้งหมด)
+    const filter: Filter<PromoCodeDoc> = {
+      $or: [
+        { applicableCamps: { $in: [campId] } },
+        { applicableCamps: { $exists: false } },
+        { applicableCamps: { $size: 0 } }
+      ]
+    } as Filter<PromoCodeDoc>;
+    
+    const promos = await collection
+      .find(filter)
       .sort({ createdAt: -1 })
       .toArray();
     

@@ -24,7 +24,8 @@ interface Registration {
   campDate?: string;
   status: string;
   appliedAt: string;
-  updatedAt: string;
+  updatedAt?: string;
+  reviewedAt?: string;
 }
 
 export default function MyCampsPage() {
@@ -32,54 +33,72 @@ export default function MyCampsPage() {
   const router = useRouter();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('attended');
-
-  const fetchRegistrations = useCallback(async () => {
-    if (!session?.user?.email) return;
-    
-    try {
-      setLoading(true);
-      console.log('Fetching registrations for:', session.user.email);
-      
-      const response = await fetch(`/api/registrations?userId=${encodeURIComponent(session.user.email)}`);
-      const data = await response.json();
-      
-      console.log('Registrations response:', data);
-      
-      if (data.registrations) {
-        const registrationsWithCamps = await Promise.all(
-          data.registrations.map(async (reg: Registration) => {
-            try {
-              const campResponse = await fetch(`/api/camps/${reg.campId}`);
-              const campData: CampDetails = await campResponse.json();
-              console.log('Camp data for', reg.campId, ':', campData);
-              return {
-                ...reg,
-                campName: campData.name,
-                campImage: campData.image,
-                campLocation: campData.location,
-                campDate: campData.date,
-              };
-            } catch {
-              return reg;
-            }
-          })
-        );
-        console.log('Final registrations with camps:', registrationsWithCamps);
-        setRegistrations(registrationsWithCamps);
-      }
-    } catch {
-      toast.error('ไม่สามารถโหลดข้อมูลได้');
-    } finally {
-      setLoading(false);
-    }
-  }, [session]);
+  const [activeTab, setActiveTab] = useState('upcoming');
 
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.email) {
+    const fetchRegistrations = async () => {
+      if (!session?.user?.email) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        console.log('Fetching registrations for:', session.user.email);
+        
+        const response = await fetch(`/api/registrations?userId=${encodeURIComponent(session.user.email)}`);
+        const data = await response.json();
+        
+        console.log('Registrations response:', data);
+        console.log('data.registrations exists?', !!data.registrations);
+        console.log('data.registrations length:', data.registrations?.length);
+        console.log('data.registrations type:', typeof data.registrations);
+        console.log('data.registrations is array?', Array.isArray(data.registrations));
+        
+        if (data.registrations && Array.isArray(data.registrations)) {
+          console.log('Raw registrations from API:', data.registrations);
+          const registrationsWithCamps = await Promise.all(
+            data.registrations.map(async (reg: Registration) => {
+              try {
+                const campResponse = await fetch(`/api/camps/${reg.campId}`);
+                if (!campResponse.ok) {
+                  console.warn(`Camp ${reg.campId} not found, using registration data only`);
+                  return reg;
+                }
+                const campData: CampDetails = await campResponse.json();
+                console.log('Camp data for', reg.campId, ':', campData);
+                return {
+                  ...reg,
+                  campName: campData.name,
+                  campImage: campData.image,
+                  campLocation: campData.location,
+                  campDate: campData.date,
+                };
+              } catch (error) {
+                console.error(`Error fetching camp ${reg.campId}:`, error);
+                return reg;
+              }
+            })
+          );
+          console.log('Final registrations with camps:', registrationsWithCamps);
+          console.log('About to setRegistrations with', registrationsWithCamps.length, 'items');
+          setRegistrations(registrationsWithCamps);
+          console.log('setRegistrations called successfully');
+        }
+      } catch (error) {
+        console.error('Error in fetchRegistrations:', error);
+        toast.error('ไม่สามารถโหลดข้อมูลได้');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (status === 'authenticated') {
       fetchRegistrations();
+    } else if (status === 'unauthenticated') {
+      setLoading(false);
     }
-  }, [status, session, fetchRegistrations]);
+  }, [status, session?.user?.email]);
 
   const handleConfirmAttendance = async (registrationId: string, campName: string) => {
     if (!confirm(`ยืนยันการเข้าร่วมค่าย "${campName}" หรือไม่?`)) return;
@@ -92,14 +111,50 @@ export default function MyCampsPage() {
       if (!response.ok) throw new Error('Failed to confirm');
 
       toast.success('ยืนยันการเข้าร่วมสำเร็จ!');
-      fetchRegistrations();
+      
+      // Refetch registrations
+      if (session?.user?.email) {
+        const regResponse = await fetch(`/api/registrations?userId=${encodeURIComponent(session.user.email)}`);
+        const data = await regResponse.json();
+        if (data.registrations) {
+          const registrationsWithCamps = await Promise.all(
+            data.registrations.map(async (reg: Registration) => {
+              try {
+                const campResponse = await fetch(`/api/camps/${reg.campId}`);
+                if (!campResponse.ok) return reg;
+                const campData: CampDetails = await campResponse.json();
+                return {
+                  ...reg,
+                  campName: campData.name,
+                  campImage: campData.image,
+                  campLocation: campData.location,
+                  campDate: campData.date,
+                };
+              } catch {
+                return reg;
+              }
+            })
+          );
+          setRegistrations(registrationsWithCamps);
+        }
+      }
     } catch {
       toast.error('เกิดข้อผิดพลาดในการยืนยัน');
     }
   };
 
   const attendedCamps = registrations.filter(r => r.status === 'attended');
-  const upcomingCamps = registrations.filter(r => r.status === 'approved');
+  // กำลังจะมาถึง = อนุมัติแล้ว (approved) หรือยืนยันแล้ว (confirmed) แต่ยังไม่ได้เข้าร่วม (ไม่ใช่ attended)
+  const upcomingCamps = registrations.filter(r => 
+    r.status === 'approved' || r.status === 'confirmed'
+  );
+  
+  console.log('=== MY CAMPS DEBUG ===');
+  console.log('Total registrations:', registrations.length);
+  console.log('Registrations statuses:', registrations.map(r => ({ id: r._id, status: r.status })));
+  console.log('Attended camps:', attendedCamps.length);
+  console.log('Upcoming camps (approved):', upcomingCamps.length);
+  console.log('=====================');
 
   if (status === 'loading' || loading) {
     return (

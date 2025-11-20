@@ -48,7 +48,7 @@ export default function OrganizerDashboard() {
       
       console.log('=== ORGANIZER DASHBOARD ===');
       console.log('Total camps loaded:', myCamps.length);
-      console.log('Camps with status:', myCamps.map(c => ({ name: c.name, status: c.status || 'NO STATUS' })));
+      console.log('Camps with status:', myCamps.map((c: Camp) => ({ name: c.name, status: c.status || 'NO STATUS' })));
       console.log('==========================');
       
       setCamps(myCamps);
@@ -464,7 +464,7 @@ export default function OrganizerDashboard() {
                 {camps.length > 0 && <p className="text-sm text-gray-500">{camps.length} ค่าย</p>}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {camps.map(camp => {
                   const campRegs = registrations.filter(r => r.campId === camp._id);
                   const pending = campRegs.filter(r => r.status === RegistrationStatus.PENDING).length;

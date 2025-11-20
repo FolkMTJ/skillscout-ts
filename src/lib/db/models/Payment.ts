@@ -83,6 +83,11 @@ export class PaymentModel {
     return this.toPublic(payment);
   }
 
+  // Alias for consistency
+  static async findByRegistrationId(registrationId: string): Promise<Payment | null> {
+    return this.findByRegistration(registrationId);
+  }
+
   static async updateStatus(id: string, status: PaymentStatus, additionalData?: Partial<Omit<PaymentDoc, '_id'>>): Promise<boolean> {
     const collection = await getCollection<PaymentDoc>(this.collectionName);
     const filter: Filter<PaymentDoc> = { _id: new ObjectId(id) } as Filter<PaymentDoc>;

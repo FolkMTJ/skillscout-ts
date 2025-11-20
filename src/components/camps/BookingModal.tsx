@@ -10,13 +10,13 @@ import {
   ModalFooter,
   Button,
   Input,
-  Textarea,
   Divider,
   Image,
   Progress,
   Card,
 } from '@heroui/react';
-import { FaCheckCircle, FaTag, FaQrcode, FaUpload, FaImage, FaClock, FaLightbulb, FaMobileAlt, FaGift } from 'react-icons/fa';
+import { FiCheckCircle, FiTag, FiCreditCard, FiUpload, FiImage, FiClock, FiInfo, FiSmartphone, FiGift, FiX, FiCheck } from 'react-icons/fi';
+import toast from 'react-hot-toast';
 
 interface CampData {
   _id: string;
@@ -27,15 +27,17 @@ interface CampData {
   deadline: string;
   fee?: number;
   organizerId?: string;
+  image?: string;
 }
 
 interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   camp: CampData;
+  onRegistrationSuccess?: () => void;
 }
 
-export default function BookingModal({ isOpen, onClose, camp }: BookingModalProps) {
+export default function BookingModal({ isOpen, onClose, camp, onRegistrationSuccess }: BookingModalProps) {
   const { data: session } = useSession();
 
   const [step, setStep] = useState(1);
@@ -43,9 +45,6 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
     name: '',
     email: '',
     phone: '',
-    address: '',
-    university: '',
-    reason: '',
   });
 
   const [promoCode, setPromoCode] = useState('');
@@ -69,21 +68,49 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
   const [error, setError] = useState('');
 
   const basePrice = camp.fee || parseFloat(camp.price.replace(/[^0-9]/g, '')) || 0;
-  const finalPrice = basePrice - discount;
+  const finalPrice = Math.max(0, basePrice - discount);
   const isFree = finalPrice === 0;
 
+  // 🔧 FIX: Fetch user data including phone number
   useEffect(() => {
-    if (session?.user) {
-      setFormData(prev => ({
-        ...prev,
-        name: session.user.name || prev.name,
-        email: session.user.email || prev.email,
-      }));
+    const fetchUserData = async () => {
+      if (session?.user?.email) {
+        try {
+          const response = await fetch('/api/user/profile');
+          if (response.ok) {
+            const data = await response.json();
+            if (data.user) {
+              setFormData(prev => ({
+                ...prev,
+                name: data.user.name || prev.name,
+                email: data.user.email || prev.email,
+                phone: data.user.phone || prev.phone,
+              }));
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+          // Fallback to session data
+          setFormData(prev => ({
+            ...prev,
+            name: session.user.name || prev.name,
+            email: session.user.email || prev.email,
+          }));
+        }
+      }
+    };
+
+    if (session?.user && isOpen) {
+      fetchUserData();
     }
-  }, [session]);
+  }, [session, isOpen]);
 
   const handleValidatePromo = async () => {
-    if (!promoCode.trim()) return;
+    if (!promoCode.trim()) {
+      toast.error('กรุณากรอกรหัสโปรโมชั่น');
+      return;
+    }
+    
     setIsValidatingPromo(true);
     setPromoMessage('');
 
@@ -91,30 +118,46 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
       const response = await fetch('/api/payment/validate-promo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: promoCode, amount: basePrice, campId: camp._id }),
+        body: JSON.stringify({ 
+          code: promoCode, 
+          amount: basePrice, 
+          campId: camp._id 
+        }),
       });
+      
       const result = await response.json();
+      
       if (result.valid) {
         setDiscount(result.discount);
         setPromoApplied(true);
-        setPromoMessage(`✓ ส่วนลด ฿${result.discount.toLocaleString()}`);
+        setPromoMessage(`ส่วนลด ฿${result.discount.toLocaleString()}`);
+        toast.success(`ใช้โค้ดสำเร็จ! ลด ฿${result.discount.toLocaleString()}`);
       } else {
         setDiscount(0);
         setPromoApplied(false);
         setPromoMessage(result.message || 'รหัสไม่ถูกต้อง');
+        toast.error(result.message || 'รหัสโปรโมชั่นไม่ถูกต้อง');
       }
-    } catch {
+    } catch (err) {
+      console.error('Promo validation error:', err);
       setPromoMessage('เกิดข้อผิดพลาด');
+      toast.error('ไม่สามารถตรวจสอบโค้ดได้');
     } finally {
       setIsValidatingPromo(false);
     }
   };
 
-  // 🔧 FIX BUG 1: ค่าย 0 บาท = ฟรี และข้ามขั้นตอนชำระเงิน
+  const handleRemovePromo = () => {
+    setPromoCode('');
+    setPromoApplied(false);
+    setDiscount(0);
+    setPromoMessage('');
+    toast.success('ยกเลิกโค้ดส่วนลด');
+  };
+
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // ถ้าเป็นค่ายฟรี (0 บาท) ให้ข้ามขั้นตอนชำระเงินไปเลย
     if (isFree) {
       await handleFreeRegistration();
       return;
@@ -127,6 +170,7 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
   const handleFreeRegistration = async () => {
     setIsSubmitting(true);
     setError('');
+    
     try {
       const regResponse = await fetch('/api/registrations', {
         method: 'POST',
@@ -136,30 +180,36 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
           userName: formData.name,
           userEmail: formData.email,
           userPhone: formData.phone,
-          answers: [
-            { question: 'ที่อยู่', answer: formData.address },
-            { question: 'มหาวิทยาลัย/สถาบัน', answer: formData.university },
-            { question: 'เหตุผลที่ต้องการเข้าร่วม', answer: formData.reason },
-          ],
         }),
       });
 
       if (!regResponse.ok) {
         const errorData = await regResponse.json();
-        throw new Error(errorData.error || 'Failed to create registration');
+        throw new Error(errorData.error || 'ไม่สามารถสมัครได้');
       }
 
       const registration = await regResponse.json();
       
-      // อัปเดตสถานะเป็น Approved เลยสำหรับค่ายฟรี
-      await fetch(`/api/registrations/${registration.registration._id}/confirm`, { 
-        method: 'POST' 
+      const registrationId = registration.registration._id;
+      await fetch(`/api/registrations/${registrationId}`, { 
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          status: 'approved',
+          reviewedBy: 'system',
+          reviewedAt: new Date().toISOString(),
+          notes: 'อนุมัติอัตโนมัติสำหรับค่ายฟรี'
+        })
       });
       
-      setStep(4); // ไปหน้า Success
+      toast.success('สมัครสำเร็จ!');
+      setStep(4);
+      onRegistrationSuccess?.();
       setTimeout(() => handleClose(), 3000);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'เกิดข้อผิดพลาด');
+      const message = error instanceof Error ? error.message : 'เกิดข้อผิดพลาด';
+      setError(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -171,13 +221,23 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
       const response = await fetch('/api/payment/generate-qr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: finalPrice, phoneNumber: '0813259525' }),
+        body: JSON.stringify({ 
+          amount: finalPrice, 
+          phoneNumber: '0813259525' 
+        }),
       });
+      
       const data = await response.json();
-      if (response.ok) setQrCodeUrl(data.qrCode);
-      else throw new Error('Failed to generate QR code');
-    } catch {
-      setError('ไม่สามารถสร้าง QR Code ได้');
+      
+      if (response.ok) {
+        setQrCodeUrl(data.qrCode);
+      } else {
+        throw new Error('ไม่สามารถสร้าง QR Code ได้');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'ไม่สามารถสร้าง QR Code ได้';
+      setError(message);
+      toast.error(message);
     } finally {
       setIsGeneratingQR(false);
     }
@@ -187,11 +247,11 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
-        setError('กรุณาอัปโหลดไฟล์รูปภาพเท่านั้น');
+        toast.error('กรุณาอัปโหลดไฟล์รูปภาพเท่านั้น');
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
-        setError('ไฟล์ใหญ่เกิน 5MB');
+        toast.error('ไฟล์ใหญ่เกิน 5MB');
         return;
       }
       setSlipFile(file);
@@ -202,9 +262,7 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
     }
   };
 
-  // 🔧 FIX BUG 2 & 4: บันทึก registrationId และ paymentId ไว้ให้สามารถ upload ซ้ำได้
   const handleProceedToUpload = async () => {
-    // ถ้ามี registration และ payment อยู่แล้ว ให้ข้ามไปขั้นตอนอัปโหลดเลย
     if (registrationId && paymentId) {
       setStep(3);
       return;
@@ -212,6 +270,7 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
 
     setIsSubmitting(true);
     setError('');
+    
     try {
       const regResponse = await fetch('/api/registrations', {
         method: 'POST',
@@ -221,17 +280,12 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
           userName: formData.name,
           userEmail: formData.email,
           userPhone: formData.phone,
-          answers: [
-            { question: 'ที่อยู่', answer: formData.address },
-            { question: 'มหาวิทยาลัย/สถาบัน', answer: formData.university },
-            { question: 'เหตุผลที่ต้องการเข้าร่วม', answer: formData.reason },
-          ],
         }),
       });
 
       if (!regResponse.ok) {
         const errorData = await regResponse.json();
-        throw new Error(errorData.error || 'Failed to create registration');
+        throw new Error(errorData.error || 'ไม่สามารถสมัครได้');
       }
 
       const registration = await regResponse.json();
@@ -253,12 +307,18 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
           promoCode: promoApplied ? promoCode : undefined,
         }),
       });
-      if (!paymentResponse.ok) throw new Error('Failed to create payment');
+      
+      if (!paymentResponse.ok) {
+        throw new Error('ไม่สามารถสร้างรายการชำระเงินได้');
+      }
+      
       const payment = await paymentResponse.json();
       setPaymentId(payment.payment._id);
       setStep(3);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'เกิดข้อผิดพลาด');
+      const message = error instanceof Error ? error.message : 'เกิดข้อผิดพลาด';
+      setError(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -266,9 +326,10 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
 
   const handleUploadSlip = async () => {
     if (!slipFile) {
-      setError('กรุณาเลือกไฟล์สลิป');
+      toast.error('กรุณาเลือกไฟล์สลิป');
       return;
     }
+    
     setIsUploading(true);
     setError('');
     setUploadProgress(0);
@@ -290,21 +351,34 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      if (!uploadResponse.ok) throw new Error('Failed to upload slip');
+      if (!uploadResponse.ok) {
+        throw new Error('ไม่สามารถอัปโหลดสลิปได้');
+      }
+      
       const uploadData = await uploadResponse.json();
       const slipUrl = uploadData.secure_url;
 
       const updateResponse = await fetch(`/api/payment/${paymentId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slipUrl: slipUrl, status: 'pending' }),
+        body: JSON.stringify({ 
+          slipUrl: slipUrl, 
+          status: 'pending' 
+        }),
       });
-      if (!updateResponse.ok) throw new Error('Failed to update payment');
+      
+      if (!updateResponse.ok) {
+        throw new Error('ไม่สามารถบันทึกข้อมูลได้');
+      }
 
+      toast.success('อัปโหลดสลิปสำเร็จ!');
       setStep(4);
+      onRegistrationSuccess?.();
       setTimeout(() => handleClose(), 3000);
-    } catch {
-      setError('ไม่สามารถอัปโหลดสลิปได้ กรุณาลองใหม่');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'ไม่สามารถอัปโหลดสลิปได้';
+      setError(message);
+      toast.error(message);
       setUploadProgress(0);
     } finally {
       setIsUploading(false);
@@ -318,9 +392,6 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
         name: session?.user?.name || '',
         email: session?.user?.email || '',
         phone: '',
-        address: '',
-        university: '',
-        reason: '',
       });
       setPromoCode('');
       setPromoApplied(false);
@@ -341,14 +412,14 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      size="3xl"
+      size="2xl"
       scrollBehavior="inside"
       isDismissable={!isSubmitting && !isUploading}
       classNames={{
-        base: "bg-gradient-to-br from-amber-50 to-orange-50 dark:from-gray-900 dark:to-gray-800",
-        header: "border-b border-orange-200 dark:border-gray-700",
+        base: "bg-white dark:bg-gray-900",
+        header: "border-b-3 border-orange-400",
         body: "py-6",
-        footer: "border-t border-orange-200 dark:border-gray-700",
+        footer: "border-t-3 border-orange-400",
       }}
     >
       <ModalContent>
@@ -356,28 +427,33 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
         {step === 4 && (
           <div className="p-12 text-center">
             <div className="flex justify-center mb-6">
-              <div className="w-24 h-24 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center animate-bounce">
-                <FaCheckCircle className="text-green-500 text-5xl" />
+              <div className="w-24 h-24 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <FiCheckCircle className="text-green-500 text-6xl" />
               </div>
             </div>
             <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-3">
-              {isFree ? 'สมัครสำเร็จ!' : 'อัปโหลดสลิปสำเร็จ!'}
+              {isFree ? '🎉 สมัครสำเร็จ!' : '✅ อัปโหลดสลิปสำเร็จ!'}
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-2">
-              {isFree ? 'คุณได้ลงทะเบียนเข้าร่วมค่ายเรียบร้อยแล้ว' : 'เรากำลังตรวจสอบการชำระเงินของคุณ'}
+              {isFree 
+                ? 'คุณได้ลงทะเบียนเข้าร่วมค่ายเรียบร้อยแล้ว' 
+                : 'เรากำลังตรวจสอบการชำระเงินของคุณ'}
             </p>
-            <p className="text-sm text-gray-500">
-              {isFree ? 'คุณจะได้รับอีเมลยืนยันในไม่ช้า' : 'คุณจะได้รับอีเมลยืนยันภายใน 24 ชั่วโมง'}
+            <p className="text-sm text-gray-500 mb-6">
+              คุณจะได้รับอีเมลยืนยัน{isFree ? 'ในไม่ช้า' : 'ภายใน 24 ชั่วโมง'}
             </p>
+            
             {!isFree && (
-              <div className="mt-6 p-4 bg-amber-100 dark:bg-amber-900/20 rounded-lg">
+              <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border-2 border-amber-200 dark:border-amber-800">
                 <div className="flex items-start gap-3 text-left">
-                  <FaClock className="text-amber-600 mt-1 flex-shrink-0" />
+                  <FiClock className="text-amber-600 mt-1 flex-shrink-0" size={20} />
                   <div className="text-sm text-amber-800 dark:text-amber-200">
-                    <p className="font-bold mb-1">ระบบ Escrow Protection</p>
-                    <p>เงินจะถูกโอนให้ผู้จัดค่ายหลังจาก:</p>
-                    <p>• คุณยืนยันการเข้าร่วมค่ายเสร็จสิ้น หรือ</p>
-                    <p>• 15 วันนับจากวันจบค่าย (อัตโนมัติ)</p>
+                    <p className="font-bold mb-2">🔒 ระบบ Escrow Protection</p>
+                    <p className="text-xs leading-relaxed">
+                      เงินจะถูกโอนให้ผู้จัดค่ายหลังจาก:<br/>
+                      • คุณยืนยันการเข้าร่วมค่ายเสร็จสิ้น หรือ<br/>
+                      • 15 วันนับจากวันจบค่าย (อัตโนมัติ)
+                    </p>
                   </div>
                 </div>
               </div>
@@ -390,55 +466,110 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
           <>
             <ModalHeader>
               <div className="w-full">
-                <h2 className="text-2xl font-black text-gray-900 dark:text-white">อัปโหลดหลักฐานการโอนเงิน</h2>
-                <p className="text-sm font-normal text-gray-600 dark:text-gray-400 mt-1">กรุณาแนบสลิปการโอนเงินเพื่อยืนยันการชำระ</p>
+                <h2 className="text-2xl font-black text-gray-900 dark:text-white">
+                  📤 อัปโหลดสลิปการโอนเงิน
+                </h2>
+                <p className="text-sm font-normal text-gray-600 dark:text-gray-400 mt-1">
+                  แนบสลิปเพื่อยืนยันการชำระเงิน ฿{finalPrice.toLocaleString()}
+                </p>
               </div>
             </ModalHeader>
             <ModalBody>
               <div className="space-y-6">
                 {error && (
-                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                    <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+                  <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-500 rounded-xl p-3">
+                    <p className="text-red-600 dark:text-red-400 text-sm font-semibold">{error}</p>
                   </div>
                 )}
-                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl p-8 text-center hover:border-orange-400 transition-all">
+                
+                <div className="border-3 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl p-8 text-center hover:border-orange-400 hover:bg-orange-50/50 dark:hover:bg-orange-900/10 transition-all">
                   {slipPreview ? (
                     <div className="space-y-4">
-                      <Image src={slipPreview} alt="Slip Preview" className="mx-auto max-h-64 rounded-lg" />
-                      <Button color="warning" variant="flat" onPress={() => { setSlipFile(null); setSlipPreview(''); }}>เปลี่ยนไฟล์</Button>
+                      <div className="relative inline-block">
+                        <Image 
+                          src={slipPreview} 
+                          alt="Slip Preview" 
+                          className="mx-auto max-h-80 rounded-xl border-3 border-orange-300" 
+                        />
+                      </div>
+                      <Button 
+                        color="warning" 
+                        variant="flat"
+                        onPress={() => { 
+                          setSlipFile(null); 
+                          setSlipPreview(''); 
+                        }}
+                        startContent={<FiX />}
+                      >
+                        เปลี่ยนไฟล์
+                      </Button>
                     </div>
                   ) : (
                     <label className="cursor-pointer block">
-                      <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                      <FaUpload className="mx-auto text-4xl text-gray-400 mb-4" />
-                      <p className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">คลิกเพื่ออัปโหลดสลิป</p>
-                      <p className="text-sm text-gray-500">รองรับไฟล์ JPG, PNG (สูงสุด 5MB)</p>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handleFileChange} 
+                        className="hidden" 
+                      />
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                          <FiUpload className="text-4xl text-orange-500" />
+                        </div>
+                        <div>
+                          <p className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-1">
+                            คลิกเพื่ออัปโหลดสลิป
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            รองรับ JPG, PNG (สูงสุด 5MB)
+                          </p>
+                        </div>
+                      </div>
                     </label>
                   )}
                 </div>
+                
                 {isUploading && (
                   <div className="space-y-2">
-                    <Progress value={uploadProgress} color="warning" className="w-full" />
-                    <p className="text-sm text-center text-gray-600">กำลังอัปโหลด... {uploadProgress}%</p>
+                    <Progress 
+                      value={uploadProgress} 
+                      color="warning" 
+                      className="w-full" 
+                      size="lg"
+                    />
+                    <p className="text-sm text-center text-gray-600 font-semibold">
+                      กำลังอัปโหลด... {uploadProgress}%
+                    </p>
                   </div>
                 )}
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 flex items-start gap-2">
-                  <FaLightbulb className="text-blue-500 mt-0.5 flex-shrink-0" size={16} />
-                  <p className="text-sm text-blue-800 dark:text-blue-200">
-                    <strong>เคล็ดลับ:</strong> ตรวจสอบให้แน่ใจว่าสลิปแสดงยอดเงิน ฿{finalPrice.toLocaleString()} ชัดเจน
-                  </p>
+                
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border-2 border-blue-200 dark:border-blue-800">
+                  <div className="flex items-start gap-2">
+                    <FiInfo className="text-blue-500 mt-0.5 flex-shrink-0" size={18} />
+                    <div className="text-sm text-blue-800 dark:text-blue-200">
+                      <p className="font-bold mb-1">💡 เคล็ดลับ:</p>
+                      <p>ตรวจสอบให้แน่ใจว่าสลิปแสดงยอดเงิน <strong>฿{finalPrice.toLocaleString()}</strong> และข้อมูลชัดเจน</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </ModalBody>
             <ModalFooter>
-              <Button color="danger" variant="light" onPress={() => setStep(2)} isDisabled={isUploading}>ย้อนกลับ</Button>
+              <Button 
+                color="danger" 
+                variant="light" 
+                onPress={() => setStep(2)} 
+                isDisabled={isUploading}
+              >
+                ย้อนกลับ
+              </Button>
               <Button 
                 color="warning" 
-                className="bg-orange-500 font-bold text-white" 
+                className="bg-gradient-to-r from-orange-500 to-amber-500 font-bold text-white shadow-lg" 
                 onPress={handleUploadSlip} 
                 isLoading={isUploading} 
                 isDisabled={!slipFile} 
-                endContent={<FaImage />}
+                endContent={<FiImage />}
               >
                 {isUploading ? 'กำลังอัปโหลด...' : 'ยืนยันและอัปโหลด'}
               </Button>
@@ -451,8 +582,12 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
           <>
             <ModalHeader>
               <div className="w-full">
-                <h2 className="text-2xl font-black text-gray-900 dark:text-white">สแกน QR Code เพื่อชำระเงิน</h2>
-                <p className="text-sm font-normal text-gray-600 dark:text-gray-400 mt-1">ชำระเงินผ่าน PromptPay</p>
+                <h2 className="text-2xl font-black text-gray-900 dark:text-white">
+                  💳 สแกน QR เพื่อชำระเงิน
+                </h2>
+                <p className="text-sm font-normal text-gray-600 dark:text-gray-400 mt-1">
+                  ชำระผ่าน PromptPay
+                </p>
               </div>
             </ModalHeader>
             <ModalBody>
@@ -460,44 +595,65 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
                 {isGeneratingQR ? (
                   <div className="py-12">
                     <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-orange-500 mx-auto mb-4"></div>
-                    <p className="text-gray-600 dark:text-gray-400">กำลังสร้าง QR Code...</p>
+                    <p className="text-gray-600 dark:text-gray-400 font-semibold">กำลังสร้าง QR Code...</p>
                   </div>
                 ) : qrCodeUrl ? (
                   <>
-                    <div className="bg-white p-6 rounded-2xl shadow-xl inline-block">
-                      <Image src={qrCodeUrl} alt="QR Code" width={300} height={300} className="mx-auto" />
+                    <div className="bg-white p-8 rounded-2xl shadow-2xl inline-block border-3 border-orange-300">
+                      <Image 
+                        src={qrCodeUrl} 
+                        alt="QR Code" 
+                        width={280} 
+                        height={280} 
+                        className="mx-auto" 
+                      />
                     </div>
-                    <div className="bg-gradient-to-r from-orange-100 to-amber-100 dark:from-orange-900/20 dark:to-amber-900/20 p-6 rounded-xl">
+                    
+                    <Card className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-3 border-orange-300">
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">ยอดชำระ</p>
-                      <p className="text-5xl font-black text-orange-600 dark:text-orange-400">฿{finalPrice.toLocaleString()}</p>
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2 text-left bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                      <p className="font-bold text-gray-800 dark:text-gray-200 mb-2 flex items-center gap-2">
-                        <FaMobileAlt className="text-blue-500" />
+                      <p className="text-5xl font-black bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+                        ฿{finalPrice.toLocaleString()}
+                      </p>
+                    </Card>
+                    
+                    <div className="text-sm text-left bg-gray-50 dark:bg-gray-800 p-5 rounded-xl border-2 border-gray-200 dark:border-gray-700">
+                      <p className="font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                        <FiSmartphone className="text-blue-500" />
                         วิธีการชำระเงิน:
                       </p>
-                      <p>1. เปิดแอพธนาคารของคุณ</p>
-                      <p>2. เลือกเมนู สแกน QR Code</p>
-                      <p>3. สแกน QR Code ด้านบน</p>
-                      <p>4. ตรวจสอบยอดเงินให้ถูกต้อง</p>
-                      <p>5. ยืนยันการโอนเงิน</p>
-                      <p>6. ถ่ายภาพสลิปหรือบันทึกหน้าจอ</p>
+                      <ol className="space-y-2 text-gray-600 dark:text-gray-400">
+                        <li>1. เปิดแอพธนาคารของคุณ</li>
+                        <li>2. เลือกเมนู <strong>สแกน QR Code</strong></li>
+                        <li>3. สแกน QR Code ด้านบน</li>
+                        <li>4. ตรวจสอบยอดเงินให้ถูกต้อง</li>
+                        <li>5. ยืนยันการโอนเงิน</li>
+                        <li>6. <strong>ถ่ายภาพสลิป</strong>หรือบันทึกหน้าจอ</li>
+                      </ol>
                     </div>
                   </>
                 ) : (
-                  <div className="py-12"><p className="text-red-600">ไม่สามารถสร้าง QR Code ได้</p></div>
+                  <div className="py-12">
+                    <p className="text-red-600 font-semibold">❌ ไม่สามารถสร้าง QR Code ได้</p>
+                  </div>
                 )}
               </div>
             </ModalBody>
             <ModalFooter>
-              <Button color="danger" variant="light" onPress={() => setStep(1)} isDisabled={isSubmitting}>ย้อนกลับ</Button>
+              <Button 
+                color="danger" 
+                variant="light" 
+                onPress={() => setStep(1)} 
+                isDisabled={isSubmitting}
+              >
+                ย้อนกลับ
+              </Button>
               <Button 
                 color="warning" 
-                className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold" 
+                className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold shadow-lg" 
                 onPress={handleProceedToUpload} 
                 isLoading={isSubmitting} 
                 isDisabled={!qrCodeUrl} 
-                endContent={<FaUpload />}
+                endContent={<FiUpload />}
               >
                 {isSubmitting ? 'กำลังดำเนินการ...' : 'โอนเงินแล้ว - อัปโหลดสลิป'}
               </Button>
@@ -510,119 +666,214 @@ export default function BookingModal({ isOpen, onClose, camp }: BookingModalProp
           <form onSubmit={handleSubmitForm}>
             <ModalHeader>
               <div className="w-full">
-                <h2 className="text-2xl font-black text-gray-900 dark:text-white">ข้อมูลผู้สมัคร</h2>
-                <p className="text-sm font-normal text-gray-600 dark:text-gray-400 mt-1">{camp.name}</p>
+                <h2 className="text-2xl font-black text-gray-900 dark:text-white">
+                  📝 ข้อมูลผู้สมัคร
+                </h2>
+                <p className="text-sm font-normal text-gray-600 dark:text-gray-400 mt-1">
+                  {camp.name}
+                </p>
               </div>
             </ModalHeader>
             <ModalBody>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-6">
+                {error && (
+                  <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-500 rounded-xl p-3">
+                    <p className="text-red-600 dark:text-red-400 text-sm font-semibold">{error}</p>
+                  </div>
+                )}
+
+                {/* Form Fields */}
                 <div className="space-y-4">
-                  <h3 className="font-bold text-gray-800 dark:text-gray-200">ข้อมูลผู้สมัคร</h3>
-                  {error && (
-                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                      <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
-                    </div>
-                  )}
-                  <Input label="ชื่อ - นามสกุล" placeholder="ชื่อ - นามสกุล" value={formData.name} onValueChange={(v) => setFormData({ ...formData, name: v })} required size="lg" classNames={{ inputWrapper: "border-2" }} />
-                  <Input type="email" label="อีเมล" placeholder="yourmail@mail.com" value={formData.email} onValueChange={(v) => setFormData({ ...formData, email: v })} required size="lg" classNames={{ inputWrapper: "border-2" }} />
-                  <Input type="tel" label="เบอร์โทร" placeholder="0812345678" value={formData.phone} onValueChange={(v) => setFormData({ ...formData, phone: v })} required size="lg" classNames={{ inputWrapper: "border-2" }} />
-                  <Input label="ที่อยู่" placeholder="ที่อยู่ของคุณ" value={formData.address} onValueChange={(v) => setFormData({ ...formData, address: v })} required size="lg" classNames={{ inputWrapper: "border-2" }} />
-                  <Input label="มหาวิทยาลัย/สถาบัน" placeholder="มหาวิทยาลัยศิลปากร" value={formData.university} onValueChange={(v) => setFormData({ ...formData, university: v })} required size="lg" classNames={{ inputWrapper: "border-2" }} />
-                  <Textarea label="เหตุผลที่ต้องการเข้าร่วม" placeholder="บอกเราว่าทำไมคุณถึงสนใจค่ายนี้..." value={formData.reason} onValueChange={(v) => setFormData({ ...formData, reason: v })} required minRows={3} classNames={{ inputWrapper: "border-2" }} />
+                  <Input 
+                    label="ชื่อ - นามสกุล" 
+                    placeholder="กรอกชื่อ - นามสกุล" 
+                    value={formData.name} 
+                    onValueChange={(v) => setFormData({ ...formData, name: v })} 
+                    required 
+                    size="lg"
+                    variant="bordered"
+                    classNames={{ 
+                      inputWrapper: "border-2 border-gray-300 hover:border-orange-400" 
+                    }} 
+                  />
+                  
+                  <Input 
+                    type="email" 
+                    label="อีเมล" 
+                    placeholder="yourmail@example.com" 
+                    value={formData.email} 
+                    onValueChange={(v) => setFormData({ ...formData, email: v })} 
+                    required 
+                    size="lg"
+                    variant="bordered"
+                    classNames={{ 
+                      inputWrapper: "border-2 border-gray-300 hover:border-orange-400" 
+                    }} 
+                  />
+                  
+                  <Input 
+                    type="tel" 
+                    label="เบอร์โทรศัพท์" 
+                    placeholder="0812345678" 
+                    value={formData.phone} 
+                    onValueChange={(v) => setFormData({ ...formData, phone: v })} 
+                    required 
+                    size="lg"
+                    variant="bordered"
+                    classNames={{ 
+                      inputWrapper: "border-2 border-gray-300 hover:border-orange-400" 
+                    }}
+                    description={formData.phone ? "ใช้เบอร์จากการตั้งค่าโปรไฟล์" : "กรุณาตั้งค่าเบอร์โทรศัพท์ในโปรไฟล์"}
+                  />
                 </div>
-                <div className="space-y-4">
-                  <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border-2 border-gray-200 dark:border-gray-700">
-                    <Image src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=400" alt={camp.name} className="w-full h-32 object-cover rounded-lg mb-3" />
-                    <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">รายละเอียดค่าย</h3>
-                    <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
-                      <p><strong>วันที่:</strong> {camp.date}</p>
-                      <p><strong>สถานที่:</strong> {camp.location}</p>
-                      <p><strong>ปิดรับสมัคร:</strong> {camp.deadline}</p>
-                    </div>
-                  </div>
-                  <Divider />
-                  <div>
-                    <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2 flex items-center gap-2">
-                      <FaTag className="text-orange-500" />
-                      มีรหัสโปรโมชั่นหรือไม่?
-                    </h3>
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="กรอกรหัสโปรโมชั่น"
-                        value={promoCode}
-                        onValueChange={setPromoCode}
-                        disabled={promoApplied}
-                        classNames={{ inputWrapper: "border-2" }}
-                        size="sm"
+
+                <Divider className="my-2" />
+
+                {/* Camp Info Card */}
+                <Card className="p-4 border-2 border-gray-200 dark:border-gray-700">
+                  <div className="flex gap-3">
+                    {camp.image && (
+                      <Image 
+                        src={camp.image} 
+                        alt={camp.name} 
+                        className="w-24 h-24 object-cover rounded-lg flex-shrink-0" 
                       />
-                      <Button
-                        color="warning"
-                        className="font-bold"
-                        onPress={handleValidatePromo}
-                        isLoading={isValidatingPromo}
-                        isDisabled={promoApplied || !promoCode.trim()}
-                        size="sm"
-                      >
-                        ตรวจสอบ
-                      </Button>
-                    </div>
-                    {promoMessage && (
-                      <p className={`text-sm mt-2 font-semibold ${promoApplied ? 'text-green-600' : 'text-red-600'}`}>
-                        {promoApplied && <FaCheckCircle className="inline mr-1" />}
-                        {promoMessage}
-                      </p>
                     )}
-                  </div>
-
-                  <Divider />
-
-                  <Card className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-2 border-orange-200 dark:border-orange-800 shadow-lg">
-                    <div className="space-y-3 text-sm">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600 dark:text-gray-400">ค่าค่าย</span>
-                        <span className="font-semibold text-gray-800 dark:text-gray-200">
-                          {isFree ? (
-                            <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                              <FaGift />
-                              ฟรี!
-                            </span>
-                          ) : (
-                            `฿${basePrice.toLocaleString()}`
-                          )}
-                        </span>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2 truncate">
+                        {camp.name}
+                      </h3>
+                      <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
+                        <p>📅 {camp.date}</p>
+                        <p>📍 {camp.location}</p>
+                        <p>⏰ ปิดรับ: {camp.deadline}</p>
                       </div>
-                      {discount > 0 && (
-                        <div className="flex justify-between items-center text-green-600 dark:text-green-400">
-                          <span>ส่วนลด</span>
-                          <span className="font-semibold">-฿{discount.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Promo Code Section */}
+                {!isFree && (
+                  <>
+                    <Divider className="my-2" />
+                    
+                    <div>
+                      <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                        <FiTag className="text-orange-500" />
+                        รหัสโปรโมชั่น
+                      </h3>
+                      
+                      {!promoApplied ? (
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="กรอกรหัสส่วนลด"
+                            value={promoCode}
+                            onValueChange={setPromoCode}
+                            variant="bordered"
+                            classNames={{ 
+                              inputWrapper: "border-2 border-gray-300" 
+                            }}
+                            size="lg"
+                          />
+                          <Button
+                            color="warning"
+                            className="font-bold px-6"
+                            onPress={handleValidatePromo}
+                            isLoading={isValidatingPromo}
+                            isDisabled={!promoCode.trim()}
+                            size="lg"
+                            endContent={<FiCheck />}
+                          >
+                            ใช้
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 border-2 border-green-500 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <FiCheckCircle className="text-green-600" />
+                            <div>
+                              <p className="font-bold text-green-700 dark:text-green-400">
+                                {promoCode}
+                              </p>
+                              <p className="text-sm text-green-600 dark:text-green-500">
+                                {promoMessage}
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="flat"
+                            color="danger"
+                            isIconOnly
+                            onPress={handleRemovePromo}
+                          >
+                            <FiX />
+                          </Button>
                         </div>
                       )}
-                      <Divider />
-                      <div className="flex justify-between items-center pt-2">
-                        <span className="font-bold text-gray-800 dark:text-gray-200 text-base">รวมทั้งหมด</span>
-                        <span className="font-black text-orange-600 dark:text-orange-400 text-2xl">
-                          {isFree ? (
-                            <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                              <FaGift />
-                              ฟรี!
-                            </span>
-                          ) : (
-                            `฿${finalPrice.toLocaleString()}`
-                          )}
-                        </span>
-                      </div>
                     </div>
-                  </Card>
-                </div>
+                  </>
+                )}
+
+                <Divider className="my-2" />
+
+                {/* Price Summary */}
+                <Card className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-3 border-orange-300 shadow-lg">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">ค่าค่าย</span>
+                      <span className="font-semibold text-gray-800 dark:text-gray-200">
+                        {basePrice === 0 ? (
+                          <span className="flex items-center gap-1 text-green-600">
+                            <FiGift />
+                            ฟรี!
+                          </span>
+                        ) : (
+                          `฿${basePrice.toLocaleString()}`
+                        )}
+                      </span>
+                    </div>
+                    
+                    {discount > 0 && (
+                      <div className="flex justify-between items-center text-sm text-green-600 dark:text-green-400">
+                        <span>ส่วนลด</span>
+                        <span className="font-semibold">-฿{discount.toLocaleString()}</span>
+                      </div>
+                    )}
+                    
+                    <Divider />
+                    
+                    <div className="flex justify-between items-center pt-2">
+                      <span className="font-bold text-gray-800 dark:text-gray-200">รวมทั้งหมด</span>
+                      <span className="text-3xl font-black bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+                        {isFree ? (
+                          <span className="flex items-center gap-1 text-green-600">
+                            <FiGift />
+                            ฟรี!
+                          </span>
+                        ) : (
+                          `฿${finalPrice.toLocaleString()}`
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </Card>
               </div>
             </ModalBody>
             <ModalFooter>
-              <Button color="danger" variant="light" onPress={handleClose}>ยกเลิก</Button>
+              <Button 
+                color="danger" 
+                variant="light" 
+                onPress={handleClose}
+              >
+                ยกเลิก
+              </Button>
               <Button
                 type="submit"
                 className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold shadow-lg"
-                endContent={isFree ? <FaGift /> : <FaQrcode />}
+                endContent={isFree ? <FiGift /> : <FiCreditCard />}
                 isLoading={isSubmitting}
+                size="lg"
               >
                 {isSubmitting ? 'กำลังดำเนินการ...' : (isFree ? 'ยืนยันการสมัคร (ฟรี)' : 'ยืนยันและชำระเงิน')}
               </Button>

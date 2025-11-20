@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
-    FaMapMarkerAlt, FaCalendarAlt, FaClock, FaArrowLeft, FaUsers, FaGraduationCap, FaPaintBrush, FaCheckCircle, FaTicketAlt
+    FaMapMarkerAlt, FaCalendarAlt, FaClock, FaArrowLeft, FaUsers, FaGraduationCap, FaPaintBrush, FaCheckCircle, FaTicketAlt, FaHourglassHalf
 } from "react-icons/fa";
 import { Chip, Progress } from "@heroui/react";
 import { Camp, Organizer } from "@/types";
@@ -56,35 +56,92 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
     const [isRegistered, setIsRegistered] = useState(false);
     const [ticketData, setTicketData] = useState<TicketData | null>(null);
     const [checkingRegistration, setCheckingRegistration] = useState(true);
+    const [canGetTicket, setCanGetTicket] = useState(false);
+    const [ticketStatus, setTicketStatus] = useState('');
+    const [ticketMessage, setTicketMessage] = useState('');
     const [currentCamp, setCurrentCamp] = useState(camp);
     const [showReviewForm, setShowReviewForm] = useState(false);
 
+    // 🔧 FIX: ตรวจสอบการลงทะเบียนและสิทธิ์ในการรับ Ticket
     useEffect(() => {
+        let isMounted = true;
+        
         const checkRegistration = async () => {
             if (!session?.user?.email) {
-                setCheckingRegistration(false);
+                if (isMounted) setCheckingRegistration(false);
                 return;
             }
 
             try {
                 const response = await fetch(
-                    `/api/ticket?userId=${encodeURIComponent(session.user.email)}&campId=${camp._id}`
+                    `/api/ticket?userId=${encodeURIComponent(session.user.email)}&campId=${camp._id}`,
+                    { 
+                        cache: 'no-store',
+                        next: { revalidate: 0 }
+                    }
                 );
                 const data = await response.json();
 
-                if (data.registered && data.ticket) {
-                    setIsRegistered(true);
-                    setTicketData(data.ticket);
+                if (isMounted) {
+                    if (data.registered) {
+                        setIsRegistered(true);
+                        
+                        // ถ้ามี ticket แปลว่าสามารถรับ ticket ได้
+                        if (data.canGetTicket && data.ticket) {
+                            setCanGetTicket(true);
+                            setTicketData(data.ticket);
+                        } else {
+                            // ยังไม่สามารถรับ ticket ได้
+                            setCanGetTicket(false);
+                            setTicketStatus(data.status || 'pending');
+                            setTicketMessage(data.message || 'รอการดำเนินการ');
+                        }
+                    }
                 }
             } catch (error) {
                 console.error('Error checking registration:', error);
             } finally {
-                setCheckingRegistration(false);
+                if (isMounted) setCheckingRegistration(false);
             }
         };
 
         checkRegistration();
-    }, [session, camp._id]);
+        
+        return () => {
+            isMounted = false;
+        };
+    }, [session?.user?.email, camp._id]);
+
+    const handleRegistrationSuccess = async () => {
+        // Refetch registration status
+        if (session?.user?.email) {
+            try {
+                const response = await fetch(
+                    `/api/ticket?userId=${encodeURIComponent(session.user.email)}&campId=${camp._id}`,
+                    { 
+                        cache: 'no-store',
+                        next: { revalidate: 0 }
+                    }
+                );
+                const data = await response.json();
+
+                if (data.registered) {
+                    setIsRegistered(true);
+                    
+                    if (data.canGetTicket && data.ticket) {
+                        setCanGetTicket(true);
+                        setTicketData(data.ticket);
+                    } else {
+                        setCanGetTicket(false);
+                        setTicketStatus(data.status || 'pending');
+                        setTicketMessage(data.message || 'รอการดำเนินการ');
+                    }
+                }
+            } catch (error) {
+                console.error('Error refreshing registration status:', error);
+            }
+        }
+    };
 
     const handleTicketClick = () => {
         if (ticketData) {
@@ -127,15 +184,6 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                         <FaArrowLeft />
                                         ย้อนกลับ
                                     </button>
-                                    {/* <Chip
-                                        size="md"
-                                        variant="flat"
-                                        className="bg-[#F2B33D] font-bold"
-                                        classNames={{ content: "text-[#2C2C2C]" }}
-                                    >
-                                        {camp.category}
-                                    </Chip> */}
-                                    {/* Display all tags */}
                                     {camp.tags && camp.tags.length > 0 && (
                                         <div className="flex flex-wrap gap-2">
                                             {camp.tags.map((tag, index) => (
@@ -207,23 +255,38 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                             <p>{camp.price === '฿0' ? 'ฟรี' : camp.price}</p>
                                         </p>
                                         
+                                        {/* 🔧 FIX: แสดงปุ่มตามสถานะที่ถูกต้อง */}
                                         {checkingRegistration ? (
                                             <Button
-                                                isLoading
-                                                className="bg-gray-300"
+                                                isDisabled
+                                                className="bg-gray-200 dark:bg-gray-700"
                                                 size="lg"
                                             >
-                                                กำลังตรวจสอบ...
+                                                <div className="flex items-center gap-2">
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                                                    <span>กำลังตรวจสอบ...</span>
+                                                </div>
                                             </Button>
                                         ) : isRegistered ? (
-                                            <Button
-                                                className="bg-gradient-to-r from-green-500 to-emerald-500 font-bold text-white shadow-lg"
-                                                size="lg"
-                                                startContent={<FaTicketAlt />}
-                                                onPress={handleTicketClick}
-                                            >
-                                                รับ Ticket
-                                            </Button>
+                                            canGetTicket ? (
+                                                <Button
+                                                    className="bg-gradient-to-r from-green-500 to-emerald-500 font-bold text-white shadow-lg"
+                                                    size="lg"
+                                                    startContent={<FaTicketAlt />}
+                                                    onPress={handleTicketClick}
+                                                >
+                                                    รับ Ticket
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    isDisabled
+                                                    className="bg-yellow-500/50 font-bold text-gray-700"
+                                                    size="lg"
+                                                    startContent={<FaHourglassHalf />}
+                                                >
+                                                    รอตรวจสอบ
+                                                </Button>
+                                            )
                                         ) : (
                                             <Button
                                                 className="bg-[#F2B33D] font-bold text-gray-900"
@@ -237,14 +300,32 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                         )}
                                     </div>
                                     
+                                    {/* แสดงข้อความสถานะ */}
                                     {isRegistered && (
-                                        <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border-2 border-green-500 rounded-lg">
-                                            <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                                                <FaCheckCircle />
-                                                <span className="font-semibold">คุณได้สมัครค่ายนี้แล้ว</span>
+                                        <div className={`mt-4 p-3 rounded-lg border-2 ${
+                                            canGetTicket 
+                                                ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
+                                                : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-500'
+                                        }`}>
+                                            <div className={`flex items-center gap-2 ${
+                                                canGetTicket 
+                                                    ? 'text-green-700 dark:text-green-400'
+                                                    : 'text-yellow-700 dark:text-yellow-400'
+                                            }`}>
+                                                {canGetTicket ? <FaCheckCircle /> : <FaHourglassHalf className="animate-pulse" />}
+                                                <span className="font-semibold">
+                                                    {canGetTicket ? 'คุณได้สมัครค่ายนี้แล้ว' : 'สมัครแล้ว - รอการตรวจสอบ'}
+                                                </span>
                                             </div>
-                                            <p className="text-sm text-green-600 dark:text-green-500 mt-1">
-                                                กดปุ่ม รับTicket เพื่อดาวน์โหลดบัตรเข้าค่าย
+                                            <p className={`text-sm mt-1 ${
+                                                canGetTicket 
+                                                    ? 'text-green-600 dark:text-green-500'
+                                                    : 'text-yellow-600 dark:text-yellow-500'
+                                            }`}>
+                                                {canGetTicket 
+                                                    ? 'กดปุ่ม "รับ Ticket" เพื่อดาวน์โหลดบัตรเข้าค่าย'
+                                                    : ticketMessage
+                                                }
                                             </p>
                                         </div>
                                     )}
@@ -339,7 +420,6 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                         <InfoCard title="สถานที่จัด" icon={<FaMapMarkerAlt className="text-lg text-[#F2B33D]" />}>
                             <p>{camp.location}</p>
                         </InfoCard>
-                        {/* Only show map if NOT Online */}
                         {camp.activityFormat !== 'Online' && (
                             <LocationMap 
                                 location={camp.location}
@@ -420,6 +500,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 camp={camp}
+                onRegistrationSuccess={handleRegistrationSuccess}
             />
 
             {ticketData && (

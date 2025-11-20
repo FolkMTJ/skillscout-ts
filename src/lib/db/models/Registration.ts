@@ -92,7 +92,13 @@ export class RegistrationModel {
 
   static async findByUser(userId: string): Promise<Registration[]> {
     const collection = await getCollection<RegistrationDoc>(this.collectionName);
-    const filter: Filter<RegistrationDoc> = { userId } as Filter<RegistrationDoc>;
+    // Search by both userId and userEmail to support both cases
+    const filter: Filter<RegistrationDoc> = { 
+      $or: [
+        { userId },
+        { userEmail: userId }
+      ]
+    } as Filter<RegistrationDoc>;
     const registrations = await collection
       .find(filter)
       .sort({ appliedAt: -1 })

@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { RegistrationModel } from '@/lib/db/models/Registration';
 import { CampModel } from '@/lib/db/models/Camp';
+import { PaymentModel } from '@/lib/db/models/Payment';
 import qrcode from 'qrcode';
 
 // GET /api/ticket?userId=xxx&campId=xxx
@@ -51,6 +52,37 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // 🔧 FIX: ตรวจสอบการชำระเงิน - ถ้าค่ายไม่ฟรีต้องมีการชำระเงินที่ approved
+    const isFree = !camp.fee || camp.fee === 0;
+    
+    if (!isFree) {
+      // ค่ายเสียเงิน - ต้องตรวจสอบ payment
+      const payment = await PaymentModel.findByRegistrationId(registration._id.toString());
+      
+      if (!payment) {
+        return NextResponse.json(
+          { 
+            registered: true,
+            canGetTicket: false,
+            message: 'รอการชำระเงิน',
+            status: 'pending_payment'
+          }
+        );
+      }
+
+      if (payment.status !== 'approved') {
+        return NextResponse.json(
+          { 
+            registered: true,
+            canGetTicket: false,
+            message: 'รอ Organizer ตรวจสอบสลิป',
+            status: 'pending_approval',
+            paymentStatus: payment.status
+          }
+        );
+      }
+    }
+
     // Generate verification URL (สแกนแล้วเปิดหน้า verify)
     const verifyUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/verify?id=${registration._id}`;
 
@@ -68,6 +100,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       registered: true,
+      canGetTicket: true,
       ticket: {
         registrationId: registration._id,
         userName: registration.userName,

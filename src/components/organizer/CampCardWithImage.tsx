@@ -30,7 +30,7 @@ export default function CampCardWithImage({
   const isActive = camp.status === 'active';
 
   return (
-    <Card className="overflow-hidden hover:shadow-xl transition-all border border-gray-100">
+    <Card className="overflow-hidden hover:shadow-xl transition-all border border-gray-100 flex flex-col h-full">
       {/* รูปปก */}
       <div className="relative h-48 bg-gray-200">
         {camp.image ? (
@@ -112,12 +112,12 @@ export default function CampCardWithImage({
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        <h3 className="font-bold text-lg text-gray-800 mb-2 line-clamp-2 min-h-[3.5rem]">
+      <div className="p-4 space-y-3 flex-1 flex flex-col">
+        <h3 className="font-bold text-lg text-gray-800 line-clamp-2 leading-tight">
           {camp.name}
         </h3>
         
-        <p className="text-sm text-gray-600 line-clamp-2 mb-3 min-h-[2.5rem]">
+        <p className="text-sm text-gray-600 leading-relaxed !break-words !whitespace-normal !overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
           {camp.description}
         </p>
 
@@ -179,7 +179,7 @@ export default function CampCardWithImage({
         </div>
 
         {/* Footer */}
-        <div className="space-y-2">
+        <div className="space-y-2 mt-auto">
           <div className="flex justify-between items-center pt-2 border-t">
             <div className="text-xs text-gray-500">
               {camp.registrationDeadline ? (
