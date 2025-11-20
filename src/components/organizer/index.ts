@@ -10,3 +10,4 @@ export { default as SimpleImageUpload } from './SimpleImageUpload';
 export { default as SimpleMultiImageUpload } from './SimpleMultiImageUpload';
 export { default as OrganizerImageUpload } from './OrganizerImageUpload';
 export { default as TagSelector } from './TagSelector';
+export { default as PromoCodeManager } from './PromoCodeManager';

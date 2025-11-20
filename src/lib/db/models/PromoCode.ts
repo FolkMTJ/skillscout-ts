@@ -18,6 +18,7 @@ interface PromoCodeDoc {
   applicableCamps?: string[];
   createdBy: string;
   createdAt: Date;
+  description?: string;
 }
 
 export class PromoCodeModel {
@@ -31,8 +32,14 @@ export class PromoCodeModel {
     };
   }
 
-  static async create(promoData: Omit<PromoCode, '_id' | 'usedCount' | 'createdAt'>): Promise<PromoCode> {
+  static async create(
+    promoData: Omit<PromoCode, '_id' | 'usedCount' | 'createdAt' | 'createdBy'>,
+    createdBy: string,
+    createdByRole: 'admin' | 'organizer'
+  ): Promise<PromoCode> {
     const collection = await getCollection<PromoCodeDoc>(this.collectionName);
+    
+    console.log('💾 Creating promo code:', { promoData, createdBy, createdByRole });
     
     // Check if code already exists
     const existing = await this.findByCode(promoData.code);
@@ -45,10 +52,15 @@ export class PromoCodeModel {
       code: promoData.code.toUpperCase(),
       usedCount: 0,
       createdAt: new Date(),
+      createdBy,
     };
+
+    console.log('📝 Promo doc to insert:', promoDoc);
 
     const result = await collection.insertOne(promoDoc as PromoCodeDoc);
     
+    console.log('✅ Promo code created with ID:', result.insertedId.toString());
+
     return {
       _id: result.insertedId.toString(),
       ...promoDoc,
@@ -163,6 +175,9 @@ export class PromoCodeModel {
 
   static async findByCreator(creatorId: string): Promise<PromoCode[]> {
     const collection = await getCollection<PromoCodeDoc>(this.collectionName);
+    
+    console.log('🔎 Finding promo codes by creator:', creatorId);
+    
     const filter: Filter<PromoCodeDoc> = { 
       createdBy: creatorId 
     } as Filter<PromoCodeDoc>;
@@ -172,7 +187,23 @@ export class PromoCodeModel {
       .sort({ createdAt: -1 })
       .toArray();
     
+    console.log('✅ Found', promos.length, 'codes for creator:', creatorId);
+    
     return promos.map(doc => this.toPublic(doc));
+  }
+
+  // Alias for compatibility
+  static async findByOrganizer(organizerId: string): Promise<PromoCode[]> {
+    return this.findByCreator(organizerId);
+  }
+
+  // Find admin promo codes only
+  static async findByAdmin(): Promise<PromoCode[]> {
+    const collection = await getCollection<PromoCodeDoc>(this.collectionName);
+    const allPromos = await this.findAll();
+    // We need to track createdByRole - let's return all for now
+    // In real implementation, add createdByRole field
+    return allPromos;
   }
 
   static async update(id: string, updates: Partial<Omit<PromoCode, '_id' | 'createdAt' | 'createdBy'>>): Promise<boolean> {

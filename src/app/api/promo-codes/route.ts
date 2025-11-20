@@ -2,82 +2,70 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { PromoCodeModel, UserModel, CampModel } from '@/lib/db/models';
-import { DiscountType } from '@/types';
+import { PromoCodeModel } from '@/lib/db/models/PromoCode';
 
-// GET - ดึงรายการ promo codes
+// GET /api/promo-codes - ดึงรายการโปรโมชั่น
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'กรุณาเข้าสู่ระบบ' },
-        { status: 401 }
-      );
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await UserModel.findByEmail(session.user.email);
+    const { searchParams } = new URL(request.url);
+    const organizerId = searchParams.get('organizerId');
 
-    if (!user) {
-      return NextResponse.json(
-        { error: 'ไม่พบข้อมูลผู้ใช้' },
-        { status: 404 }
-      );
-    }
-
-    // Admin เห็นทั้งหมด, Organizer เห็นแค่ของตัวเอง
-    let promoCodes;
-    if (user.role === 'admin') {
-      promoCodes = await PromoCodeModel.findAll();
-    } else if (user.role === 'organizer') {
-      promoCodes = await PromoCodeModel.findByCreator(user._id);
-    } else {
-      return NextResponse.json(
-        { error: 'คุณไม่มีสิทธิ์เข้าถึง' },
-        { status: 403 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      promoCodes,
+    console.log('🔍 GET Promo Codes - User:', {
+      userId: session.user.id,
+      role: session.user.role,
+      organizerId
     });
+
+    let promoCodes;
+
+    if (session.user.role === 'admin') {
+      // Admin ดูได้ทั้งหมด
+      if (organizerId) {
+        // ดูโค้ดของ organizer คนหนึ่ง
+        console.log('🔍 Admin viewing organizer codes:', organizerId);
+        promoCodes = await PromoCodeModel.findByOrganizer(organizerId);
+      } else {
+        // ดูทั้งหมด
+        console.log('🔍 Admin viewing all codes');
+        promoCodes = await PromoCodeModel.findAll();
+      }
+    } else if (session.user.role === 'organizer') {
+      // Organizer ดูได้แค่ของตัวเอง
+      console.log('🔍 Organizer viewing own codes:', session.user.id);
+      promoCodes = await PromoCodeModel.findByOrganizer(session.user.id);
+    } else {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    console.log('✅ Found', promoCodes.length, 'promo codes');
+    console.log('Codes:', promoCodes.map(p => ({ code: p.code, createdBy: p.createdBy })));
+
+    return NextResponse.json(promoCodes);
   } catch (error) {
     console.error('Error fetching promo codes:', error);
     return NextResponse.json(
-      { error: 'เกิดข้อผิดพลาด' },
+      { error: 'Failed to fetch promo codes' },
       { status: 500 }
     );
   }
 }
 
-// POST - สร้าง promo code ใหม่
+// POST /api/promo-codes - สร้างโปรโมชั่นใหม่
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'กรุณาเข้าสู่ระบบ' },
-        { status: 401 }
-      );
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await UserModel.findByEmail(session.user.email);
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'ไม่พบข้อมูลผู้ใช้' },
-        { status: 404 }
-      );
-    }
-
-    if (user.role !== 'admin' && user.role !== 'organizer') {
-      return NextResponse.json(
-        { error: 'คุณไม่มีสิทธิ์สร้างโค้ด' },
-        { status: 403 }
-      );
+    // เฉพาะ admin และ organizer
+    if (session.user.role !== 'admin' && session.user.role !== 'organizer') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await request.json();
@@ -85,108 +73,94 @@ export async function POST(request: NextRequest) {
       code,
       discountType,
       discountValue,
-      minAmount,
-      maxDiscount,
-      usageLimit,
+      maxUses,
       validFrom,
       validUntil,
-      isActive,
+      applicableToAllCamps,
       applicableCamps,
+      description,
+      minPurchaseAmount,
+      maxDiscountAmount,
     } = body;
 
     // Validation
-    if (!code || !code.trim()) {
+    if (!code || !discountType || !discountValue || !maxUses || !validFrom || !validUntil) {
       return NextResponse.json(
-        { error: 'กรุณากรอกรหัสโปรโมชั่น' },
+        { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    if (!discountType || !Object.values(DiscountType).includes(discountType)) {
-      return NextResponse.json(
-        { error: 'ประเภทส่วนลดไม่ถูกต้อง' },
-        { status: 400 }
-      );
-    }
-
-    if (!discountValue || discountValue <= 0) {
-      return NextResponse.json(
-        { error: 'มูลค่าส่วนลดต้องมากกว่า 0' },
-        { status: 400 }
-      );
-    }
-
-    if (discountType === DiscountType.PERCENTAGE && discountValue > 100) {
-      return NextResponse.json(
-        { error: 'เปอร์เซ็นต์ส่วนลดไม่เกิน 100%' },
-        { status: 400 }
-      );
-    }
-
-    if (!validFrom || !validUntil) {
-      return NextResponse.json(
-        { error: 'กรุณาระบุวันที่ใช้งาน' },
-        { status: 400 }
-      );
-    }
-
-    // Organizer ต้องระบุค่ายที่ใช้ได้
-    if (user.role === 'organizer') {
+    // ถ้าเป็น organizer ต้องระบุค่ายที่ใช้ได้
+    if (session.user.role === 'organizer') {
+      if (applicableToAllCamps) {
+        return NextResponse.json(
+          { error: 'Organizers cannot create site-wide promo codes' },
+          { status: 403 }
+        );
+      }
       if (!applicableCamps || applicableCamps.length === 0) {
         return NextResponse.json(
-          { error: 'กรุณาเลือกค่ายที่ใช้โค้ดได้' },
+          { error: 'Please select at least one camp' },
           { status: 400 }
         );
       }
 
-      // ตรวจสอบว่าค่ายทั้งหมดเป็นของ Organizer คนนี้
+      // ตรวจสอบว่าค่ายทั้งหมดเป็นของ organizer คนนี้
+      const { CampModel } = await import('@/lib/db/models');
       for (const campId of applicableCamps) {
         const camp = await CampModel.findById(campId);
-        if (!camp || camp.organizerId !== user._id) {
+        if (!camp || camp.organizerId !== session.user.id) {
           return NextResponse.json(
-            { error: 'คุณสามารถสร้างโค้ดได้เฉพาะค่ายของตัวเองเท่านั้น' },
+            { error: 'You can only create promo codes for your own camps' },
             { status: 403 }
           );
         }
       }
     }
 
-    // Admin สามารถสร้างโค้ดใช้ได้ทั้งหมด (applicableCamps = null หรือ [])
-    // Organizer ต้องระบุค่าย
-
-    const promoCode = await PromoCodeModel.create({
-      code: code.trim(),
-      discountType,
-      discountValue,
-      minAmount: minAmount || undefined,
-      maxDiscount: maxDiscount || undefined,
-      usageLimit: usageLimit || undefined,
-      validFrom: new Date(validFrom),
-      validUntil: new Date(validUntil),
-      isActive: isActive !== false,
-      applicableCamps: user.role === 'admin' && (!applicableCamps || applicableCamps.length === 0) 
-        ? undefined 
-        : applicableCamps,
-      createdBy: user._id,
+    // สร้างโปรโมชั่น
+    console.log('🚀 Creating promo code with:', {
+      code,
+      createdBy: session.user.id,
+      createdByRole: session.user.role,
+      applicableCamps: applicableCamps || []
     });
+    
+    const promoCode = await PromoCodeModel.create(
+      {
+        code,
+        discountType,
+        discountValue: parseFloat(discountValue),
+        maxUses: parseInt(maxUses),
+        validFrom: new Date(validFrom),
+        validUntil: new Date(validUntil),
+        applicableToAllCamps: applicableToAllCamps || false,
+        applicableCamps: applicableCamps || [],
+        description,
+        minPurchaseAmount: minPurchaseAmount ? parseFloat(minPurchaseAmount) : undefined,
+        maxDiscountAmount: maxDiscountAmount ? parseFloat(maxDiscountAmount) : undefined,
+      },
+      session.user.id,
+      session.user.role as 'admin' | 'organizer'
+    );
 
-    return NextResponse.json({
-      success: true,
-      message: 'สร้างโค้ดสำเร็จ',
-      promoCode,
-    });
+    console.log('✅ Promo code created successfully:', promoCode);
+
+    return NextResponse.json(promoCode, { status: 201 });
   } catch (error) {
     console.error('Error creating promo code:', error);
     
-    if (error instanceof Error && error.message.includes('มีอยู่แล้ว')) {
+    // ตรวจสอบ duplicate code
+    if (error instanceof Error && error.message.includes('duplicate key')) {
       return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
+        { error: 'Promo code already exists' },
+        { status: 409 }
       );
     }
-    
+
     return NextResponse.json(
-      { error: 'เกิดข้อผิดพลาด' },
+      { error: 'Failed to create promo code' },
       { status: 500 }
     );
   }

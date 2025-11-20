@@ -12,7 +12,6 @@ import {
   Select,
   SelectItem,
   Switch,
-  DatePicker,
 } from '@heroui/react';
 import { FiTag, FiPercent, FiDollarSign } from 'react-icons/fi';
 import toast from 'react-hot-toast';

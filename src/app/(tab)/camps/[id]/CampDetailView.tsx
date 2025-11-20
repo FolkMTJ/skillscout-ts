@@ -57,7 +57,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
     const [ticketData, setTicketData] = useState<TicketData | null>(null);
     const [checkingRegistration, setCheckingRegistration] = useState(true);
     const [canGetTicket, setCanGetTicket] = useState(false);
-    const [ticketStatus, setTicketStatus] = useState('');
+    const [, setTicketStatus] = useState('');
     const [ticketMessage, setTicketMessage] = useState('');
     const [currentCamp, setCurrentCamp] = useState(camp);
     const [showReviewForm, setShowReviewForm] = useState(false);

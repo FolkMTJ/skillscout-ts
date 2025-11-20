@@ -4,12 +4,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Card, Button, useDisclosure, Chip } from '@heroui/react';
-import { FiCalendar, FiUsers, FiCheckCircle, FiPlus, FiClock, FiUserCheck, FiCreditCard, FiTarget, FiZap, FiBook, FiAlertCircle } from 'react-icons/fi';
+import { Card, Button, useDisclosure, Chip, Modal, ModalContent, ModalHeader, ModalBody } from '@heroui/react';
+import { FiCalendar, FiUsers, FiCheckCircle, FiPlus, FiClock, FiUserCheck, FiCreditCard, FiTarget, FiZap, FiBook, FiAlertCircle, FiTag } from 'react-icons/fi';
 import { Camp, Registration, RegistrationStatus } from '@/types';
 import { 
   CampFormModal, CampDetailModal, CampCardWithImage, StatCard, EmptyState 
 } from '@/components/organizer';
+import PromoCodeManager from '@/components/organizer/PromoCodeManager';
 import toast from 'react-hot-toast';
 
 export default function OrganizerDashboard() {
@@ -23,6 +24,7 @@ export default function OrganizerDashboard() {
 
   const { isOpen: isFormModalOpen, onOpen: onFormModalOpen, onClose: onFormModalClose } = useDisclosure();
   const { isOpen: isDetailModalOpen, onOpen: onDetailModalOpen, onClose: onDetailModalClose } = useDisclosure();
+  const { isOpen: isPromoModalOpen, onOpen: onPromoModalOpen, onClose: onPromoModalClose } = useDisclosure();
 
   const [formData, setFormData] = useState({
     name: '', description: '', startDate: '', endDate: '', registrationDeadline: '',
@@ -324,6 +326,7 @@ export default function OrganizerDashboard() {
   }
 
   const totalEnrolled = camps.reduce((sum, c) => sum + (c.enrolled || 0), 0);
+  const userRole = session.user.role as 'admin' | 'organizer';
   
   // กรองค่ายรอตรวจสอบ (status = pending หรือไม่มี status)
   const pendingCamps = camps.filter(c => c.status === 'pending');
@@ -375,6 +378,9 @@ export default function OrganizerDashboard() {
               <div className="space-y-3">
                 <Button color="primary" size="lg" startContent={<FiPlus className="w-5 h-5" />} onPress={handleOpenCreateModal} className="w-full">
                   สร้างค่ายใหม่
+                </Button>
+                <Button color="warning" size="lg" startContent={<FiTag className="w-5 h-5" />} onPress={onPromoModalOpen} className="w-full">
+                  จัดการรหัสโปรโมชั่น
                 </Button>
                 <Button color="secondary" size="lg" startContent={<FiCreditCard className="w-5 h-5" />} onPress={() => router.push('/organizer/payments')} className="w-full">
                   ตรวจสอบสลิป
@@ -508,6 +514,30 @@ export default function OrganizerDashboard() {
           registrations={registrations.filter(r => r.campId === viewingCamp._id)}
         />
       )}
+
+      {/* Promo Code Modal */}
+      <Modal 
+        isOpen={isPromoModalOpen} 
+        onClose={onPromoModalClose}
+        size="5xl"
+        scrollBehavior="inside"
+      >
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <FiTag className="text-orange-500" />
+              จัดการรหัสโปรโมชั่น
+            </h2>
+          </ModalHeader>
+          <ModalBody>
+            <PromoCodeManager 
+              userId={session.user.id}
+              userRole={session.user.role as 'admin' | 'organizer'}
+              camps={camps}
+            />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }
