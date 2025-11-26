@@ -96,13 +96,13 @@ export function calculateSkillProfile(campTags: string[][]): {
     // กำหนด level label ตามจำนวนค่าย
     let level: 'novice' | 'intermediate' | 'experienced' | 'expert';
     if (data.count === 1) {
-      level = 'novice';        // 🌱 ผู้เริ่มต้น
+      level = 'novice';        // ผู้เริ่มต้น
     } else if (data.count === 2) {
       level = 'intermediate';  // 📚 มีพื้นฐาน
     } else if (data.count >= 3 && data.count < 5) {
-      level = 'experienced';   // 💪 มีประสบการณ์
+      level = 'experienced';   // มีประสบการณ์
     } else {
-      level = 'expert';        // ⭐ ชำนาญ
+      level = 'expert';        // ชำนาญ
     }
 
     return {
@@ -124,7 +124,6 @@ export function getSkillLevelInfo(level: 'novice' | 'intermediate' | 'experience
     novice: {
       label: 'ผู้เริ่มต้น',
       labelEn: 'Novice',
-      icon: '🌱',
       color: 'text-green-600',
       bgColor: 'bg-green-100',
       borderColor: 'border-green-400',
@@ -133,7 +132,6 @@ export function getSkillLevelInfo(level: 'novice' | 'intermediate' | 'experience
     intermediate: {
       label: 'มีพื้นฐาน',
       labelEn: 'Intermediate',
-      icon: '📚',
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
       borderColor: 'border-blue-400',
@@ -142,7 +140,6 @@ export function getSkillLevelInfo(level: 'novice' | 'intermediate' | 'experience
     experienced: {
       label: 'มีประสบการณ์',
       labelEn: 'Experienced',
-      icon: '💪',
       color: 'text-purple-600',
       bgColor: 'bg-purple-100',
       borderColor: 'border-purple-400',
@@ -151,7 +148,6 @@ export function getSkillLevelInfo(level: 'novice' | 'intermediate' | 'experience
     expert: {
       label: 'ชำนาญ',
       labelEn: 'Expert',
-      icon: '⭐',
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-100',
       borderColor: 'border-yellow-400',

@@ -36,7 +36,7 @@ export async function POST() {
     console.log('🔧 Found', pendingRegistrations.length, 'pending registrations for user:', userId);
 
     let approvedCount = 0;
-    let errors = [];
+    const errors = [];
 
     for (const reg of pendingRegistrations) {
       try {

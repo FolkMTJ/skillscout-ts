@@ -278,7 +278,7 @@ export default function PromoCodeFormModal({
                   description="เลือกอย่างน้อย 1 ค่าย"
                 >
                   {organizerCamps.map((camp) => (
-                    <SelectItem key={camp._id} value={camp._id}>
+                    <SelectItem key={camp._id}>
                       {camp.name}
                     </SelectItem>
                   ))}

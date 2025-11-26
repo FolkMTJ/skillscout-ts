@@ -14,6 +14,23 @@ interface SkillPieChartProps {
   }[];
 }
 
+interface ChartDataItem {
+  name: string;
+  value: number;
+  experienceCount: number;
+  level: string;
+  color: string;
+}
+
+interface TooltipProps {
+  active?: boolean;
+  payload?: Array<{ payload: ChartDataItem }>;
+}
+
+interface LegendProps {
+  payload?: Array<{ value: string; color: string }>;
+}
+
 const COLORS = [
   '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
   '#EC4899', '#14B8A6', '#F97316', '#06B6D4', '#84CC16',
@@ -30,29 +47,31 @@ export default function SkillPieChart({ skills }: SkillPieChartProps) {
     }));
   }, [skills]);
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: TooltipProps) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
-      const levelInfo = getSkillLevelInfo(data.level);
+      const levelInfo = getSkillLevelInfo(data.level as 'novice' | 'intermediate' | 'experienced' | 'expert');
 
       return (
-        <Card className="border-2 border-black shadow-xl">
+        <Card className="shadow-lg">
           <CardBody className="p-4">
-            <p className="font-black text-lg mb-2">{data.name}</p>
-            <div className="space-y-1 text-sm">
-              <p><span className="font-bold">สัดส่วน:</span> {data.value}%</p>
-              <p><span className="font-bold">ประสบการณ์:</span> {data.experienceCount} ค่าย</p>
+            <p className="font-bold text-lg mb-2">{data.name}</p>
+            <div className="space-y-1 text-sm text-gray-600">
+              <p><span className="font-semibold">สัดส่วน:</span> {data.value}%</p>
+              <p><span className="font-semibold">ประสบการณ์:</span> {data.experienceCount} ค่าย</p>
             </div>
             <Chip
               size="sm"
+              variant="flat"
               className="mt-2"
-              style={{
-                backgroundColor: levelInfo.bgColor.replace('bg-', ''),
-                color: levelInfo.color.replace('text-', ''),
-                borderColor: levelInfo.borderColor.replace('border-', '')
-              }}
+              color={
+                levelInfo.label === 'ผู้เริ่มต้น' ? 'success' :
+                levelInfo.label === 'มีพื้นฐาน' ? 'primary' :
+                levelInfo.label === 'มีประสบการณ์' ? 'secondary' :
+                'warning'
+              }
             >
-              {levelInfo.icon} {levelInfo.label}
+              {levelInfo.label}
             </Chip>
           </CardBody>
         </Card>
@@ -61,41 +80,18 @@ export default function SkillPieChart({ skills }: SkillPieChartProps) {
     return null;
   };
 
-  const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
-    const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-    if (percent < 0.05) return null;
-
-    return (
-      <text 
-        x={x} 
-        y={y} 
-        fill="white" 
-        textAnchor={x > cx ? 'start' : 'end'} 
-        dominantBaseline="central"
-        className="font-black text-sm"
-        stroke="black"
-        strokeWidth="0.5"
-      >
-        {`${(percent * 100).toFixed(0)}%`}
-      </text>
-    );
-  };
-
-  const CustomLegend = ({ payload }: any) => {
+  const CustomLegend = ({ payload }: LegendProps) => {
     return (
       <div className="flex flex-wrap justify-center gap-2 mt-6">
-        {payload.map((entry: any, index: number) => (
+        {payload?.map((entry, index) => (
           <Chip
             key={`legend-${index}`}
             variant="flat"
+            size="sm"
             className="cursor-pointer"
             startContent={
               <div
-                className="w-3 h-3 rounded-full border border-gray-600"
+                className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: entry.color }}
               />
             }
@@ -130,12 +126,11 @@ export default function SkillPieChart({ skills }: SkillPieChartProps) {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={renderCustomLabel}
-                outerRadius={120}
+                outerRadius={130}
                 fill="#8884d8"
                 dataKey="value"
-                stroke="#000"
-                strokeWidth={3}
+                stroke="#fff"
+                strokeWidth={2}
               >
                 {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
@@ -152,9 +147,7 @@ export default function SkillPieChart({ skills }: SkillPieChartProps) {
       <Table 
         aria-label="Skills table"
         classNames={{
-          wrapper: "border-2 border-gray-300 shadow-lg",
-          th: "bg-yellow-400 text-black font-black",
-          td: "font-medium"
+          wrapper: "shadow-md",
         }}
       >
         <TableHeader>
@@ -171,19 +164,19 @@ export default function SkillPieChart({ skills }: SkillPieChartProps) {
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <div
-                      className="w-4 h-4 rounded-full border-2 border-black"
+                      className="w-4 h-4 rounded-full"
                       style={{ backgroundColor: COLORS[index % COLORS.length] }}
                     />
-                    <span className="font-bold">{skill.name}</span>
+                    <span className="font-semibold">{skill.name}</span>
                   </div>
                 </TableCell>
                 <TableCell className="text-center">
-                  <Chip variant="flat" size="sm">
+                  <Chip variant="flat" size="sm" color="default">
                     {skill.experienceCount} ค่าย
                   </Chip>
                 </TableCell>
                 <TableCell className="text-center">
-                  <span className="font-black text-xl">{skill.percentage}%</span>
+                  <span className="font-bold text-xl">{skill.percentage}%</span>
                 </TableCell>
                 <TableCell className="text-center">
                   <Chip
@@ -195,7 +188,6 @@ export default function SkillPieChart({ skills }: SkillPieChartProps) {
                       levelInfo.label === 'มีประสบการณ์' ? 'secondary' :
                       'warning'
                     }
-                    startContent={<span>{levelInfo.icon}</span>}
                   >
                     {levelInfo.label}
                   </Chip>
@@ -207,10 +199,10 @@ export default function SkillPieChart({ skills }: SkillPieChartProps) {
       </Table>
 
       {/* คำอธิบาย */}
-      <Card className="bg-blue-50 border-2 border-blue-200">
+      <Card className="bg-primary-50">
         <CardBody className="p-4">
-          <p className="text-sm text-blue-800">
-            <span className="font-bold">💡 หมายเหตุ:</span> เปอร์เซ็นต์แสดงสัดส่วนประสบการณ์จากค่ายทั้งหมดที่เข้าร่วม 
+          <p className="text-sm text-primary-800">
+            <span className="font-semibold">💡 หมายเหตุ:</span> เปอร์เซ็นต์แสดงสัดส่วนประสบการณ์จากค่ายทั้งหมดที่เข้าร่วม 
             ไม่ใช่การวัดระดับความเก่งจริง ยิ่งเข้าค่ายที่เน้นทักษะใดมาก % ของทักษะนั้นก็จะสูงขึ้น
           </p>
         </CardBody>

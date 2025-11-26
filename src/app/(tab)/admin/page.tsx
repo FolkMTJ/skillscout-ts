@@ -24,8 +24,7 @@ import {
   Input,
   Textarea,
 } from '@heroui/react';
-import { FiUsers, FiCalendar, FiShield, FiTrash2, FiEye, FiSearch, FiAlertCircle, FiXCircle, FiAlertTriangle, FiCheck, FiX, FiTag } from 'react-icons/fi';
-import PromoCodeManager from '@/components/organizer/PromoCodeManager';
+import { FiUsers, FiCalendar, FiShield, FiTrash2, FiEye, FiSearch, FiAlertCircle, FiXCircle, FiAlertTriangle, FiCheck, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 interface User {

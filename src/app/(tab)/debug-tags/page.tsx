@@ -5,9 +5,20 @@ import { Card, Button } from '@heroui/react';
 import { FiTag, FiCheckCircle } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
+interface CampUpdate {
+  campName: string;
+  tagsAdded: string[];
+}
+
+interface ResultData {
+  message: string;
+  updated: CampUpdate[];
+  instructions: string[];
+}
+
 export default function DebugTagsPage() {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<ResultData | null>(null);
 
   const handleAddTags = async () => {
     setLoading(true);
@@ -100,11 +111,11 @@ export default function DebugTagsPage() {
                   <div className="bg-white p-4 rounded border-2 border-green-300 mb-4">
                     <h3 className="font-bold mb-3 text-green-900">📋 ค่ายที่อัปเดต:</h3>
                     <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {result.updated.map((camp: any, i: number) => (
+                      {result.updated.map((camp, i) => (
                         <div key={i} className="border-b border-green-200 pb-3 last:border-0">
                           <p className="font-semibold text-gray-900">{camp.campName}</p>
                           <div className="flex flex-wrap gap-2 mt-2">
-                            {camp.tagsAdded.map((tag: string, j: number) => (
+                            {camp.tagsAdded.map((tag, j) => (
                               <span
                                 key={j}
                                 className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs"
@@ -123,7 +134,7 @@ export default function DebugTagsPage() {
                 <div className="bg-blue-100 p-4 rounded border-2 border-blue-300 mb-4">
                   <h3 className="font-bold mb-3 text-blue-900">📝 ขั้นตอนต่อไป:</h3>
                   <ol className="space-y-1 text-sm text-blue-800 list-decimal list-inside">
-                    {result.instructions.map((inst: string, i: number) => (
+                    {result.instructions.map((inst, i) => (
                       <li key={i}>{inst}</li>
                     ))}
                   </ol>

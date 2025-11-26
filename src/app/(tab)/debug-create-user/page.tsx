@@ -3,15 +3,24 @@
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { Card, Button } from '@heroui/react';
-import { FiUserPlus, FiCheckCircle, FiZap, FiAlertCircle } from 'react-icons/fi';
+import { FiCheckCircle, FiZap, FiAlertCircle } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+
+interface ResultData {
+  message: string;
+  registrations: {
+    created: number;
+    details: Array<{ campName: string; status: string }>;
+  };
+  nextSteps: string[];
+}
 
 export default function CreateTestUserPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<ResultData | null>(null);
 
   const isOrganizer = session?.user?.role === 'organizer' || session?.user?.role === 'admin';
   const isUser = session?.user?.role === 'user';
@@ -133,7 +142,7 @@ export default function CreateTestUserPage() {
                   <p className="mb-2">สร้าง/อัปเดต <strong>{result.registrations.created}</strong> รายการ</p>
                   {result.registrations.details.length > 0 && (
                     <ul className="space-y-1 text-sm">
-                      {result.registrations.details.map((reg: any, i: number) => (
+                      {result.registrations.details.map((reg, i) => (
                         <li key={i} className="text-gray-700">
                           • {reg.campName} ({reg.status})
                         </li>
@@ -146,7 +155,7 @@ export default function CreateTestUserPage() {
                 <div className="bg-blue-100 p-4 rounded border-2 border-blue-300 mb-4">
                   <h3 className="font-bold mb-3 text-blue-900">📝 ขั้นตอนต่อไป:</h3>
                   <ol className="space-y-1 text-sm text-blue-800 list-decimal list-inside">
-                    {result.nextSteps.map((step: string, i: number) => (
+                    {result.nextSteps.map((step, i) => (
                       <li key={i}>{step}</li>
                     ))}
                   </ol>

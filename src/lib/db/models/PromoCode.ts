@@ -35,16 +35,15 @@ export class PromoCodeModel {
   static async create(
     promoData: Omit<PromoCode, '_id' | 'usedCount' | 'createdAt' | 'createdBy'>,
     createdBy: string,
-    createdByRole: 'admin' | 'organizer'
   ): Promise<PromoCode> {
     const collection = await getCollection<PromoCodeDoc>(this.collectionName);
-    
+
     // Check if code already exists
     const existing = await this.findByCode(promoData.code);
     if (existing) {
       throw new Error('รหัสโปรโมชั่นนี้มีอยู่แล้ว');
     }
-    
+
     const promoDoc: Omit<PromoCodeDoc, '_id'> = {
       ...promoData,
       code: promoData.code.toUpperCase(),
@@ -63,10 +62,10 @@ export class PromoCodeModel {
 
   static async findByCode(code: string): Promise<PromoCode | null> {
     const collection = await getCollection<PromoCodeDoc>(this.collectionName);
-    const filter: Filter<PromoCodeDoc> = { 
-      code: code.toUpperCase() 
+    const filter: Filter<PromoCodeDoc> = {
+      code: code.toUpperCase()
     } as Filter<PromoCodeDoc>;
-    
+
     const promo = await collection.findOne(filter);
     if (!promo) return null;
     return this.toPublic(promo);
@@ -74,10 +73,10 @@ export class PromoCodeModel {
 
   static async findById(id: string): Promise<PromoCode | null> {
     const collection = await getCollection<PromoCodeDoc>(this.collectionName);
-    const filter: Filter<PromoCodeDoc> = { 
-      _id: new ObjectId(id) 
+    const filter: Filter<PromoCodeDoc> = {
+      _id: new ObjectId(id)
     } as Filter<PromoCodeDoc>;
-    
+
     const promo = await collection.findOne(filter);
     if (!promo) return null;
     return this.toPublic(promo);
@@ -90,7 +89,7 @@ export class PromoCodeModel {
     promoCode?: PromoCode;
   }> {
     const promo = await this.findByCode(code);
-    
+
     if (!promo) {
       return { valid: false, discount: 0, message: 'รหัสโปรโมชั่นไม่ถูกต้อง' };
     }
@@ -110,10 +109,10 @@ export class PromoCodeModel {
     }
 
     if (promo.minAmount && amount < promo.minAmount) {
-      return { 
-        valid: false, 
-        discount: 0, 
-        message: `ยอดขั้นต่ำ ฿${promo.minAmount}` 
+      return {
+        valid: false,
+        discount: 0,
+        message: `ยอดขั้นต่ำ ฿${promo.minAmount}`
       };
     }
 
@@ -136,24 +135,24 @@ export class PromoCodeModel {
 
     discount = Math.min(discount, amount);
 
-    return { 
-      valid: true, 
-      discount: Math.round(discount), 
-      promoCode: promo 
+    return {
+      valid: true,
+      discount: Math.round(discount),
+      promoCode: promo
     };
   }
 
   static async incrementUsage(code: string): Promise<boolean> {
     const collection = await getCollection<PromoCodeDoc>(this.collectionName);
-    const filter: Filter<PromoCodeDoc> = { 
-      code: code.toUpperCase() 
+    const filter: Filter<PromoCodeDoc> = {
+      code: code.toUpperCase()
     } as Filter<PromoCodeDoc>;
-    
+
     const result = await collection.updateOne(
       filter,
       { $inc: { usedCount: 1 } }
     );
-    
+
     return result.modifiedCount > 0;
   }
 
@@ -163,22 +162,22 @@ export class PromoCodeModel {
       .find({})
       .sort({ createdAt: -1 })
       .toArray();
-    
+
     return promos.map(doc => this.toPublic(doc));
   }
 
   static async findByCreator(creatorId: string): Promise<PromoCode[]> {
     const collection = await getCollection<PromoCodeDoc>(this.collectionName);
-    
-    const filter: Filter<PromoCodeDoc> = { 
-      createdBy: creatorId 
+
+    const filter: Filter<PromoCodeDoc> = {
+      createdBy: creatorId
     } as Filter<PromoCodeDoc>;
-    
+
     const promos = await collection
       .find(filter)
       .sort({ createdAt: -1 })
       .toArray();
-    
+
     return promos.map(doc => this.toPublic(doc));
   }
 
@@ -189,7 +188,6 @@ export class PromoCodeModel {
 
   // Find admin promo codes only
   static async findByAdmin(): Promise<PromoCode[]> {
-    const collection = await getCollection<PromoCodeDoc>(this.collectionName);
     const allPromos = await this.findAll();
     // We need to track createdByRole - let's return all for now
     // In real implementation, add createdByRole field
@@ -198,36 +196,34 @@ export class PromoCodeModel {
 
   static async update(id: string, updates: Partial<Omit<PromoCode, '_id' | 'createdAt' | 'createdBy'>>): Promise<boolean> {
     const collection = await getCollection<PromoCodeDoc>(this.collectionName);
-    const filter: Filter<PromoCodeDoc> = { 
-      _id: new ObjectId(id) 
-    } as Filter<PromoCodeDoc>;
-    
-    const updateDoc: any = { ...updates };
-    if (updateDoc.code) {
+
+    const updateDoc: Record<string, unknown> = { ...updates };
+    delete updateDoc._id; // ลบ _id ออกเพราะไม่ควร update _id
+
+    if (updateDoc.code && typeof updateDoc.code === 'string') {
       updateDoc.code = updateDoc.code.toUpperCase();
     }
-    
+
     const result = await collection.updateOne(
-      filter,
+      { _id: new ObjectId(id) },
       { $set: updateDoc }
     );
-    
     return result.modifiedCount > 0;
   }
 
   static async delete(id: string): Promise<boolean> {
     const collection = await getCollection<PromoCodeDoc>(this.collectionName);
-    const filter: Filter<PromoCodeDoc> = { 
-      _id: new ObjectId(id) 
+    const filter: Filter<PromoCodeDoc> = {
+      _id: new ObjectId(id)
     } as Filter<PromoCodeDoc>;
-    
+
     const result = await collection.deleteOne(filter);
     return result.deletedCount > 0;
   }
 
   static async findByCamp(campId: string): Promise<PromoCode[]> {
     const collection = await getCollection<PromoCodeDoc>(this.collectionName);
-    
+
     // หาโค้ดที่ใช้ได้กับค่ายนี้ (applicableCamps มี campId หรือ applicableCamps เป็น null/empty = ใช้ได้ทั้งหมด)
     const filter: Filter<PromoCodeDoc> = {
       $or: [
@@ -236,12 +232,12 @@ export class PromoCodeModel {
         { applicableCamps: { $size: 0 } }
       ]
     } as Filter<PromoCodeDoc>;
-    
+
     const promos = await collection
       .find(filter)
       .sort({ createdAt: -1 })
       .toArray();
-    
+
     return promos.map(doc => this.toPublic(doc));
   }
 }

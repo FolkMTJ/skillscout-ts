@@ -1,6 +1,7 @@
 'use client';
 
-import { FiTrendingUp, FiDollarSign, FiCheckCircle } from 'react-icons/fi';
+import { Card, CardBody, CardHeader, Chip, Button, Divider } from '@heroui/react';
+import { FiTrendingUp, FiDollarSign, FiCheckCircle, FiArrowRight } from 'react-icons/fi';
 
 interface Career {
   id: string;
@@ -18,11 +19,11 @@ interface CareerCardProps {
 }
 
 export default function CareerCard({ career, rank }: CareerCardProps) {
-  const getMatchColor = (score: number) => {
-    if (score >= 80) return 'bg-green-500';
-    if (score >= 60) return 'bg-blue-500';
-    if (score >= 40) return 'bg-yellow-500';
-    return 'bg-gray-500';
+  const getMatchColor = (score: number): "success" | "primary" | "warning" | "default" => {
+    if (score >= 80) return 'success';
+    if (score >= 60) return 'primary';
+    if (score >= 40) return 'warning';
+    return 'default';
   };
 
   const getMatchLabel = (score: number) => {
@@ -37,81 +38,103 @@ export default function CareerCard({ career, rank }: CareerCardProps) {
   const matchLabel = getMatchLabel(career.matchScore);
 
   return (
-    <div className="bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+    <Card className="w-full">
       {/* Header with Rank and Match Score */}
-      <div className={`${matchColor} border-b-4 border-black p-6`}>
-        <div className="flex items-center justify-between">
+      <CardHeader className={`bg-gradient-to-r ${
+        matchColor === 'success' ? 'from-green-500 to-green-600' :
+        matchColor === 'primary' ? 'from-blue-500 to-blue-600' :
+        matchColor === 'warning' ? 'from-yellow-500 to-yellow-600' :
+        'from-gray-500 to-gray-600'
+      } text-white p-6`}>
+        <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-black text-white flex items-center justify-center text-3xl font-black border-4 border-black shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)]">
+            <Chip
+              color={matchColor}
+              variant="solid"
+              size="lg"
+              className="w-14 h-14 text-2xl font-bold"
+            >
               #{rank}
-            </div>
+            </Chip>
             <div>
-              <h3 className="text-2xl font-black text-white drop-shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+              <h3 className="text-2xl font-bold">
                 {career.name}
               </h3>
-              <p className="text-white font-bold opacity-90">{matchLabel}</p>
+              <p className="opacity-90 text-sm">{matchLabel}</p>
             </div>
           </div>
           <div className="text-center">
-            <div className="text-5xl font-black text-white drop-shadow-[3px_3px_0px_rgba(0,0,0,1)]">
+            <div className="text-5xl font-bold">
               {career.matchScore}%
             </div>
-            <div className="text-white font-bold text-sm">MATCH</div>
+            <div className="text-sm font-medium">MATCH</div>
           </div>
         </div>
-      </div>
+      </CardHeader>
+
+      <Divider />
 
       {/* Content */}
-      <div className="p-6 space-y-6">
+      <CardBody className="p-6 space-y-6">
         {/* Description */}
-        <p className="text-lg leading-relaxed">{career.description}</p>
+        <p className="text-base leading-relaxed text-gray-700">{career.description}</p>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Salary */}
-          <div className="bg-green-50 border-2 border-black p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <FiDollarSign className="text-xl" />
-              <span className="font-bold">ช่วงเงินเดือน</span>
-            </div>
-            <div className="text-2xl font-black">{career.salary}</div>
-          </div>
+          <Card className="bg-success-50">
+            <CardBody className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <FiDollarSign className="text-xl text-success-600" />
+                <span className="font-semibold">ช่วงเงินเดือน</span>
+              </div>
+              <div className="text-2xl font-bold text-success-700">{career.salary}</div>
+            </CardBody>
+          </Card>
 
           {/* Growth Outlook */}
-          <div className="bg-blue-50 border-2 border-black p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <FiTrendingUp className="text-xl" />
-              <span className="font-bold">แนวโน้มตลาดงาน</span>
-            </div>
-            <div className="text-xl font-black">{career.growthOutlook}</div>
-          </div>
+          <Card className="bg-primary-50">
+            <CardBody className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <FiTrendingUp className="text-xl text-primary-600" />
+                <span className="font-semibold">แนวโน้มตลาดงาน</span>
+              </div>
+              <div className="text-xl font-bold text-primary-700">{career.growthOutlook}</div>
+            </CardBody>
+          </Card>
         </div>
 
         {/* Required Skills */}
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <FiCheckCircle className="text-xl" />
-            <span className="font-bold text-lg">ทักษะที่ต้องใช้:</span>
+            <FiCheckCircle className="text-xl text-warning-600" />
+            <span className="font-semibold text-base">ทักษะที่ต้องใช้:</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {career.requiredSkills.map((skill) => (
-              <span
+              <Chip
                 key={skill}
-                className="bg-yellow-400 border-2 border-black px-4 py-2 font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                color="warning"
+                variant="flat"
               >
                 {skill}
-              </span>
+              </Chip>
             ))}
           </div>
         </div>
 
+        <Divider />
+
         {/* CTA */}
-        <div className="pt-4 border-t-2 border-black">
-          <button className="w-full bg-black text-white py-4 text-lg font-bold border-4 border-black hover:bg-white hover:text-black transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-            ดูรายละเอียดเส้นทางอาชีพนี้
-          </button>
-        </div>
-      </div>
-    </div>
+        <Button
+          color={matchColor}
+          size="lg"
+          className="w-full font-semibold"
+          endContent={<FiArrowRight />}
+        >
+          ดูรายละเอียดเส้นทางอาชีพนี้
+        </Button>
+      </CardBody>
+    </Card>
   );
 }

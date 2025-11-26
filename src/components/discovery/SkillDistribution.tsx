@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { getSkillLevelInfo } from '@/lib/utils/riasec-calculator';
 
 interface SkillDistributionProps {
@@ -48,7 +48,7 @@ export default function SkillDistribution({ skills }: SkillDistributionProps) {
                   />
                   <span className="font-bold text-lg">{skill.name}</span>
                   <span className={`px-2 py-0.5 text-xs font-bold rounded border ${levelInfo.borderColor} ${levelInfo.bgColor} ${levelInfo.color}`}>
-                    {levelInfo.icon} {levelInfo.label}
+                     {levelInfo.label}
                   </span>
                 </div>
                 <div className="flex items-center gap-4">
@@ -116,7 +116,7 @@ export default function SkillDistribution({ skills }: SkillDistributionProps) {
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span className={`inline-flex items-center gap-1 px-3 py-1 rounded border-2 ${levelInfo.borderColor} ${levelInfo.bgColor} ${levelInfo.color} font-bold text-sm`}>
-                      {levelInfo.icon} {levelInfo.label}
+                       {levelInfo.label}
                     </span>
                   </td>
                 </tr>

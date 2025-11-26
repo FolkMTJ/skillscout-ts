@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDatabase } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
 
 /**
  * DEBUG: เพิ่ม tags ให้กับค่ายที่ไม่มี tags

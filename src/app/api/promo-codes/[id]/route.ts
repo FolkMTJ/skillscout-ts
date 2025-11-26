@@ -5,9 +5,9 @@ import { authOptions } from '@/lib/auth';
 import { PromoCodeModel } from '@/lib/db/models/PromoCode';
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 // PATCH /api/promo-codes/[id] - อัพเดทโปรโมชั่น
@@ -21,7 +21,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     // ดึงข้อมูลโปรโมชั่นเดิม
@@ -59,7 +59,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // ดึงข้อมูลโปรโมชั่นเดิม
     const promoCode = await PromoCodeModel.findById(id);

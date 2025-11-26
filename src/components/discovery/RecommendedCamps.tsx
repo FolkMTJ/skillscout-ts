@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { Card, CardBody, CardFooter, Button, Chip } from '@heroui/react';
 import { FiArrowRight } from 'react-icons/fi';
 
 interface RecommendedCamp {
@@ -20,64 +21,78 @@ export default function RecommendedCamps({ camps }: RecommendedCampsProps) {
 
   if (camps.length === 0) {
     return (
-      <div className="bg-gray-100 border-4 border-black p-8 text-center">
-        <p className="text-lg font-bold mb-4">ยังไม่มีค่ายที่แนะนำในขณะนี้</p>
-        <button
-          onClick={() => router.push('/allcamps')}
-          className="bg-black text-white px-6 py-3 font-bold border-4 border-black hover:bg-white hover:text-black transition-all"
-        >
-          ดูค่ายทั้งหมด
-        </button>
-      </div>
+      <Card>
+        <CardBody className="text-center p-8">
+          <p className="text-lg font-semibold mb-4 text-gray-600">ยังไม่มีค่ายที่แนะนำในขณะนี้</p>
+          <Button
+            color="warning"
+            onPress={() => router.push('/allcamps')}
+          >
+            ดูค่ายทั้งหมด
+          </Button>
+        </CardBody>
+      </Card>
     );
   }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {camps.map((camp) => (
-        <div
+        <Card
           key={camp.id}
-          className="bg-white border-4 border-black overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer group"
-          onClick={() => router.push(`/camps/${camp.id}`)}
+          className="overflow-hidden cursor-pointer hover:scale-105 transition-transform"
         >
           {/* Image */}
-          <div className="relative h-48 bg-gray-200 border-b-4 border-black overflow-hidden">
+          <div 
+            className="relative h-48 w-full bg-gray-200"
+            onClick={() => router.push(`/camps/${camp.id}`)}
+          >
             <Image
               src={camp.image || '/images/camp-placeholder.png'}
               alt={camp.name}
               fill
-              className="object-cover group-hover:scale-110 transition-transform duration-300"
+              className="object-cover"
             />
-            <div className="absolute top-3 right-3 bg-yellow-400 border-2 border-black px-3 py-1 font-bold text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <Chip
+              color="warning"
+              variant="solid"
+              size="sm"
+              className="absolute top-3 right-3 font-semibold"
+            >
               แนะนำ
-            </div>
+            </Chip>
           </div>
 
           {/* Content */}
-          <div className="p-4 space-y-3">
-            <h4 className="font-black text-lg line-clamp-2 group-hover:text-yellow-600 transition-colors">
+          <CardBody className="p-4 space-y-3">
+            <h4 
+              className="font-bold text-lg line-clamp-2 cursor-pointer hover:text-warning-600 transition-colors"
+              onClick={() => router.push(`/camps/${camp.id}`)}
+            >
               {camp.name}
             </h4>
 
             {/* Reason */}
-            <div className="bg-yellow-50 border-2 border-black p-3">
-              <div className="text-xs font-bold mb-1 opacity-70">เหมาะกับคุณเพราะ:</div>
-              <p className="text-sm font-bold">{camp.reason}</p>
-            </div>
+            <Card className="bg-warning-50">
+              <CardBody className="p-3">
+                <div className="text-xs font-semibold mb-1 text-gray-600">เหมาะกับคุณเพราะ:</div>
+                <p className="text-sm font-medium">{camp.reason}</p>
+              </CardBody>
+            </Card>
+          </CardBody>
 
-            {/* CTA */}
-            <button
-              className="w-full bg-black text-white py-3 font-bold border-4 border-black flex items-center justify-center gap-2 group-hover:bg-yellow-400 group-hover:text-black transition-all"
-              onClick={(e) => {
-                e.stopPropagation();
-                router.push(`/camps/${camp.id}`);
-              }}
+          {/* CTA */}
+          <CardFooter className="p-4 pt-0">
+            <Button
+              color="warning"
+              className="w-full font-semibold"
+              endContent={<FiArrowRight />}
+              onPress={() => router.push(`/camps/${camp.id}`)}
             >
               ดูรายละเอียด
-              <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
-            </button>
-          </div>
-        </div>
+            </Button>
+          </CardFooter>
+        </Card>
       ))}
     </div>
   );

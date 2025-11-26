@@ -59,9 +59,9 @@ export default function MyRegistrationsDebugPage() {
       const res = await fetch('/api/debug/approve-all', {
         method: 'POST'
       });
-      
+
       const result = await res.json();
-      
+
       if (res.ok) {
         toast.success(`อนุมัติสำเร็จ! ${result.approvedCount} ค่าย`);
         // Refresh data
@@ -106,7 +106,7 @@ export default function MyRegistrationsDebugPage() {
               <p className="text-sm text-gray-600 mb-1">ทั้งหมด</p>
               <p className="text-3xl font-black">{data.totalRegistrations}</p>
             </Card>
-            
+
             <Card className="p-4 bg-green-50 border-2 border-green-400">
               <p className="text-sm text-gray-600 mb-1">Confirmed</p>
               <p className="text-3xl font-black text-green-600">{data.confirmedCount || 0}</p>
@@ -116,7 +116,7 @@ export default function MyRegistrationsDebugPage() {
               <p className="text-sm text-gray-600 mb-1">Approved</p>
               <p className="text-3xl font-black text-purple-600">{data.approvedCount || 0}</p>
             </Card>
-            
+
             <Card className="p-4 bg-yellow-50 border-2 border-yellow-400">
               <p className="text-sm text-gray-600 mb-1">Pending</p>
               <p className="text-3xl font-black text-yellow-600">{data.pendingCount}</p>
@@ -179,7 +179,11 @@ export default function MyRegistrationsDebugPage() {
 }
 
 function StatusChip({ status }: { status: string }) {
-  const statusConfig: Record<string, { color: any; icon: any; label: string }> = {
+  const statusConfig: Record<string, {
+    color: 'success' | 'primary' | 'secondary' | 'warning' | 'danger' | 'default';
+    icon: React.ReactNode;
+    label: string
+  }> = {
     attended: {
       color: 'success',
       icon: <FiCheckCircle />,

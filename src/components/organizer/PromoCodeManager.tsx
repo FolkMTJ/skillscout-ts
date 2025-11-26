@@ -37,7 +37,7 @@ export default function PromoCodeManager({ userId, userRole, camps = [] }: Promo
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingCode, setEditingCode] = useState<PromoCode | null>(null);
-  
+
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
   const [deletingId, setDeletingId] = useState<string>('');
@@ -58,23 +58,24 @@ export default function PromoCodeManager({ userId, userRole, camps = [] }: Promo
 
   useEffect(() => {
     fetchPromoCodes();
-  }, []); // ✅ เพิ่ม empty array เพื่อเรียกแค่ครั้งเดียว
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchPromoCodes = async () => {
     try {
       setLoading(true);
-      const url = userRole === 'organizer' 
+      const url = userRole === 'organizer'
         ? `/api/promo-codes?organizerId=${userId}`
         : '/api/promo-codes';
-      
+
       const res = await fetch(url, {
         cache: 'no-store' // ป้องกัน cache
       });
-      
+
       if (!res.ok) {
         throw new Error('Failed to fetch');
       }
-      
+
       const data = await res.json();
       setPromoCodes(Array.isArray(data) ? data : data.promoCodes || []);
     } catch (error) {
@@ -123,8 +124,8 @@ export default function PromoCodeManager({ userId, userRole, camps = [] }: Promo
   const handleSubmit = async () => {
     try {
       // Validation
-      if (!formData.code || !formData.discountValue || !formData.maxUses || 
-          !formData.validFrom || !formData.validUntil) {
+      if (!formData.code || !formData.discountValue || !formData.maxUses ||
+        !formData.validFrom || !formData.validUntil) {
         toast.error('กรุณากรอกข้อมูลให้ครบถ้วน');
         return;
       }
@@ -226,8 +227,8 @@ export default function PromoCodeManager({ userId, userRole, camps = [] }: Promo
       <div className="flex justify-between items-center">
         <div>
           <p className="text-gray-600 text-sm">
-            {userRole === 'admin' 
-              ? 'สร้างรหัสส่วนลดที่ใช้ได้ทั้งเว็บ' 
+            {userRole === 'admin'
+              ? 'สร้างรหัสส่วนลดที่ใช้ได้ทั้งเว็บ'
               : 'สร้างรหัสส่วนลดสำหรับค่ายของคุณ'}
           </p>
         </div>
@@ -268,85 +269,85 @@ export default function PromoCodeManager({ userId, userRole, camps = [] }: Promo
             <TableColumn>จัดการ</TableColumn>
           </TableHeader>
           <TableBody>
-              {promoCodes.map((code) => (
-                <TableRow key={code._id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-bold text-orange-600">{code.code}</p>
-                      {code.description && (
-                        <p className="text-xs text-gray-500">{code.description}</p>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {code.applicableCamps && code.applicableCamps.length > 0 ? (
-                      <Chip size="sm" color="primary" variant="flat">
-                        {code.applicableCamps.length} ค่าย
-                      </Chip>
-                    ) : (
-                      <Chip size="sm" color="success" variant="flat">
-                        ทั้งเว็บ
-                      </Chip>
+            {promoCodes.map((code) => (
+              <TableRow key={code._id}>
+                <TableCell>
+                  <div>
+                    <p className="font-bold text-orange-600">{code.code}</p>
+                    {code.description && (
+                      <p className="text-xs text-gray-500">{code.description}</p>
                     )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      {code.discountType === DiscountType.PERCENTAGE ? (
-                        <>
-                          <FiPercent className="w-3 h-3" />
-                          {code.discountValue}%
-                        </>
-                      ) : (
-                        <>฿{code.discountValue}</>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {code.usedCount} / {code.usageLimit || '∞'}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1 text-sm">
-                      <FiCalendar className="w-3 h-3" />
-                      {new Date(code.validUntil).toLocaleDateString('th-TH')}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Switch
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {code.applicableCamps && code.applicableCamps.length > 0 ? (
+                    <Chip size="sm" color="primary" variant="flat">
+                      {code.applicableCamps.length} ค่าย
+                    </Chip>
+                  ) : (
+                    <Chip size="sm" color="success" variant="flat">
+                      ทั้งเว็บ
+                    </Chip>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    {code.discountType === DiscountType.PERCENTAGE ? (
+                      <>
+                        <FiPercent className="w-3 h-3" />
+                        {code.discountValue}%
+                      </>
+                    ) : (
+                      <>฿{code.discountValue}</>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {code.usedCount} / {code.usageLimit || '∞'}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1 text-sm">
+                    <FiCalendar className="w-3 h-3" />
+                    {new Date(code.validUntil).toLocaleDateString('th-TH')}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Switch
+                    size="sm"
+                    isSelected={code.isActive}
+                    onValueChange={() => handleToggleActive(code._id, code.isActive)}
+                  />
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button
                       size="sm"
-                      isSelected={code.isActive}
-                      onValueChange={() => handleToggleActive(code._id, code.isActive)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        isIconOnly
-                        variant="light"
-                        color="primary"
-                        onPress={() => handleOpenModal(code)}
-                      >
-                        <FiEdit2 />
-                      </Button>
-                      <Button
-                        size="sm"
-                        isIconOnly
-                        variant="light"
-                        color="danger"
-                        onPress={() => {
-                          setDeletingId(code._id);
-                          onDeleteOpen();
-                        }}
-                      >
-                        <FiTrash2 />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+                      isIconOnly
+                      variant="light"
+                      color="primary"
+                      onPress={() => handleOpenModal(code)}
+                    >
+                      <FiEdit2 />
+                    </Button>
+                    <Button
+                      size="sm"
+                      isIconOnly
+                      variant="light"
+                      color="danger"
+                      onPress={() => {
+                        setDeletingId(code._id);
+                        onDeleteOpen();
+                      }}
+                    >
+                      <FiTrash2 />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
 
       {/* Create/Edit Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="2xl">
@@ -452,7 +453,7 @@ export default function PromoCodeManager({ userId, userRole, camps = [] }: Promo
               {userRole === 'admin' && (
                 <Switch
                   isSelected={formData.applicableToAllCamps}
-                  onValueChange={(checked) => 
+                  onValueChange={(checked) =>
                     setFormData({ ...formData, applicableToAllCamps: checked, applicableCamps: [] })
                   }
                 >
@@ -466,7 +467,7 @@ export default function PromoCodeManager({ userId, userRole, camps = [] }: Promo
                   selectionMode="multiple"
                   placeholder="เลือกค่าย"
                   selectedKeys={formData.applicableCamps}
-                  onSelectionChange={(keys) => 
+                  onSelectionChange={(keys) =>
                     setFormData({ ...formData, applicableCamps: Array.from(keys as Set<string>) })
                   }
                   isRequired={userRole === 'organizer'}

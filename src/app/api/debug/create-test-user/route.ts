@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDatabase } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
 
 /**
  * DEBUG: สร้าง test user พร้อม registrations สำหรับทดสอบ Discovery Path

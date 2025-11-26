@@ -47,7 +47,7 @@ export async function GET() {
           return new ObjectId(r.campId);
         }
         return r.campId;
-      } catch (e) {
+      } catch {
         console.warn('Invalid campId:', r.campId);
         return null;
       }

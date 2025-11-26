@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { Card, Button, Chip, Tabs, Tab } from '@heroui/react';
 import { FiCalendar, FiMapPin, FiCheckCircle, FiClock, FiStar } from 'react-icons/fi';

@@ -17,7 +17,7 @@ import {
   DropdownMenu,
   DropdownItem,
 } from '@heroui/react';
-import { FiPlus, FiTag, FiEdit2, FiTrash2, FiMoreVertical, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiPlus, FiTag, FiTrash2, FiMoreVertical, FiEye, FiEyeOff } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { PromoCode, DiscountType } from '@/types';
 import PromoCodeFormModal from './PromoCodeFormModal';

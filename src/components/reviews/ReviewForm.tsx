@@ -13,7 +13,7 @@ interface ReviewFormProps {
   userName: string;
 }
 
-export default function ReviewForm({ campId, campName, onReviewSubmitted, userName }: ReviewFormProps) {
+export default function ReviewForm({ campId, onReviewSubmitted, userName }: ReviewFormProps) {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState('');

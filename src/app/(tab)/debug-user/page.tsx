@@ -5,9 +5,39 @@ import { useSession } from 'next-auth/react';
 import { Card, Button } from '@heroui/react';
 import { FiRefreshCw, FiUser } from 'react-icons/fi';
 
+interface UserData {
+  session: {
+    userId: string;
+    email: string;
+    name: string;
+    role: string;
+  };
+  user: {
+    _id: string;
+    email: string;
+    name: string;
+    role: string;
+  } | null;
+  registrations: {
+    totalInSystem: number;
+    myRegistrations: number;
+    myRegistrationsByEmail: number;
+    myRegistrationsByStringId: number;
+    details: {
+      byObjectId: unknown[];
+      byEmail: unknown[];
+    };
+  };
+  payments: {
+    total: number;
+    details: unknown[];
+  };
+  debug: unknown;
+}
+
 export default function DebugUserPage() {
   const { status } = useSession();
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

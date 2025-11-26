@@ -1,14 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDatabase } from '@/lib/mongodb';
-import { Collection, ObjectId } from 'mongodb';
+import { Collection, ObjectId, Db } from 'mongodb';
 import { calculateUserRIASEC, calculateSkillProfile, calculateCampRIASEC } from '@/lib/utils/riasec-calculator';
 
 interface Registration {
   _id: ObjectId;
-  userId: ObjectId;
-  campId: ObjectId;
+  userId: ObjectId | string;
+  campId: ObjectId | string;
+  userEmail?: string;
   status: string;
 }
 
@@ -19,7 +20,14 @@ interface Camp {
   image?: string;
 }
 
-export async function GET(req: NextRequest) {
+interface SkillProfile {
+  name: string;
+  experienceCount: number;
+  percentage: number;
+  level: 'novice' | 'intermediate' | 'experienced' | 'expert';
+}
+
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
@@ -43,9 +51,9 @@ export async function GET(req: NextRequest) {
     const registrations = await registrationsCollection
       .find({
         $or: [
-          { userId: new ObjectId(userId) },
-          { userId: userId },
-          { userEmail: userEmail }
+          { userId: new ObjectId(userId) } as never,
+          { userId: userId } as never,
+          { userEmail: userEmail } as never
         ],
         status: 'attended' // ✅ เฉพาะที่เข้าร่วมแล้วเท่านั้น
       })
@@ -77,11 +85,11 @@ export async function GET(req: NextRequest) {
           return new ObjectId(r.campId);
         }
         return r.campId;
-      } catch (e) {
-        console.warn('⚠️ Invalid campId:', r.campId);
+      } catch {
+        console.warn('Invalid campId:', r.campId);
         return null;
       }
-    }).filter(id => id !== null) as ObjectId[];
+    }).filter((id): id is ObjectId => id !== null);
 
     console.log('🔍 Looking for camps with IDs:', campIds.map(id => id.toString()));
 
@@ -89,8 +97,8 @@ export async function GET(req: NextRequest) {
       .find({ _id: { $in: campIds } })
       .toArray();
 
-    console.log('✅ Found camps:', camps.length);
-    console.log('📋 Camp details:', camps.map(c => ({
+    console.log('Found camps:', camps.length);
+    console.log('Camp details:', camps.map(c => ({
       id: c._id.toString(),
       name: c.name,
       tagsCount: (c.tags || []).length,
@@ -135,7 +143,7 @@ export async function GET(req: NextRequest) {
 // Helper: แนะนำอาชีพตาม RIASEC
 function getCareerRecommendations(
   riasecProfile: { R: number; I: number; A: number; S: number; E: number; C: number },
-  skillProfile: { name: string; level: number; experienceCount: number }[]
+  skillProfile: SkillProfile[]
 ) {
   const careers = [
     {
@@ -233,19 +241,19 @@ function getCareerRecommendations(
 
 // Helper: แนะนำค่ายที่ยังไม่ได้เข้า
 async function getRecommendedCamps(
-  db: any,
-  skillProfile: { name: string; level: number }[],
+  db: Db,
+  skillProfile: SkillProfile[],
   riasecProfile: { R: number; I: number; A: number; S: number; E: number; C: number },
   attendedCampIds: ObjectId[]
 ) {
   const campsCollection = db.collection('camps');
 
-  // หา skills ที่ยังอ่อน (level < 60)
-  const weakSkills = skillProfile.filter(s => s.level < 60).map(s => s.name);
+  // หา skills ที่ยังอ่อน (experienceCount < 3)
+  const weakSkills = skillProfile.filter(s => s.experienceCount < 3).map(s => s.name);
 
   // หา top RIASEC code
   const topRIASEC = Object.entries(riasecProfile)
-    .sort(([, a], [, b]) => (b as number) - (a as number))
+    .sort((a, b) => (b[1] as number) - (a[1] as number))
     .slice(0, 2)
     .map(([code]) => code);
 
@@ -259,8 +267,9 @@ async function getRecommendedCamps(
     .toArray();
 
   const recommended = camps
-    .map((camp: Camp) => {
-      const campRIASEC = calculateCampRIASEC(camp.tags || []);
+    .map((camp) => {
+      const campData = camp as unknown as Camp;
+      const campRIASEC = calculateCampRIASEC(campData.tags || []);
       
       // คำนวณความเกี่ยวข้อง
       const riasecRelevance = topRIASEC.reduce((sum, code) => {
@@ -268,10 +277,10 @@ async function getRecommendedCamps(
       }, 0);
 
       return {
-        id: camp._id.toString(),
-        name: camp.name,
-        image: camp.image || '/images/camp-placeholder.png',
-        reason: generateRecommendationReason(camp.tags || [], weakSkills, topRIASEC),
+        id: campData._id.toString(),
+        name: campData.name,
+        image: campData.image || '/images/camp-placeholder.png',
+        reason: generateRecommendationReason(campData.tags || [], weakSkills),
         relevance: riasecRelevance
       };
     })
@@ -283,8 +292,7 @@ async function getRecommendedCamps(
 
 function generateRecommendationReason(
   campTags: string[],
-  weakSkills: string[],
-  topRIASEC: string[]
+  weakSkills: string[]
 ): string {
   // ถ้ามี tag ที่ตรงกับ weak skills
   const matchingSkills = campTags.filter(tag => 

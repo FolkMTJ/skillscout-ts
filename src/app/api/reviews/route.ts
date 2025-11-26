@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { connectToDatabase } from '@/lib/mongodb';
+import { getDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import { z } from 'zod';
 
@@ -15,7 +15,7 @@ const reviewSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -25,8 +25,8 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const validatedData = reviewSchema.parse(body);
-    
-    const { db } = await connectToDatabase();
+
+    const db = await getDatabase();
 
     // ตรวจสอบว่า User ได้เข้าร่วมค่ายและเช็คอินแล้วหรือยัง
     const registration = await db.collection('registrations').findOne({
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     // อัปเดตค่าย
     const currentReviews = camp.reviews || [];
     const updatedReviews = [...currentReviews, newReview];
-    
+
     // คำนวณคะแนนเฉลี่ย
     const totalRating = updatedReviews.reduce((sum, review) => sum + review.rating, 0);
     const avgRating = totalRating / updatedReviews.length;
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error creating review:', error);
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Invalid input data', details: error.errors },
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
       return NextResponse.json(
         { canReview: false, reason: 'Not authenticated' },
@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { db } = await connectToDatabase();
+    const db = await getDatabase();
 
     // ตรวจสอบว่า User ได้เข้าร่วมและเช็คอินแล้วหรือยัง
     const registration = await db.collection('registrations').findOne({
@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
     }
 
     const hasReviewed = camp.reviews?.some(
-      (review: { authorEmail?: string; author: string }) => 
+      (review: { authorEmail?: string; author: string }) =>
         review.authorEmail === session.user.email || review.author === registration.userName
     );
 

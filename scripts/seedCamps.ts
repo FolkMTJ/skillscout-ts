@@ -263,13 +263,13 @@ const sampleCamps = [
 
 async function seedDatabase() {
   try {
-    console.log('🔌 Connecting to MongoDB...');
+    console.log('Connecting to MongoDB...');
     await connectDB();
     
-    console.log('🗑️  Clearing existing camps...');
+    console.log('Clearing existing camps...');
     await Camp.deleteMany({});
     
-    console.log('🌱 Seeding camps...');
+    console.log('Seeding camps...');
     
     // สร้าง slug ให้แต่ละค่ายก่อน insert
     const campsWithSlug = sampleCamps.map(camp => ({

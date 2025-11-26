@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea, Chip, Select, SelectItem } from '@heroui/react';
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea, Select, SelectItem } from '@heroui/react';
 import { FiPlus, FiX, FiSave } from 'react-icons/fi';
 import SimpleImageUpload from './SimpleImageUpload';
 import SimpleMultiImageUpload from './SimpleMultiImageUpload';

@@ -45,7 +45,7 @@ export async function GET() {
           return new ObjectId(r.campId);
         }
         return r.campId;
-      } catch (e) {
+      } catch {
         return null;
       }
     }).filter(id => id !== null);

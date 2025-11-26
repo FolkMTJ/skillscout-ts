@@ -7,8 +7,8 @@ import { useRouter } from 'next/navigation';
 import { Card, Button, useDisclosure, Chip, Modal, ModalContent, ModalHeader, ModalBody } from '@heroui/react';
 import { FiCalendar, FiUsers, FiCheckCircle, FiPlus, FiClock, FiUserCheck, FiCreditCard, FiTarget, FiZap, FiBook, FiAlertCircle, FiTag } from 'react-icons/fi';
 import { Camp, Registration, RegistrationStatus } from '@/types';
-import { 
-  CampFormModal, CampDetailModal, CampCardWithImage, StatCard, EmptyState 
+import {
+  CampFormModal, CampDetailModal, CampCardWithImage, StatCard, EmptyState
 } from '@/components/organizer';
 import PromoCodeManager from '@/components/organizer/PromoCodeManager';
 import toast from 'react-hot-toast';
@@ -42,17 +42,17 @@ export default function OrganizerDashboard() {
       if (!campsRes.ok) throw new Error('Failed to fetch camps');
       const campsData = await campsRes.json();
       const allCamps = Array.isArray(campsData) ? campsData : (campsData.camps || []);
-      
+
       // Admin สามารถดูค่ายทั้งหมด, Organizer ดูเฉพาะค่ายของตัวเอง
-      const myCamps = session.user.role === 'admin' 
-        ? allCamps 
+      const myCamps = session.user.role === 'admin'
+        ? allCamps
         : allCamps.filter((c: Camp) => c.organizerId === session.user.id);
-      
+
       console.log('=== ORGANIZER DASHBOARD ===');
       console.log('Total camps loaded:', myCamps.length);
       console.log('Camps with status:', myCamps.map((c: Camp) => ({ name: c.name, status: c.status || 'NO STATUS' })));
       console.log('==========================');
-      
+
       setCamps(myCamps);
 
       if (myCamps.length > 0) {
@@ -90,7 +90,7 @@ export default function OrganizerDashboard() {
     if (!formData.name || !formData.description || !formData.location || !formData.startDate || !formData.endDate || !formData.registrationDeadline) {
       return toast.error('กรุณากรอกข้อมูลให้ครบถ้วน');
     }
-    
+
     try {
       const slug = formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       const startDate = new Date(formData.startDate);
@@ -235,19 +235,19 @@ export default function OrganizerDashboard() {
   const handleCompleteCamp = async (campId: string, campName: string) => {
     const message = 'ยืนยันจบค่าย "' + campName + '" หรือไม่?\n\nหมายเหตุ: ค่ายจะถูกตั้งเป็นสถานะ "จบแล้ว" และไม่สามารถรับสมัครเพิ่มได้';
     if (!confirm(message)) return;
-    
+
     try {
       const response = await fetch('/api/camps/' + campId, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           status: 'completed',
           endDate: new Date().toISOString()
         }),
       });
 
       if (!response.ok) throw new Error('Failed to complete camp');
-      
+
       toast.success('จบค่ายสำเร็จ!');
       fetchData();
     } catch (completeError) {
@@ -326,27 +326,18 @@ export default function OrganizerDashboard() {
   }
 
   const totalEnrolled = camps.reduce((sum, c) => sum + (c.enrolled || 0), 0);
-  const userRole = session.user.role as 'admin' | 'organizer';
-  
+
   // กรองค่ายรอตรวจสอบ (status = pending หรือไม่มี status)
   const pendingCamps = camps.filter(c => c.status === 'pending');
-  
-  // กรองค่ายที่เปิดอยู่ (active หรือไม่มี status และยังไม่จบ)
-  const activeCamps = camps.filter(c => {
-    if (c.status === 'active') return true;
-    // ถ้าไม่มี status และยังไม่จบ ให้ถือว่าเป็น active
-    if (!c.status && c.endDate && new Date(c.endDate) > new Date()) return true;
-    return false;
-  });
-  
+
   // กรองค่ายที่จบแล้ว
   const completedCamps = camps.filter(c => {
     return c.status === 'completed' || (c.endDate && new Date(c.endDate) < new Date());
   });
-  
+
   // กรองค่ายที่ถูกปฏิเสธ
   const rejectedCamps = camps.filter(c => c.status === 'rejected');
-  
+
   const attendedRegs = registrations.filter(r => r.status === RegistrationStatus.CONFIRMED).length;
 
   return (
@@ -411,10 +402,10 @@ export default function OrganizerDashboard() {
                   </Card>
                 ))}
                 {pendingCamps.length === 0 && (
-                  <EmptyState 
-                    icon={FiCheckCircle} 
-                    title="ไม่มีค่ายรอตรวจสอบ" 
-                    description="ค่ายทั้งหมดได้รับการอนุมัติแล้ว" 
+                  <EmptyState
+                    icon={FiCheckCircle}
+                    title="ไม่มีค่ายรอตรวจสอบ"
+                    description="ค่ายทั้งหมดได้รับการอนุมัติแล้ว"
                   />
                 )}
               </div>
@@ -516,8 +507,8 @@ export default function OrganizerDashboard() {
       )}
 
       {/* Promo Code Modal */}
-      <Modal 
-        isOpen={isPromoModalOpen} 
+      <Modal
+        isOpen={isPromoModalOpen}
         onClose={onPromoModalClose}
         size="5xl"
         scrollBehavior="inside"
@@ -530,9 +521,9 @@ export default function OrganizerDashboard() {
             </h2>
           </ModalHeader>
           <ModalBody>
-            <PromoCodeManager 
-              userId={session.user.id}
-              userRole={session.user.role as 'admin' | 'organizer'}
+            <PromoCodeManager
+              userId={session?.user?.id || ''}
+              userRole={(session?.user?.role as 'admin' | 'organizer') || 'organizer'}
               camps={camps}
             />
           </ModalBody>

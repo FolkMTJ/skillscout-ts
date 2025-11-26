@@ -7,6 +7,7 @@ import PromoCodeList from '@/components/promo/PromoCodeList';
 import toast from 'react-hot-toast';
 
 interface Camp {
+  [x: string]: string;
   _id: string;
   name: string;
 }
@@ -35,7 +36,7 @@ export default function PromoCodesPage() {
         fetchCamps();
       }
     }
-  }, [status]); // ลบ session และ router ออกจาก dependencies
+  }); // ลบ session และ router ออกจาก dependencies
 
   const fetchCamps = async () => {
     setLoading(true);
