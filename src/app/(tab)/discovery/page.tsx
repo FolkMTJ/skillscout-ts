@@ -150,7 +150,7 @@ export default function DiscoveryPathPage() {
         <div className="container mx-auto px-4 py-16">
           <div className="max-w-4xl mx-auto text-center text-white">
             <Chip color="warning" variant="solid" className="mb-4 bg-white text-[#F2B33D] font-semibold">
-              ✨ Discovery Path
+              Discovery Path
             </Chip>
             <h1 className="text-5xl font-bold mb-4">เส้นทางอาชีพของคุณ</h1>
             <p className="text-xl mb-2 opacity-90">
@@ -165,7 +165,7 @@ export default function DiscoveryPathPage() {
 
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-6xl mx-auto space-y-8">
-          
+
           {/* Stats Overview */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card className="bg-gradient-to-br from-blue-500 to-blue-600">
@@ -242,7 +242,7 @@ export default function DiscoveryPathPage() {
               <Chip color="warning" variant="flat" size="sm">
                 ทักษะ
               </Chip>
-              <h2 className="text-2xl font-bold">🎯 สัดส่วนประสบการณ์ของคุณ</h2>
+              <h2 className="text-2xl font-bold">สัดส่วนประสบการณ์ของคุณ</h2>
               <p className="text-gray-600 text-sm">
                 แสดงสัดส่วนทักษะจากค่ายทั้งหมดที่เข้าร่วม (ไม่ใช่การวัดความเก่งจริง)
               </p>
@@ -252,7 +252,7 @@ export default function DiscoveryPathPage() {
               <SkillPieChart skills={data.skillProfile} />
             </CardBody>
           </Card>
-
+    
           {/* Career Recommendations */}
           <div className="space-y-6">
             <div>
@@ -261,7 +261,7 @@ export default function DiscoveryPathPage() {
               </Chip>
               <h2 className="text-2xl font-bold">อาชีพที่เหมาะกับคุณ</h2>
             </div>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {data.recommendedCareers.map((career, index) => (
                 <CareerCard
                   key={career.id}
