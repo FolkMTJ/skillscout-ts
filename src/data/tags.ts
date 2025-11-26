@@ -232,6 +232,19 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     ],
     isCore: true
   },
+  // DevOps & Infrastructure
+  {
+    id: 'devops',
+    name: 'DevOps',
+    nameTh: 'DevOps',
+    category: 'devops',
+    riasecMapping: [
+      { code: 'C', weight: 0.5 },
+      { code: 'I', weight: 0.4 },
+      { code: 'E', weight: 0.1 }
+    ],
+    isCore: true
+  },
   {
     id: 'docker',
     name: 'Docker',

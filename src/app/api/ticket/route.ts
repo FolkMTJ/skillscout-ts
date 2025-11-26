@@ -70,18 +70,46 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      if (payment.status !== 'approved') {
+      // ตรวจสอบ status ของ payment และ registration
+      // Payment: status = 'completed' และ slipVerified = true
+      // Registration: status = 'confirmed'
+      
+      if (payment.status !== 'completed' || !payment.slipVerified) {
         return NextResponse.json(
           { 
             registered: true,
             canGetTicket: false,
             message: 'รอ Organizer ตรวจสอบสลิป',
             status: 'pending_approval',
-            paymentStatus: payment.status
+            paymentStatus: payment.status,
+            slipVerified: payment.slipVerified
           }
         );
       }
     }
+
+    // ตรวจสอบ registration status - ต้องเป็น confirmed
+    console.log('🔍 Checking registration status:', registration.status);
+    
+    if (registration.status !== 'confirmed' && registration.status !== 'approved') {
+      console.log('⚠️ Registration status not confirmed/approved:', registration.status);
+      return NextResponse.json(
+        { 
+          registered: true,
+          canGetTicket: false,
+          message: 'รอการอนุมัติ',
+          status: registration.status,
+          registrationStatus: registration.status,
+          debugInfo: {
+            status: registration.status,
+            expected: ['confirmed', 'approved']
+          }
+        }
+      );
+    }
+
+    console.log('✅ Registration is confirmed/approved');
+    console.log('✅ All checks passed - can get ticket');
 
     // Generate verification URL (สแกนแล้วเปิดหน้า verify)
     const verifyUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/verify?id=${registration._id}`;

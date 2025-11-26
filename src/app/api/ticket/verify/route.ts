@@ -68,8 +68,15 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Check if registration is approved
-    if (registration.status !== RegistrationStatus.APPROVED && registration.status !== RegistrationStatus.PENDING) {
+    // Check if registration is approved/confirmed
+    // ✅ รองรับทั้ง APPROVED, CONFIRMED, และ PENDING
+    const validStatuses = [
+      RegistrationStatus.APPROVED,
+      RegistrationStatus.CONFIRMED,
+      RegistrationStatus.PENDING
+    ];
+    
+    if (!validStatuses.includes(registration.status as RegistrationStatus)) {
       console.log('❌ Registration not approved, status:', registration.status);
       return NextResponse.json({
         success: false,

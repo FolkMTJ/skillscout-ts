@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import PromoCodeList from '@/components/promo/PromoCodeList';
@@ -20,15 +20,22 @@ export default function PromoCodesPage() {
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
-    } else if (status === 'authenticated') {
-      if (session.user.role !== 'organizer' && session.user.role !== 'admin') {
+      return; // หยุดการทำงาน
+    }
+    
+    if (status === 'authenticated') {
+      if (session?.user.role !== 'organizer' && session?.user.role !== 'admin') {
         router.push('/');
         toast.error('คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
-      } else {
+        return; // หยุดการทำงาน
+      }
+      
+      // เรียก fetchCamps แค่ครั้งเดียว
+      if (loading) {
         fetchCamps();
       }
     }
-  }, [status, session, router]);
+  }, [status]); // ลบ session และ router ออกจาก dependencies
 
   const fetchCamps = async () => {
     setLoading(true);
@@ -53,6 +60,10 @@ export default function PromoCodesPage() {
     }
   };
 
+  // ใช้ useMemo เพื่อป้องกัน re-render ของ PromoCodeList
+  const memoizedCamps = useMemo(() => camps, [camps]);
+  const memoizedUserRole = useMemo(() => session?.user?.role as 'admin' | 'organizer', [session?.user?.role]);
+
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -69,8 +80,8 @@ export default function PromoCodesPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <PromoCodeList
-          userRole={session.user.role as 'admin' | 'organizer'}
-          organizerCamps={camps}
+          userRole={memoizedUserRole}
+          organizerCamps={memoizedCamps}
         />
       </div>
     </div>

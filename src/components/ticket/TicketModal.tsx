@@ -44,6 +44,7 @@ export default function TicketModal({ isOpen, onClose, ticket }: TicketModalProp
   const getStatusBadge = () => {
     switch (ticket.status) {
       case 'approved':
+      case 'confirmed': // ✅ เพิ่ม confirmed
         return (
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-100 dark:bg-green-900/30 border-2 border-green-500">
             <FaCheckCircle className="text-green-600" />

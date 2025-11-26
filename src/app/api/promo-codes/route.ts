@@ -15,37 +15,25 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const organizerId = searchParams.get('organizerId');
 
-    console.log('🔍 GET Promo Codes - User:', {
-      userId: session.user.id,
-      role: session.user.role,
-      organizerId
-    });
+    // ลบ console.log ส่วนใหญ่ออก - เหลือแค่ตอน debug
 
     let promoCodes;
 
     if (session.user.role === 'admin') {
       // Admin ดูได้ทั้งหมด
       if (organizerId) {
-        // ดูโค้ดของ organizer คนหนึ่ง
-        console.log('🔍 Admin viewing organizer codes:', organizerId);
         promoCodes = await PromoCodeModel.findByOrganizer(organizerId);
       } else {
-        // ดูทั้งหมด
-        console.log('🔍 Admin viewing all codes');
         promoCodes = await PromoCodeModel.findAll();
       }
     } else if (session.user.role === 'organizer') {
       // Organizer ดูได้แค่ของตัวเอง
-      console.log('🔍 Organizer viewing own codes:', session.user.id);
       promoCodes = await PromoCodeModel.findByOrganizer(session.user.id);
     } else {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    console.log('✅ Found', promoCodes.length, 'promo codes');
-    console.log('Codes:', promoCodes.map(p => ({ code: p.code, createdBy: p.createdBy })));
-
-    return NextResponse.json(promoCodes);
+    return NextResponse.json({ promoCodes });
   } catch (error) {
     console.error('Error fetching promo codes:', error);
     return NextResponse.json(

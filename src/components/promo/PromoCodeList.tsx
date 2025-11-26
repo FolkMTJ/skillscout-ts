@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Card,
   Button,
@@ -32,33 +32,50 @@ interface PromoCodeListProps {
   organizerCamps?: Camp[];
 }
 
-export default function PromoCodeList({ userRole, organizerCamps = [] }: PromoCodeListProps) {
+export default React.memo(function PromoCodeList({ userRole, organizerCamps = [] }: PromoCodeListProps) {
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const hasFetchedRef = useRef(false); // ใช้ useRef แทน state
 
-  useEffect(() => {
-    fetchPromoCodes();
-  }, []);
-
-  const fetchPromoCodes = async () => {
+  const fetchPromoCodes = useCallback(async () => {
+    // ตรวจสอบด้วย ref
+    if (hasFetchedRef.current) {
+      console.log('⚠️ Already fetched, skipping...');
+      return;
+    }
+    
+    console.log('📡 Fetching promo codes...');
+    hasFetchedRef.current = true; // ตั้งเป็น true ทันที
     setIsLoading(true);
+    
     try {
-      const response = await fetch('/api/promo-codes');
+      const url = '/api/promo-codes';
+      const response = await fetch(url, {
+        cache: 'no-store',
+      });
       const data = await response.json();
 
       if (response.ok) {
-        setPromoCodes(data.promoCodes || []);
+        setPromoCodes(data.promoCodes || data || []);
+        console.log('✅ Fetched', (data.promoCodes || data || []).length, 'promo codes');
       } else {
         toast.error('ไม่สามารถโหลดข้อมูลได้');
+        hasFetchedRef.current = false; // reset ถ้า error
       }
     } catch (error) {
       console.error('Error fetching promo codes:', error);
       toast.error('เกิดข้อผิดพลาด');
+      hasFetchedRef.current = false; // reset ถ้า error
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []); // ไม่มี dependencies เลย!
+
+  useEffect(() => {
+    console.log('👀 Component mounted, calling fetchPromoCodes');
+    fetchPromoCodes();
+  }, [fetchPromoCodes]); // มีแค่ fetchPromoCodes
 
   const handleToggleActive = async (id: string, currentStatus: boolean) => {
     try {
@@ -357,4 +374,4 @@ export default function PromoCodeList({ userRole, organizerCamps = [] }: PromoCo
       />
     </div>
   );
-}
+});

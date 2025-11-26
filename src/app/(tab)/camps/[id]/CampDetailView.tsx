@@ -324,7 +324,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                             }`}>
                                                 {canGetTicket 
                                                     ? 'กดปุ่ม "รับ Ticket" เพื่อดาวน์โหลดบัตรเข้าค่าย'
-                                                    : ticketMessage
+                                                    : (ticketMessage || 'รอ Organizer ตรวจสอบและอนุมัติสลิปการชำระเงิน')
                                                 }
                                             </p>
                                         </div>

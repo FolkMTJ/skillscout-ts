@@ -31,18 +31,32 @@ export async function GET(req: NextRequest) {
     }
 
     const userId = session.user.id;
+    const userEmail = session.user.email;
     const db = await getDatabase();
     
     // ดึงข้อมูล registrations ที่ confirmed
     const registrationsCollection = db.collection('registrations') as Collection<Registration>;
     const campsCollection = db.collection('camps') as Collection<Camp>;
 
+    // 🔍 ค้นหาทั้ง ObjectId, string userId, และ email
+    // ⚠️ เฉพาะค่ายที่เข้าร่วมจริงแล้ว (attended) เท่านั้น
     const registrations = await registrationsCollection
       .find({
-        userId: new ObjectId(userId),
-        status: 'confirmed'
+        $or: [
+          { userId: new ObjectId(userId) },
+          { userId: userId },
+          { userEmail: userEmail }
+        ],
+        status: 'attended' // ✅ เฉพาะที่เข้าร่วมแล้วเท่านั้น
       })
       .toArray();
+
+    console.log('🔍 Discovery Debug:', {
+      userId,
+      userEmail,
+      totalRegistrations: registrations.length,
+      statuses: registrations.map(r => ({ id: r._id.toString(), status: r.status }))
+    });
 
     const campsAttended = registrations.length;
 
@@ -57,10 +71,31 @@ export async function GET(req: NextRequest) {
     }
 
     // ดึงข้อมูลค่ายทั้งหมดที่เข้า
-    const campIds = registrations.map(r => r.campId);
+    const campIds = registrations.map(r => {
+      try {
+        if (typeof r.campId === 'string') {
+          return new ObjectId(r.campId);
+        }
+        return r.campId;
+      } catch (e) {
+        console.warn('⚠️ Invalid campId:', r.campId);
+        return null;
+      }
+    }).filter(id => id !== null) as ObjectId[];
+
+    console.log('🔍 Looking for camps with IDs:', campIds.map(id => id.toString()));
+
     const camps = await campsCollection
       .find({ _id: { $in: campIds } })
       .toArray();
+
+    console.log('✅ Found camps:', camps.length);
+    console.log('📋 Camp details:', camps.map(c => ({
+      id: c._id.toString(),
+      name: c.name,
+      tagsCount: (c.tags || []).length,
+      tags: c.tags || []
+    })));
 
     // คำนวณ Skill Profile
     const campTags = camps.map(camp => camp.tags || []);

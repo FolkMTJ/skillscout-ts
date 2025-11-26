@@ -109,7 +109,13 @@ export class RegistrationModel {
 
   static async checkDuplicate(userId: string, campId: string): Promise<boolean> {
     const collection = await getCollection<RegistrationDoc>(this.collectionName);
-    const filter: Filter<RegistrationDoc> = { userId, campId } as Filter<RegistrationDoc>;
+    // 🔍 ค้นหาทั้ง userId และ userEmail
+    const filter: Filter<RegistrationDoc> = { 
+      $or: [
+        { userId, campId },
+        { userEmail: userId, campId }
+      ]
+    } as Filter<RegistrationDoc>;
     const count = await collection.countDocuments(filter);
     return count > 0;
   }

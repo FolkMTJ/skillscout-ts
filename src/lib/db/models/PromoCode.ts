@@ -39,8 +39,6 @@ export class PromoCodeModel {
   ): Promise<PromoCode> {
     const collection = await getCollection<PromoCodeDoc>(this.collectionName);
     
-    console.log('💾 Creating promo code:', { promoData, createdBy, createdByRole });
-    
     // Check if code already exists
     const existing = await this.findByCode(promoData.code);
     if (existing) {
@@ -55,11 +53,7 @@ export class PromoCodeModel {
       createdBy,
     };
 
-    console.log('📝 Promo doc to insert:', promoDoc);
-
     const result = await collection.insertOne(promoDoc as PromoCodeDoc);
-    
-    console.log('✅ Promo code created with ID:', result.insertedId.toString());
 
     return {
       _id: result.insertedId.toString(),
@@ -176,8 +170,6 @@ export class PromoCodeModel {
   static async findByCreator(creatorId: string): Promise<PromoCode[]> {
     const collection = await getCollection<PromoCodeDoc>(this.collectionName);
     
-    console.log('🔎 Finding promo codes by creator:', creatorId);
-    
     const filter: Filter<PromoCodeDoc> = { 
       createdBy: creatorId 
     } as Filter<PromoCodeDoc>;
@@ -186,8 +178,6 @@ export class PromoCodeModel {
       .find(filter)
       .sort({ createdAt: -1 })
       .toArray();
-    
-    console.log('✅ Found', promos.length, 'codes for creator:', creatorId);
     
     return promos.map(doc => this.toPublic(doc));
   }

@@ -66,11 +66,13 @@ export function calculateUserRIASEC(campRIASECs: RIASECProfile[]): RIASECProfile
 
 /**
  * คำนวณ Skill Profile จาก tags ของค่ายทั้งหมด
+ * แสดงเป็นสัดส่วนประสบการณ์ (%) จากค่ายทั้งหมด
  */
 export function calculateSkillProfile(campTags: string[][]): {
   name: string;
-  level: number;
   experienceCount: number;
+  percentage: number;
+  level: 'novice' | 'intermediate' | 'experienced' | 'expert';
 }[] {
   const skillMap = new Map<string, { count: number; tag: string }>();
 
@@ -80,22 +82,84 @@ export function calculateSkillProfile(campTags: string[][]): {
     skillMap.set(tagId, { count: current.count + 1, tag: tagId });
   });
 
-  // แปลงเป็น array และคำนวณ level
+  // คำนวณผลรวมทั้งหมด
+  const totalCount = Array.from(skillMap.values()).reduce((sum, item) => sum + item.count, 0);
+
+  // แปลงเป็น array และคำนวณ percentage
   const skills = Array.from(skillMap.entries()).map(([tagId, data]) => {
     const tag = getTagById(tagId);
     const name = tag?.nameTh || tag?.name || tagId;
     
-    // คำนวณ level จากจำนวนค่ายที่เข้า (1 ค่าย = 20%, max 100%)
-    const level = Math.min(data.count * 20, 100);
+    // คำนวณ % จากประสบการณ์ทั้งหมด
+    const percentage = totalCount > 0 ? Math.round((data.count / totalCount) * 100) : 0;
+    
+    // กำหนด level label ตามจำนวนค่าย
+    let level: 'novice' | 'intermediate' | 'experienced' | 'expert';
+    if (data.count === 1) {
+      level = 'novice';        // 🌱 ผู้เริ่มต้น
+    } else if (data.count === 2) {
+      level = 'intermediate';  // 📚 มีพื้นฐาน
+    } else if (data.count >= 3 && data.count < 5) {
+      level = 'experienced';   // 💪 มีประสบการณ์
+    } else {
+      level = 'expert';        // ⭐ ชำนาญ
+    }
 
     return {
       name,
-      level,
-      experienceCount: data.count
+      experienceCount: data.count,
+      percentage,
+      level
     };
   });
 
-  return skills.sort((a, b) => b.level - a.level);
+  return skills.sort((a, b) => b.experienceCount - a.experienceCount);
+}
+
+/**
+ * ดึงข้อมูลแสดง Level Label ที่เหมาะสม
+ */
+export function getSkillLevelInfo(level: 'novice' | 'intermediate' | 'experienced' | 'expert') {
+  const levelInfo = {
+    novice: {
+      label: 'ผู้เริ่มต้น',
+      labelEn: 'Novice',
+      icon: '🌱',
+      color: 'text-green-600',
+      bgColor: 'bg-green-100',
+      borderColor: 'border-green-400',
+      description: 'มีประสบการณ์เบื้องต้น'
+    },
+    intermediate: {
+      label: 'มีพื้นฐาน',
+      labelEn: 'Intermediate',
+      icon: '📚',
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-100',
+      borderColor: 'border-blue-400',
+      description: 'มีความรู้และประสบการณ์เพิ่มเติม'
+    },
+    experienced: {
+      label: 'มีประสบการณ์',
+      labelEn: 'Experienced',
+      icon: '💪',
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-100',
+      borderColor: 'border-purple-400',
+      description: 'มีประสบการณ์หลากหลายค่าย'
+    },
+    expert: {
+      label: 'ชำนาญ',
+      labelEn: 'Expert',
+      icon: '⭐',
+      color: 'text-yellow-600',
+      bgColor: 'bg-yellow-100',
+      borderColor: 'border-yellow-400',
+      description: 'มีประสบการณ์สูงและเชี่ยวชาญ'
+    }
+  };
+
+  return levelInfo[level];
 }
 
 /**

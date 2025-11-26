@@ -39,12 +39,12 @@ export async function POST(
       verifiedBy: session.user.email,
     });
 
-    // อัปเดต Registration status เป็น approved
+    // อัปเดต Registration status เป็น confirmed (ยืนยันแล้ว)
     await RegistrationModel.updateStatus(
       payment.registrationId,
-      RegistrationStatus.APPROVED,
+      RegistrationStatus.CONFIRMED,
       session.user.id || session.user.email,
-      'อนุมัติการชำระเงิน'
+      'อนุมัติการชำระเงินและยืนยันการเข้าร่วม'
     );
 
     return NextResponse.json({

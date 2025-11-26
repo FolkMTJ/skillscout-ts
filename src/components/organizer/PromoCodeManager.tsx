@@ -58,7 +58,7 @@ export default function PromoCodeManager({ userId, userRole, camps = [] }: Promo
 
   useEffect(() => {
     fetchPromoCodes();
-  },);
+  }, []); // ✅ เพิ่ม empty array เพื่อเรียกแค่ครั้งเดียว
 
   const fetchPromoCodes = async () => {
     try {
@@ -66,19 +66,19 @@ export default function PromoCodeManager({ userId, userRole, camps = [] }: Promo
       const url = userRole === 'organizer' 
         ? `/api/promo-codes?organizerId=${userId}`
         : '/api/promo-codes';
-      console.log('🔍 Fetching promo codes from:', url);
-      const res = await fetch(url);
-      console.log('📡 Response status:', res.status);
+      
+      const res = await fetch(url, {
+        cache: 'no-store' // ป้องกัน cache
+      });
+      
       if (!res.ok) {
-        const errorData = await res.json();
-        console.error('❌ API Error:', errorData);
         throw new Error('Failed to fetch');
       }
+      
       const data = await res.json();
-      console.log('✅ Promo codes loaded:', data);
-      setPromoCodes(Array.isArray(data) ? data : []);
+      setPromoCodes(Array.isArray(data) ? data : data.promoCodes || []);
     } catch (error) {
-      console.error('❌ Error fetching promo codes:', error);
+      console.error('Error fetching promo codes:', error);
       toast.error('ไม่สามารถโหลดรหัสโปรโมชั่นได้');
     } finally {
       setLoading(false);
