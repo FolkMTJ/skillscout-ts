@@ -145,6 +145,32 @@ export default function OrganizerDashboard() {
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('API Error Response:', errorData);
+        
+        // แสดง validation errors ถ้ามี
+        if (errorData.issues && Array.isArray(errorData.issues)) {
+          const errorMessages = errorData.issues.map((issue: { path: string[]; message: string }) => {
+            const field = issue.path.join('.');
+            const fieldNames: Record<string, string> = {
+              'name': 'ชื่อค่าย',
+              'description': 'คำอธิบาย',
+              'location': 'สถานที่',
+              'fee': 'ค่าธรรมเนียม',
+              'capacity': 'จำนวนที่รับ'
+            };
+            return `${fieldNames[field] || field}: ${issue.message}`;
+          }).join('\n');
+          
+          toast.error(
+            <div>
+              <div className="font-bold mb-2">ข้อมูลไม่ถูกต้อง:</div>
+              <div className="text-sm whitespace-pre-line">{errorMessages}</div>
+            </div>,
+            { duration: 5000 }
+          );
+          return;
+        }
+        
         throw new Error(errorData.message || errorData.error || 'Failed to create camp');
       }
 

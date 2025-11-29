@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useDisclosure } from '@heroui/react';
+import OTPModal from '@/components/auth/OTPModal';
 import { useRouter } from 'next/navigation';
 import { Card, Input, Button, Select, SelectItem, Textarea } from '@heroui/react';
 import { Mail, User, Phone, Building, CreditCard, MapPin, FileText } from 'lucide-react';
@@ -23,6 +25,8 @@ const provinces = [
 export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const { isOpen: isOTPOpen, onOpen: onOTPOpen, onClose: onOTPClose } = useDisclosure();
+  const [pendingRegistration, setPendingRegistration] = useState<typeof formData & { role: UserRole } | null>(null);
   const [role, setRole] = useState<'user' | 'organizer'>('user');
   const [formData, setFormData] = useState({
     email: '',
@@ -41,13 +45,56 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
+      // Validate form data
+      if (!formData.email || !formData.name) {
+        throw new Error('กรุณากรอกอีเมลและชื่อ');
+      }
+
+      if (role === 'organizer') {
+        if (!formData.organization || !formData.idCard || !formData.phone || !formData.lineId || !formData.address || !formData.province || !formData.district) {
+          throw new Error('กรุณากรอกข้อมูลให้ครบถ้วน');
+        }
+      }
+
+      // Send OTP
+      const otpResponse = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: formData.email,
+          name: formData.name 
+        }),
+      });
+
+      if (!otpResponse.ok) {
+        throw new Error('ไม่สามารถส่ง OTP ได้');
+      }
+
+      // Store registration data temporarily
+      setPendingRegistration({
+        ...formData,
+        role: role === 'organizer' ? UserRole.ORGANIZER : UserRole.USER,
+      });
+
+      // Open OTP modal
+      onOTPOpen();
+      toast.success('ส่งรหัส OTP ไปยังอีเมลของคุณแล้ว');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'เกิดข้อผิดพลาด');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOTPVerified = async () => {
+    if (!pendingRegistration) return;
+
+    setLoading(true);
+    try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          role: role === 'organizer' ? UserRole.ORGANIZER : UserRole.USER,
-        }),
+        body: JSON.stringify(pendingRegistration),
       });
 
       const data = await response.json();
@@ -56,6 +103,7 @@ export default function RegisterPage() {
         throw new Error(data.error);
       }
 
+      onOTPClose();
       toast.success('สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
       router.push('/login');
     } catch (error) {
@@ -298,6 +346,17 @@ export default function RegisterPage() {
           </div>
         </Card>
       </div>
+
+      {/* OTP Modal */}
+      {pendingRegistration && (
+        <OTPModal
+          isOpen={isOTPOpen}
+          onClose={onOTPClose}
+          email={formData.email}
+          name={formData.name}
+          onVerified={handleOTPVerified}
+        />
+      )}
     </div>
   );
 }

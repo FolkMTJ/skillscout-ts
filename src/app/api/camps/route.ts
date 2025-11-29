@@ -92,8 +92,8 @@ export async function POST(request: NextRequest) {
       name: body.name,
       description: body.description,
       location: body.location,
-      fee: typeof body.fee === 'string' ? parseInt(body.fee) : body.fee,
-      capacity: typeof body.capacity === 'string' ? parseInt(body.capacity) : body.capacity,
+      fee: typeof body.fee === 'string' ? (parseInt(body.fee) || 0) : (body.fee || 0),
+      capacity: typeof body.capacity === 'string' ? (parseInt(body.capacity) || 1) : (body.capacity || 1),
     };
 
     // Validate with Zod
