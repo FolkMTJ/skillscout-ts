@@ -26,6 +26,7 @@ import {
 } from '@heroui/react';
 import { FiUsers, FiCalendar, FiShield, FiTrash2, FiEye, FiSearch, FiAlertCircle, FiXCircle, FiAlertTriangle, FiCheck, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { StatCard } from '@/components/common';
 
 interface User {
   _id: string;
@@ -237,7 +238,7 @@ export default function AdminDashboard() {
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F2B33D]"></div>
       </div>
     );
   }
@@ -262,63 +263,48 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <FiShield className="text-3xl text-blue-600" />
+            <FiShield className="text-3xl text-[#F2B33D]" />
             <h1 className="text-4xl font-bold text-gray-800 dark:text-white">Admin Dashboard</h1>
           </div>
           <p className="text-gray-600 dark:text-gray-400">จัดการระบบและผู้ใช้งาน</p>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats Cards - ✅ แก้ไขใช้ StatCard component */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-          <Card className="p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">ผู้ใช้ทั้งหมด</p>
-                <p className="text-3xl font-bold mt-1">{totalUsers}</p>
-              </div>
-              <FiUsers className="text-4xl opacity-80" />
-            </div>
-          </Card>
+          <StatCard 
+            title="ผู้ใช้ทั้งหมด"
+            value={totalUsers}
+            icon={<FiUsers />}
+            color="primary"
+          />
 
-          <Card className="p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Organizers</p>
-                <p className="text-3xl font-bold mt-1">{organizers}</p>
-              </div>
-              <FiShield className="text-4xl opacity-80" />
-            </div>
-          </Card>
+          <StatCard 
+            title="Organizers"
+            value={organizers}
+            icon={<FiShield />}
+            color="secondary"
+          />
 
-          <Card className="p-6 bg-gradient-to-br from-red-500 to-red-600 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Banned</p>
-                <p className="text-3xl font-bold mt-1">{bannedUsers}</p>
-              </div>
-              <FiXCircle className="text-4xl opacity-80" />
-            </div>
-          </Card>
+          <StatCard 
+            title="Banned"
+            value={bannedUsers}
+            icon={<FiXCircle />}
+            color="danger"
+          />
 
-          <Card className="p-6 bg-gradient-to-br from-orange-500 to-orange-600 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">ค่ายรออนุมัติ</p>
-                <p className="text-3xl font-bold mt-1">{pendingCamps}</p>
-              </div>
-              <FiAlertCircle className="text-4xl opacity-80" />
-            </div>
-          </Card>
+          <StatCard 
+            title="ค่ายรออนุมัติ"
+            value={pendingCamps}
+            icon={<FiAlertCircle />}
+            color="warning"
+          />
 
-          <Card className="p-6 bg-gradient-to-br from-green-500 to-green-600 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">ค่ายที่เปิด</p>
-                <p className="text-3xl font-bold mt-1">{activeCamps}</p>
-              </div>
-              <FiCalendar className="text-4xl opacity-80" />
-            </div>
-          </Card>
+          <StatCard 
+            title="ค่ายที่เปิด"
+            value={activeCamps}
+            icon={<FiCalendar />}
+            color="success"
+          />
         </div>
 
         {/* Tabs */}
@@ -334,7 +320,7 @@ export default function AdminDashboard() {
                   <h3 className="text-xl font-bold mb-4">สถิติระบบ</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center">
-                      <p className="text-3xl font-bold text-blue-600">{totalUsers}</p>
+                      <p className="text-3xl font-bold text-[#F2B33D]">{totalUsers}</p>
                       <p className="text-sm text-gray-600">Users</p>
                     </div>
                     <div className="text-center">
@@ -346,7 +332,7 @@ export default function AdminDashboard() {
                       <p className="text-sm text-gray-600">Pending</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-3xl font-bold text-purple-600">{organizers}</p>
+                      <p className="text-3xl font-bold text-[#F97316]">{organizers}</p>
                       <p className="text-sm text-gray-600">Organizers</p>
                     </div>
                   </div>

@@ -32,7 +32,7 @@ const navLinks = [
     { name: "หน้าหลัก", href: "/" },
     { name: "ค่ายทั้งหมด", href: "/allcamps" },
     { name: "Discovery Path", href: "/discovery" },
-    { name: "Path Finder", href: "/pathfinder" },
+    { name: "Path Finder", href: "/path-finder" },
 ];
 
 export default function NavBar(props: NavbarProps) {
