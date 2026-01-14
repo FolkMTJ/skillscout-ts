@@ -5,7 +5,7 @@ import { Spinner } from "@heroui/react";
 
 export default function AllCampsPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-white dark:bg-[#171717]">
       {/* Header */}
       <PageHeader
         title="All Camps"

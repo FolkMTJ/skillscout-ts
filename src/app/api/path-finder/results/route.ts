@@ -1,5 +1,5 @@
 // src/app/api/path-finder/results/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { PathFinderModel } from '@/lib/db/models';
@@ -9,7 +9,7 @@ import { IT_CAREERS } from '@/data/path-finder';
  * GET /api/path-finder/results
  * ดึงผลลัพธ์ล่าสุดของ user
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // ตรวจสอบ authentication
     const session = await getServerSession(authOptions);

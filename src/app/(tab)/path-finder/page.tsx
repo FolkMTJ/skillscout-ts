@@ -19,13 +19,15 @@ export default function PathFinderLandingPage() {
     } else if (status === 'unauthenticated') {
       setLoading(false);
     }
-  }, [status]);
+  }, [status, router]);
 
   const checkExistingResult = async () => {
     try {
       const res = await fetch('/api/path-finder/results');
       if (res.ok) {
-        setHasResult(true);
+        // ถ้าเคยทำ quiz แล้ว ให้ redirect ไป results เลย
+        router.push('/path-finder/results');
+        return;
       }
     } catch (error) {
       console.error('Error checking results:', error);

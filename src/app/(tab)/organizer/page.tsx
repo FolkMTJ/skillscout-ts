@@ -381,7 +381,7 @@ export default function OrganizerDashboard() {
           <StatCard title="ค่ายทั้งหมด" value={camps.length} icon={FiCalendar} gradient="bg-gradient-to-br from-blue-500 to-blue-600" />
           <StatCard title="ผู้เข้าร่วมทั้งหมด" value={totalEnrolled} icon={FiUsers} gradient="bg-gradient-to-br from-green-500 to-green-600" />
           <StatCard title="ค่ายรอตรวจสอบ" value={pendingCamps.length} icon={FiClock} gradient="bg-gradient-to-br from-orange-500 to-orange-600" />
-          <StatCard title="ค่ายที่จบแล้ว" value={completedCamps.length} icon={FiCheckCircle} gradient="bg-gradient-to-br from-purple-500 to-purple-600" />
+          <StatCard title="ค่ายที่จบแล้ว" value={completedCamps.length} icon={FiCheckCircle} gradient="" />
           <StatCard title="เช็คอินแล้ว" value={attendedRegs} icon={FiUserCheck} gradient="bg-gradient-to-br from-pink-500 to-purple-600" />
         </div>
 
@@ -396,7 +396,7 @@ export default function OrganizerDashboard() {
                 <Button color="primary" size="lg" startContent={<FiPlus className="w-5 h-5" />} onPress={handleOpenCreateModal} className="w-full">
                   สร้างค่ายใหม่
                 </Button>
-                <Button color="warning" size="lg" startContent={<FiTag className="w-5 h-5" />} onPress={onPromoModalOpen} className="w-full">
+                <Button size="lg" startContent={<FiTag className="w-5 h-5" />} onPress={onPromoModalOpen} className="w-full bg-[#F2B33D]">
                   จัดการรหัสโปรโมชั่น
                 </Button>
                 <Button color="secondary" size="lg" startContent={<FiCreditCard className="w-5 h-5" />} onPress={() => router.push('/organizer/payments')} className="w-full">
@@ -420,7 +420,7 @@ export default function OrganizerDashboard() {
                           <FiCalendar className="inline mr-1" />
                           {camp.date}
                         </p>
-                        <Chip size="sm" color="warning" variant="flat" className="mt-2">
+                        <Chip size="sm" color="warning" variant="flat" className="mt-2 ">
                           รอ Admin ตรวจสอบ
                         </Chip>
                       </div>

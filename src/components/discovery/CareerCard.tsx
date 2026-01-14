@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { Card, CardBody, Chip, Divider, Button } from '@heroui/react';
 import { FiTrendingUp, FiDollarSign, FiCheckCircle, FiArrowRight } from 'react-icons/fi';
 
@@ -19,6 +20,8 @@ interface CareerCardProps {
 }
 
 export default function CareerCard({ career, rank }: CareerCardProps) {
+  const router = useRouter();
+  
   const getMatchColor = (score: number): "success" | "primary" | "warning" | "default" => {
     if (score >= 80) return 'success';
     if (score >= 60) return 'primary';
@@ -112,6 +115,7 @@ export default function CareerCard({ career, rank }: CareerCardProps) {
           variant="flat"
           className="w-full font-semibold mt-auto"
           endContent={<FiArrowRight />}
+          onPress={() => router.push(`/path-finder/careers/${career.id}`)}
         >
           ดูรายละเอียดเพิ่มเติม
         </Button>

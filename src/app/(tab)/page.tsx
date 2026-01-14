@@ -10,16 +10,16 @@ import {
   FaTrophy,
   FaRocket,
   FaSmile,
-  FaChartLine,
   FaCampground
 } from "react-icons/fa";
 
-import CampCarousel from "@/components/(card)/CampCarousel";
+import CampCarousel from "@/components/(card)/camp/CampCarousel";
 import CampCard from "@/components/(card)/CampCard";
 
 import { categories } from "@/data/categories";
 
 import HeroSection from '@/components/HeroSection';
+import HeroBanner from '@/components/HeroBanner';
 import { Camp } from "@/types/camp";
 
 
@@ -64,7 +64,11 @@ function campToCampData(camp: Camp) {
     deadline: camp.deadline,
     daysLeft: daysLeft,
     description: camp.description,
-    category: camp.category
+    category: camp.category,
+    avgRating: camp.avgRating,
+    reviews: camp.reviews,
+    capacity: camp.capacity || camp.participantCount,
+    enrolled: camp.enrolled || 0
   };
 }
 
@@ -141,9 +145,74 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-2C2C2C dark:bg-zinc-900 overflow-x-hidden">
-      {/* Banner Section - กระทัดรัดมากขึ้น */}
+      {/* Hero Banner - SKILL SCOUT */}
+      <HeroBanner />
+
+      {/* Loading State */}
+      {loading && (
+        <section className="max-w-[1536px] mx-auto px-6 py-16">
+          <div className="flex flex-col items-center justify-center">
+            <Spinner size="lg" color="warning" className="mb-4" />
+            <p className="text-gray-600 dark:text-gray-400 font-semibold">กำลังโหลดค่าย...</p>
+          </div>
+        </section>
+      )}
+
+      {/* Urgent Registration Section */}
+      {!loading && urgentCamps.length > 0 && (
+        <section className="max-w-[1536px] mx-auto px-6 py-8">
+          <CampCarousel camps={urgentCamps} title="กำลังจะปิดรับเร็วๆนี้!" />
+        </section>
+      )}
+
+      {/* Hero Section */}
+      <section className="py-6">
+        <HeroSection />
+      </section>
+
+      {/* Trending Section - 2 การ์ดต่อแถว */}
+      {!loading && trendingCamps.length > 0 && (
+        <section className="bg-white dark:from-[#1a1a1a] dark:to-[#0a0a0a] py-15 border-y border-[#F2B33D]/10 dark:border-amber-500/10">
+          <div className="max-w-[1536px] mx-auto px-6">
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#F2B33D]/10 backdrop-blur-md border border-[#F2B33D]/30 dark:bg-amber-500/10 dark:border-amber-500/20 mb-2 hover:scale-105 transition-transform">
+                <FaStar className="text-[#F2B33D] dark:text-amber-400" size={12} />
+                <span className="font-bold text-[#2C2C2C] dark:text-white text-xs">ยอดนิยม</span>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-black text-[#2C2C2C] dark:text-white mb-1.5">
+                ค่ายที่กำลัง<span className="text-[#F2B33D] dark:text-amber-400">มาแรง!</span>
+              </h2>
+              <p className="text-zinc-600 dark:text-zinc-400 text-sm max-w-xl mx-auto">
+                ค่ายยอดนิยมที่ได้รับความสนใจสูงสุดในเดือนนี้
+              </p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {trendingCamps.map((camp) => (
+                <CampCard key={camp.id} camp={camp} variant="detailed" />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Empty State */}
+      {!loading && urgentCamps.length === 0 && trendingCamps.length === 0 && (
+        <section className="max-w-[1536px] mx-auto px-6 py-16">
+          <div className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center">
+                <FaCampground className="text-white" size={48} />
+              </div>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-2">ยังไม่มีค่ายในขณะนี้</h3>
+            <p className="text-gray-600 dark:text-gray-400">กรุณารอสักครู่ หรือลองรีเฟรชหน้าใหม่</p>
+          </div>
+        </section>
+      )}
+
+            {/* Banner Section - กระทัดรัดมากขึ้น */}
       <section className="relative min-h-[480px] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-t from-white-50 from-0% via-yellow-500 via-50% to-orange-400 to-100% dark:from-gray-900 dark:via-orange-900/30 dark:to-gray-900">
+        <div className="absolute inset-0 bg-gradient-to-t from-white-50 from-0% via-yellow-500 via-50% to-[#F2B33D] to-100% dark:from-gray-900 dark:via-orange-900/30 dark:to-gray-900">
           <div className="absolute top-10 left-10 w-72 h-72 bg-white/20 rounded-full blur-3xl animate-pulse" />
           <div className="absolute inset-0 opacity-10 dark:opacity-20" style={{
             backgroundImage: `linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px)`,
@@ -183,13 +252,13 @@ export default function HomePage() {
                   inputWrapper: "bg-white h-11 shadow-2xl border-2 border-white hover:border-orange-300 transition-all",
                   input: "text-sm text-gray-700 placeholder:text-gray-400"
                 }}
-                startContent={<FaSearch className="text-orange-500" size={16} />}
+                startContent={<FaSearch className="text-[#F2B33D]" size={16} />}
               />
             </div>
             <Button
               size="md"
               onPress={handleSearch}
-              className="h-11 px-6 font-bold text-sm shadow-2xl hover:shadow-orange-400/50 hover:scale-105 transition-all bg-white text-orange-600 border-2 border-white hover:bg-orange-50"
+              className="h-11 px-6 font-bold text-sm shadow-2xl hover:shadow-orange-400/50 hover:scale-105 transition-all bg-white text-[#F2B33D] border-2 border-white hover:bg-orange-50"
               endContent={<FaRocket size={16} />}
             >
               ค้นหา
@@ -204,7 +273,7 @@ export default function HomePage() {
               { icon: FaSmile, value: "95%", label: "ความพึงพอใจ" }
             ].map((stat, idx) => (
               <div key={idx} className="bg-white/95 dark:bg-black/50 backdrop-blur-md border-2 border-white/50 rounded-lg p-3 hover:bg-white dark:hover:bg-black/70 hover:scale-105 transition-all duration-300 group shadow-xl">
-                <stat.icon className="text-orange-500 text-2xl mb-1.5 mx-auto group-hover:scale-110 transition-transform" />
+                <stat.icon className="text-[#F2B33D] text-2xl mb-1.5 mx-auto group-hover:scale-110 transition-transform" />
                 <p className="text-3xl font-black text-gray-800 dark:text-white">{stat.value}</p>
                 <p className="text-gray-600 dark:text-gray-300 font-semibold text-xs">{stat.label}</p>
               </div>
@@ -215,73 +284,11 @@ export default function HomePage() {
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white-50 to-transparent dark:from-zinc-900" />
       </section>
 
-      {/* Loading State */}
-      {loading && (
-        <section className="max-w-[1536px] mx-auto px-6 py-16">
-          <div className="flex flex-col items-center justify-center">
-            <Spinner size="lg" color="warning" className="mb-4" />
-            <p className="text-gray-600 dark:text-gray-400 font-semibold">กำลังโหลดค่าย...</p>
-          </div>
-        </section>
-      )}
-
-      {/* Urgent Registration Section */}
-      {!loading && urgentCamps.length > 0 && (
-        <section className="max-w-[1536px] mx-auto px-6 py-8">
-          <CampCarousel camps={urgentCamps} title="กำลังจะปิดรับเร็วๆนี้!" />
-        </section>
-      )}
-
-      {/* Hero Section */}
-      <section className="py-6">
-        <HeroSection />
-      </section>
-
-      {/* Trending Section - 2 การ์ดต่อแถว */}
-      {!loading && trendingCamps.length > 0 && (
-        <section className="bg-gradient-to-br from-zinc-50 to-white dark:from-[#1a1a1a] dark:to-[#0a0a0a] py-8 border-y border-[#F2B33D]/10 dark:border-amber-500/10">
-          <div className="max-w-[1536px] mx-auto px-6">
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#F2B33D]/10 backdrop-blur-md border border-[#F2B33D]/30 dark:bg-amber-500/10 dark:border-amber-500/20 mb-2 hover:scale-105 transition-transform">
-                <FaStar className="text-[#F2B33D] dark:text-amber-400" size={12} />
-                <span className="font-bold text-[#2C2C2C] dark:text-white text-xs">ยอดนิยม</span>
-              </div>
-              <h2 className="text-2xl md:text-3xl font-black text-[#2C2C2C] dark:text-white mb-1.5">
-                ค่ายที่กำลัง<span className="text-[#F2B33D] dark:text-amber-400">มาแรง!</span>
-              </h2>
-              <p className="text-zinc-600 dark:text-zinc-400 text-sm max-w-xl mx-auto">
-                ค่ายยอดนิยมที่ได้รับความสนใจสูงสุดในเดือนนี้
-              </p>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {trendingCamps.map((camp) => (
-                <CampCard key={camp.id} camp={camp} variant="detailed" />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Empty State */}
-      {!loading && urgentCamps.length === 0 && trendingCamps.length === 0 && (
-        <section className="max-w-[1536px] mx-auto px-6 py-16">
-          <div className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center">
-                <FaCampground className="text-white" size={48} />
-              </div>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-2">ยังไม่มีค่ายในขณะนี้</h3>
-            <p className="text-gray-600 dark:text-gray-400">กรุณารอสักครู่ หรือลองรีเฟรชหน้าใหม่</p>
-          </div>
-        </section>
-      )}
-
       {/* Categories Section - กระทัดรัดขึ้น */}
-      <section className="max-w-[1536px] mx-auto px-6 py-8">
+      <section className="max-w-[1536px] mx-auto px-6 py-20 mb-10">
         <div className="text-center mb-6">
           <h2 className="text-2xl md:text-3xl font-black text-gray-800 dark:text-white mb-2">
-            สำรวจตาม<span className="text-orange-600 dark:text-amber-500">หมวดหมู่</span>
+            สำรวจตาม<span className="text-[#F2B33D] dark:text-amber-500">หมวดหมู่</span>
           </h2>
           <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">
             เลือกหมวดหมู่ที่คุณสนใจและเริ่มต้นการเรียนรู้
@@ -294,7 +301,7 @@ export default function HomePage() {
               <Button
                 key={category.name}
                 variant="flat"
-                className="h-24 flex flex-col gap-2 bg-white border-2 border-gray-200 hover:border-orange-500 hover:shadow-xl hover:shadow-orange-200/50 hover:scale-105 transition-all duration-300 group dark:bg-gray-800/50 dark:border-gray-700 dark:hover:border-amber-500 dark:hover:shadow-amber-500/10"
+                className="h-24 flex flex-col gap-2 bg-white border-2 border-gray-200 hover:border-[#F2B33D] hover:shadow-xl hover:shadow-orange-200/50 hover:scale-105 transition-all duration-300 group dark:bg-gray-800/50 dark:border-gray-700 dark:hover:border-amber-500 dark:hover:shadow-amber-500/10"
               >
                 <div className={`p-2 rounded-lg bg-gradient-to-br ${category.gradient} group-hover:scale-110 transition-transform shadow-lg`}>
                   <IconComponent size={28} className="text-white" />
@@ -309,7 +316,7 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section - กระทัดรัดมาก */}
-      <section className="relative overflow-hidden">
+      {/* <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-400 dark:from-gray-900 dark:via-orange-900/40 dark:to-gray-900">
           <div className="absolute inset-0 opacity-20">
             <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" />
@@ -363,7 +370,7 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
     </div>
   );
 }

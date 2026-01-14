@@ -3,7 +3,7 @@
 import React, { useState, useRef } from "react";
 import { Button } from "@heroui/react";
 import { FaChevronLeft, FaChevronRight, FaFire } from "react-icons/fa";
-import CampCard, { CampData } from "./CampCard";
+import CampCard, { CampData } from "../CampCard";
 
 interface CampCarouselProps {
     camps: CampData[];
@@ -53,15 +53,15 @@ export default function CampCarousel({ camps }: CampCarouselProps) {
             {/* Header */}
             <div className="flex items-end justify-between mb-8">
                 <div className="flex items-center gap-3">
-                    <div className="w-2 h-12 bg-gradient-to-b from-orange-500 to-red-500 rounded-full" />
+                    <div className="w-2 h-12 bg-gradient-to-b from-[#F2B33D] to-[#F2B33D] rounded-full" />
                     <div>
-                        <div className="flex items-center gap-2 mb-2">
-                            <FaFire className="text-red-500 animate-pulse" size={24} />
-                            <h2 className="text-4xl font-black text-gray-800 dark:text-white">
+                        <div className="flex items-center gap-2">
+                            <FaFire className="text-[#F2B33D] animate-pulse" size={24} />
+                            <h2 className="text-2xl font-black text-gray-800 dark:text-white">
                                 กำลังจะปิดรับเร็วๆ นี้
                             </h2>
                         </div>
-                        <p className="text-gray-600 text-lg font-medium dark:text-gray-300">
+                        <p className="text-gray-600 text-md font-medium dark:text-gray-300">
                             รีบสมัครก่อนหมดเขต! ที่นั่งเหลือน้อย
                         </p>
                     </div>

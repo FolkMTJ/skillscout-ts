@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { Button, Input, Chip, Spinner } from "@heroui/react";
-import { FaSearch, FaTrophy, FaClock, FaFire, FaChevronDown, FaFilter, FaTimes, FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
+import { FaSearch, FaTrophy, FaClock, FaFire, FaChevronDown, FaFilter, FaTimes } from "react-icons/fa";
 import CampCard from "@/components/(card)/CampCard";
 import { Camp } from "@/types/camp";
 import { useSearchParams } from 'next/navigation';
@@ -37,7 +37,11 @@ function campToCampData(camp: Camp) {
     deadline: camp.deadline,
     daysLeft: daysLeft,
     description: camp.description,
-    category: camp.category
+    category: camp.category,
+    avgRating: camp.avgRating,
+    reviews: camp.reviews,
+    capacity: camp.capacity || camp.participantCount,
+    enrolled: camp.enrolled || 0
   };
 }
 
@@ -267,140 +271,126 @@ export default function AllCampsContent() {
   return (
     <div className="max-w-[1536px] mx-auto px-6 py-12">
       <section className="mb-12">
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-gray-200/50 dark:border-gray-700/50">
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-gray-200/50 dark:border-gray-700/50">
           
-          {/* Search Bar & Filter Toggle */}
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
+          {/* Search Bar */}
+          <div className="flex flex-col md:flex-row gap-3 mb-4">
             <div className="flex-1">
               <Input
-                size="lg"
+                size="md"
                 placeholder="ค้นหาค่ายที่คุณสนใจ..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 classNames={{
                   base: "w-full",
-                  inputWrapper: "bg-white dark:bg-gray-900 border-2 border-gray-300/50 dark:border-gray-600/50 hover:border-orange-400 focus-within:border-orange-500 transition-all h-14 rounded-2xl shadow-lg",
-                  input: "text-base"
+                  inputWrapper: "bg-white dark:bg-gray-900 border border-gray-300/50 dark:border-gray-600/50 hover:border-[#F2B33D] focus-within:border-[#F2B33D] transition-all h-10 rounded-xl",
+                  input: "text-sm"
                 }}
-                startContent={
-                  <div className="flex items-center gap-2">
-                    <FaSearch className="text-orange-500" size={20} />
-                  </div>
-                }
+                startContent={<FaSearch className="text-[#F97316]" size={16} />}
                 endContent={
                   searchQuery && (
                     <button
                       onClick={() => setSearchQuery("")}
                       className="text-gray-400 hover:text-gray-600 transition-colors"
                     >
-                      <FaTimes size={18} />
+                      <FaTimes size={14} />
                     </button>
                   )
                 }
               />
             </div>
             <Button
-              size="lg"
+              size="md"
               onPress={() => setShowFilters(!showFilters)}
-              className={`h-14 px-6 rounded-2xl font-bold transition-all shadow-lg ${
+              className={`h-10 px-5 rounded-xl font-bold transition-all ${
                 showFilters 
-                  ? 'bg-orange-500 text-white hover:bg-orange-600' 
-                  : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-2 border-gray-300 dark:border-gray-600 hover:border-orange-400'
+                  ? 'bg-[#F97316] text-white hover:bg-[#F97316]/90' 
+                  : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:border-[#F2B33D]'
               }`}
-              startContent={<FaFilter size={18} />}
+              startContent={<FaFilter size={14} />}
             >
-              {showFilters ? 'ซ่อนตัวกรอง' : 'ตัวกรอง'}
+              {showFilters ? 'ซ่อน' : 'ตัวกรอง'}
             </Button>
           </div>
 
-          {/* 🎯 Advanced Filters Panel */}
+          {/* 🎯 Compact Filters - Horizontal Layout */}
           <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
-            showFilters ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+            showFilters ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
           }`}>
-            <div className="space-y-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="space-y-3 pt-3 border-t border-gray-200 dark:border-gray-700">
               
-              {/* Sort By */}
-              <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                  เรียงตาม
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <Button
-                    size="sm"
-                    variant={sortBy === 'newest' ? 'solid' : 'bordered'}
-                    color={sortBy === 'newest' ? 'primary' : 'default'}
-                    onPress={() => setSortBy('newest')}
-                    startContent={<FaSortAmountDown />}
+              {/* Row 1: เรียงตาม + ราคา */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Sort */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                    เรียงตาม
+                  </label>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortOption)}
+                    className="w-full px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 hover:border-[#F2B33D] focus:border-[#F2B33D] focus:outline-none transition-all cursor-pointer"
                   >
-                    ใหม่สุด
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={sortBy === 'deadline-near' ? 'solid' : 'bordered'}
-                    color={sortBy === 'deadline-near' ? 'warning' : 'default'}
-                    onPress={() => setSortBy('deadline-near')}
-                    startContent={<FaClock />}
-                  >
-                    ใกล้ปิดสุด
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={sortBy === 'price-low' ? 'solid' : 'bordered'}
-                    color={sortBy === 'price-low' ? 'success' : 'default'}
-                    onPress={() => setSortBy('price-low')}
-                    startContent={<FaSortAmountUp />}
-                  >
-                    ราคาน้อย-มาก
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={sortBy === 'price-high' ? 'solid' : 'bordered'}
-                    color={sortBy === 'price-high' ? 'danger' : 'default'}
-                    onPress={() => setSortBy('price-high')}
-                    startContent={<FaSortAmountDown />}
-                  >
-                    ราคามาก-น้อย
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={sortBy === 'popular' ? 'solid' : 'bordered'}
-                    color={sortBy === 'popular' ? 'secondary' : 'default'}
-                    onPress={() => setSortBy('popular')}
-                    startContent={<FaFire />}
-                  >
-                    ยอดนิยม
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={sortBy === 'deadline-far' ? 'solid' : 'bordered'}
-                    color={sortBy === 'deadline-far' ? 'default' : 'default'}
-                    onPress={() => setSortBy('deadline-far')}
-                  >
-                    ไกลปิดสุด
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={sortBy === 'oldest' ? 'solid' : 'bordered'}
-                    color={sortBy === 'oldest' ? 'default' : 'default'}
-                    onPress={() => setSortBy('oldest')}
-                  >
-                    เก่าสุด
-                  </Button>
+                    <option value="newest">ใอม่สุด</option>
+                    <option value="deadline-near">ใกล้ปิดสุด</option>
+                    <option value="popular">ยอดนิยม</option>
+                    <option value="price-low">ราคาน้อย-มาก</option>
+                    <option value="price-high">ราคามาก-น้อย</option>
+                    <option value="deadline-far">ไกลปิดสุด</option>
+                    <option value="oldest">เก่าสุด</option>
+                  </select>
+                </div>
+
+                {/* Price Range - Compact */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                    ราคา: ฿{priceRange[0].toLocaleString()} - {priceRange[1] >= 10000 ? '฿10k+' : `฿${priceRange[1].toLocaleString()}`}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400">฿0</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="10000"
+                      step="500"
+                      value={priceRange[0]}
+                      onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
+                      className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full appearance-none cursor-pointer accent-[#F2B33D]"
+                    />
+                    <span className="text-xs text-gray-400">฿10k+</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-gray-400">฿0</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="10000"
+                      step="500"
+                      value={priceRange[1]}
+                      onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
+                      className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full appearance-none cursor-pointer accent-[#F97316]"
+                    />
+                    <span className="text-xs text-gray-400">฿10k+</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Category Filter */}
+              {/* Row 2: หมวดหมู่ */}
               <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
                   หมวดหมู่
                 </label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {categories.map((category) => (
                     <Chip
                       key={category}
+                      size="sm"
                       variant={selectedCategory === category ? "solid" : "bordered"}
-                      color={selectedCategory === category ? "primary" : "default"}
-                      className="cursor-pointer"
+                      className={`cursor-pointer transition-all text-xs h-6 ${
+                        selectedCategory === category 
+                          ? 'bg-[#F2B33D] text-[#2C2C2C] font-bold border-[#F2B33D]' 
+                          : 'border-gray-300 dark:border-gray-600 hover:border-[#F2B33D]'
+                      }`}
                       onClick={() => setSelectedCategory(category)}
                     >
                       {category}
@@ -409,18 +399,32 @@ export default function AllCampsContent() {
                 </div>
               </div>
 
-              {/* 🎯 Tag Filter (Multiple Selection) */}
+              {/* Row 3: Tags - Collapsible */}
               <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                  Tags (เลือกได้หลายอัน)
-                </label>
-                <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900 rounded-xl">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Tags {selectedTags.length > 0 && `(${selectedTags.length})`}
+                  </label>
+                  {selectedTags.length > 0 && (
+                    <button
+                      onClick={() => setSelectedTags([])}
+                      className="text-xs text-red-500 hover:text-red-700 font-medium"
+                    >
+                      ล้างทั้งหมด
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto p-2 bg-gray-50/50 dark:bg-gray-900/30 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
                   {ALL_TAGS.map((tag) => (
                     <Chip
                       key={tag}
+                      size="sm"
                       variant={selectedTags.includes(tag) ? "solid" : "bordered"}
-                      color={selectedTags.includes(tag) ? "warning" : "default"}
-                      className="cursor-pointer"
+                      className={`cursor-pointer transition-all text-xs h-5 ${
+                        selectedTags.includes(tag)
+                          ? 'bg-[#F97316] text-white font-semibold border-[#F97316]'
+                          : 'border-gray-300 dark:border-gray-600 hover:border-[#F97316]'
+                      }`}
                       onClick={() => {
                         if (selectedTags.includes(tag)) {
                           setSelectedTags(selectedTags.filter(t => t !== tag));
@@ -433,52 +437,17 @@ export default function AllCampsContent() {
                     </Chip>
                   ))}
                 </div>
-                {selectedTags.length > 0 && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                    เลือกแล้ว: {selectedTags.length} tags
-                  </p>
-                )}
               </div>
 
-              {/* Price Range */}
-              <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                  ช่วงราคา: ฿{priceRange[0].toLocaleString()} - ฿{priceRange[1].toLocaleString()}
-                </label>
-                <div className="flex gap-4 items-center">
-                  <input
-                    type="range"
-                    min="0"
-                    max="10000"
-                    step="100"
-                    value={priceRange[0]}
-                    onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
-                    className="flex-1"
-                  />
-                  <input
-                    type="range"
-                    min="0"
-                    max="10000"
-                    step="100"
-                    value={priceRange[1]}
-                    onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                    className="flex-1"
-                  />
-                </div>
-                <div className="flex justify-between mt-2 text-xs text-gray-500">
-                  <span>฿0</span>
-                  <span>฿10,000+</span>
-                </div>
-              </div>
-
-              {/* Clear Filters */}
+              {/* Clear All */}
               {hasActiveFilters && (
                 <Button
+                  size="sm"
                   color="danger"
                   variant="flat"
                   onPress={clearFilters}
-                  startContent={<FaTimes />}
-                  className="w-full"
+                  startContent={<FaTimes size={12} />}
+                  className="w-full font-semibold h-7 text-xs"
                 >
                   ล้างตัวกรองทั้งหมด
                 </Button>
@@ -486,29 +455,28 @@ export default function AllCampsContent() {
 
             </div>
           </div>
-
-          {/* Results Count */}
-          <div className="mt-6 flex items-center justify-between">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              พบ <strong>{filteredCamps.length}</strong> ค่าย
-              {hasActiveFilters && ' (มีตัวกรอง)'}
-            </p>
-            {selectedTags.length > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">Tags ที่เลือก:</span>
-                {selectedTags.slice(0, 3).map(tag => (
-                  <Chip key={tag} size="sm" color="warning" variant="flat">
-                    {tag}
-                  </Chip>
-                ))}
-                {selectedTags.length > 3 && (
-                  <Chip size="sm" color="default">+{selectedTags.length - 3}</Chip>
-                )}
-              </div>
-            )}
-          </div>
         </div>
       </section>
+
+      {/* Results Count - อยู่ข้างนอก */}
+      <div className="mb-6 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        <span>
+          พบ <strong className="text-gray-700 dark:text-gray-300">{filteredCamps.length}</strong> ค่าย
+          {hasActiveFilters && ' (มีตัวกรอง)'}
+        </span>
+        {selectedTags.length > 0 && (
+          <div className="flex items-center gap-1">
+            {selectedTags.slice(0, 2).map(tag => (
+              <Chip key={tag} size="sm" className="bg-[#F97316]/10 text-[#F97316] h-5 text-xs">
+                {tag}
+              </Chip>
+            ))}
+            {selectedTags.length > 2 && (
+              <Chip size="sm" className="bg-gray-200 dark:bg-gray-700 h-5 text-xs">+{selectedTags.length - 2}</Chip>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Loading State */}
       {loading && (

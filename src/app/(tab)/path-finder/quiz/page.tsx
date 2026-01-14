@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Card, CardBody, Button, Progress, Spinner, RadioGroup, Radio } from '@heroui/react';
+import { Card, CardBody, Button, Progress, Spinner } from '@heroui/react';
 import { FiArrowLeft, FiArrowRight, FiCheck } from 'react-icons/fi';
 import { Question } from '@/data/path-finder';
 import { PathFinderAnswer } from '@/types';
@@ -122,7 +122,7 @@ export default function PathFinderQuizPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-white to-orange-50 py-12">
+    <div className="min-h-screen bg-white py-12">
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Header */}
         <div className="mb-8">
@@ -138,7 +138,7 @@ export default function PathFinderQuizPage() {
           <h1 className="text-3xl md:text-4xl font-bold mb-4">
             แบบทดสอบความถนัด Path Finder
           </h1>
-          
+
           <p className="text-gray-600 mb-6">
             ให้คะแนนความเห็นด้วยกับข้อความต่อไปนี้ จาก 1 (ไม่เห็นด้วยอย่างยิ่ง) ถึง 5 (เห็นด้วยอย่างยิ่ง)
           </p>
@@ -169,34 +169,45 @@ export default function PathFinderQuizPage() {
                 className="shadow-md hover:shadow-lg transition-shadow"
               >
                 <CardBody className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-[#F2B33D] rounded-full flex items-center justify-center font-bold text-white">
-                      {globalIndex + 1}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-lg mb-4">{question.text}</p>
-                      
-                      <RadioGroup
-                        value={currentAnswer?.toString()}
-                        onValueChange={(value) => handleAnswer(question.id, parseInt(value))}
-                        orientation="horizontal"
-                        className="gap-3"
-                      >
-                        {[1, 2, 3, 4, 5].map((rating) => (
-                          <Radio
-                            key={rating}
-                            value={rating.toString()}
+                  <div className="w-full">
+                    {/* Question Title - Centered */}
+                    <p className="text-lg md:text-xl mb-6 font-medium text-gray-700 text-center">{question.text}</p>
+
+                    {/* Custom Rating Buttons */}
+                    <div className="flex justify-center items-center gap-4 md:gap-5 max-w-2xl mx-auto">
+                      {[
+                        { value: 1, label: 'ไม่ชอบ', color: 'bg-[#E0A849]', size: 'w-15 h-15 md:w-17 md:h-17' },
+                        { value: 2, label: 'ไม่ค่อยชอบ', color: 'bg-[#ECC576]', size: 'w-14 h-14 md:w-15 md:h-15' },
+                        { value: 3, label: 'เฉยๆ', color: 'bg-[#F5E5B8]', size: 'w-13 h-13 md:w-13 md:h-13' },
+                        { value: 4, label: 'ชอบ', color: 'bg-[#ECC576]', size: 'w-14 h-14 md:w-15 md:h-15' },
+                        { value: 5, label: 'ชอบมาก', color: 'bg-[#E0A849]', size: 'w-15 h-15 md:w-17 md:h-17' }
+                      ].map((option) => {
+                        const isSelected = currentAnswer === option.value;
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => handleAnswer(question.id, option.value)}
+                            className="flex flex-col items-center gap-2 group transition-all"
                           >
-                            <span className="font-semibold">{rating}</span>
-                          </Radio>
-                        ))}
-                      </RadioGroup>
-                      
-                      <div className="flex justify-between text-xs text-gray-500 mt-2">
-                        <span>ไม่เห็นด้วยอย่างยิ่ง</span>
-                        <span>เห็นด้วยอย่างยิ่ง</span>
-                      </div>
+                            <div
+                              className={`${option.size} rounded-full flex items-center justify-center font-bold text-white text-base md:text-lg transition-all duration-300 ${option.color
+                                } ${isSelected
+                                  ? 'shadow-2xl scale-110 ring-4 ring-[#F2B33D]/40 brightness-110'
+                                  : 'opacity-100  hover:scale-105 hover:shadow-lg'
+                                }`}
+                            >
+                              {option.value}
+                            </div>
+                            <span className={`text-xs md:text-sm font-medium transition-colors text-center whitespace-nowrap ${isSelected ? 'text-[#E0A849] font-bold' : 'text-gray-500 group-hover:text-[#E0A849]'
+                              }`}>
+                              {option.label}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
+
                   </div>
                 </CardBody>
               </Card>
@@ -221,7 +232,7 @@ export default function PathFinderQuizPage() {
 
           {currentPage < totalPages - 1 ? (
             <Button
-              color="warning"
+              className="bg-[#F2B33D] text-balck font-medium shadow-md hover:bg-[#F2B33D]/90"
               endContent={<FiArrowRight className="w-5 h-5" />}
               onClick={handleNext}
               isDisabled={!isCurrentPageComplete()}

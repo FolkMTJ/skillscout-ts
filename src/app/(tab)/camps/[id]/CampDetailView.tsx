@@ -52,7 +52,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
     const [selectedImage, setSelectedImage] = useState(camp.galleryImages[0] || camp.image);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
-    
+
     const [isRegistered, setIsRegistered] = useState(false);
     const [ticketData, setTicketData] = useState<TicketData | null>(null);
     const [checkingRegistration, setCheckingRegistration] = useState(true);
@@ -65,7 +65,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
     // 🔧 FIX: ตรวจสอบการลงทะเบียนและสิทธิ์ในการรับ Ticket
     useEffect(() => {
         let isMounted = true;
-        
+
         const checkRegistration = async () => {
             if (!session?.user?.email) {
                 if (isMounted) setCheckingRegistration(false);
@@ -75,7 +75,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
             try {
                 const response = await fetch(
                     `/api/ticket?userId=${encodeURIComponent(session.user.email)}&campId=${camp._id}`,
-                    { 
+                    {
                         cache: 'no-store',
                         next: { revalidate: 0 }
                     }
@@ -85,7 +85,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                 if (isMounted) {
                     if (data.registered) {
                         setIsRegistered(true);
-                        
+
                         // ถ้ามี ticket แปลว่าสามารถรับ ticket ได้
                         if (data.canGetTicket && data.ticket) {
                             setCanGetTicket(true);
@@ -106,7 +106,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
         };
 
         checkRegistration();
-        
+
         return () => {
             isMounted = false;
         };
@@ -118,7 +118,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
             try {
                 const response = await fetch(
                     `/api/ticket?userId=${encodeURIComponent(session.user.email)}&campId=${camp._id}`,
-                    { 
+                    {
                         cache: 'no-store',
                         next: { revalidate: 0 }
                     }
@@ -127,7 +127,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
 
                 if (data.registered) {
                     setIsRegistered(true);
-                    
+
                     if (data.canGetTicket && data.ticket) {
                         setCanGetTicket(true);
                         setTicketData(data.ticket);
@@ -159,14 +159,16 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
             console.error('Error refreshing camp data:', error);
         }
     };
-    
+
     return (
         <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
             <div className="container mx-auto px-4 py-8 md:py-12">
                 <section>
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
-                        <div className="grid grid-cols-1 md:grid-cols-5">
-                            <div className="relative md:col-span-2 h-64 md:h-full min-h-[400px]">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden max-w-10xl mx-auto">
+                        <div className="grid grid-cols-1 md:grid-cols-7">
+
+                            {/* 1. ส่วนรูปภาพ: ลบ min-h-400px ออกเพื่อให้ไม่สูงเกินไป ปรับเป็น h-56 สำหรับมือถือ */}
+                            <div className="relative md:col-span-4 h-56 md:h-auto">
                                 <Image
                                     src={camp.image}
                                     alt={camp.name}
@@ -175,24 +177,28 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                     sizes="(max-width: 768px) 100vw, 40vw"
                                 />
                             </div>
-                            <div className="md:col-span-3 p-8 md:p-10 flex flex-col">
-                                <div className="flex justify-between items-center mb-6">
+
+                            {/* 2. ส่วนเนื้อหา: ลด Padding ลง */}
+                            <div className="md:col-span-3 p-5 md:p-10 flex flex-col">
+
+                                {/* Header: Back Button & Tags */}
+                                <div className="flex justify-between items-start mb-4">
                                     <button
                                         onClick={() => router.back()}
-                                        className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
                                     >
                                         <FaArrowLeft />
                                         ย้อนกลับ
                                     </button>
                                     {camp.tags && camp.tags.length > 0 && (
-                                        <div className="flex flex-wrap gap-2">
+                                        <div className="flex flex-wrap gap-1.5">
                                             {camp.tags.map((tag, index) => (
                                                 <Chip
                                                     key={`${tag}-${index}`}
                                                     size="sm"
                                                     variant="flat"
-                                                    className="bg-gray-200 dark:bg-gray-700"
-                                                    classNames={{ content: "text-gray-700 dark:text-gray-300" }}
+                                                    className="bg-gray-100 dark:bg-gray-700 h-6"
+                                                    classNames={{ content: "text-xs text-gray-600 dark:text-gray-300 px-1" }}
                                                 >
                                                     {tag}
                                                 </Chip>
@@ -200,78 +206,85 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                         </div>
                                     )}
                                 </div>
-                                <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white leading-tight">
+
+                                {/* Title: ลดขนาด Font */}
+                                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white leading-tight mb-2">
                                     {camp.name}
                                 </h1>
-                                <div className="space-y-3 mt-auto pt-3 dark:border-gray-700">
-                                    <div className="flex items-center gap-4 text-gray-800 dark:text-gray-200">
-                                        <FaCalendarAlt className="text-xl text-[#F2B33D]" />
-                                        <span className="font-semibold text-lg">{camp.date}</span>
+
+                                {/* Details: ลด Gap และ Font size */}
+                                <div className="space-y-2 mt-2 dark:border-gray-700">
+                                    <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
+                                        <FaCalendarAlt className="text-base text-[#F2B33D]" />
+                                        <span className="font-medium text-sm">{camp.date}</span>
                                     </div>
-                                    <div className="flex items-center gap-4 text-gray-800 dark:text-gray-200">
-                                        <FaMapMarkerAlt className="text-xl text-[#F2B33D]" />
-                                        <span className="font-semibold text-lg">{camp.location}</span>
+                                    <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
+                                        <FaMapMarkerAlt className="text-base text-[#F2B33D]" />
+                                        <span className="font-medium text-sm">{camp.location}</span>
                                     </div>
-                                    <div className="flex items-center gap-4 text-red-500 dark:text-red-400">
-                                        <FaClock className="text-xl" />
-                                        <span className="font-semibold text-lg">ปิดรับสมัคร: {camp.deadline}</span>
+                                    <div className="flex items-center gap-3 text-red-500 dark:text-red-400">
+                                        <FaClock className="text-base" />
+                                        <span className="font-medium text-sm">ปิดรับ: {camp.deadline}</span>
                                     </div>
-                                    {camp.organizers && camp.organizers.length > 0 && (
-                                        <div className="mt-8">
-                                            <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">ผู้จัดค่าย</h2>
-                                            <div className="flex flex-wrap items-center gap-4">
-                                                {camp.organizers.map((organizer: Organizer, index: number) => {
-                                                    const isPlaceholder = organizer.imageUrl === '/api/placeholder/100/100' || !organizer.imageUrl;
-                                                    return (
-                                                        <div key={`${organizer.name}-${index}`} className="flex flex-col items-center gap-2">
-                                                            <div className="relative w-16 h-16 rounded-full overflow-hidden border-3 border-amber-400/30 shadow-md hover:border-amber-400 transition-all">
-                                                                {isPlaceholder ? (
-                                                                    <div className="w-full h-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                                                                        <span className="text-white text-2xl font-bold">
-                                                                            {organizer.name.charAt(0).toUpperCase()}
-                                                                        </span>
-                                                                    </div>
-                                                                ) : (
-                                                                    <Image
-                                                                        src={organizer.imageUrl}
-                                                                        alt={organizer.name}
-                                                                        fill
-                                                                        className="object-cover"
-                                                                        sizes="64px"
-                                                                    />
-                                                                )}
-                                                            </div>
-                                                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 text-center max-w-[80px] truncate">
-                                                                {organizer.name}
-                                                            </span>
+                                </div>
+
+                                {/* Organizers: ลดขนาดรูปและพื้นที่ */}
+                                {camp.organizers && camp.organizers.length > 0 && (
+                                    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                                        <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">ผู้จัดค่าย</h2>
+                                        <div className="flex flex-wrap items-center gap-3">
+                                            {camp.organizers.map((organizer: Organizer, index: number) => {
+                                                const isPlaceholder = organizer.imageUrl === '/api/placeholder/100/100' || !organizer.imageUrl;
+                                                return (
+                                                    <div key={`${organizer.name}-${index}`} className="flex items-center gap-2">
+                                                        <div className="relative w-8 h-8 rounded-full overflow-hidden border border-gray-200 dark:border-gray-600 shadow-sm">
+                                                            {isPlaceholder ? (
+                                                                <div className="w-full h-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                                                                    <span className="text-white text-xs font-bold">
+                                                                        {organizer.name.charAt(0).toUpperCase()}
+                                                                    </span>
+                                                                </div>
+                                                            ) : (
+                                                                <Image
+                                                                    src={organizer.imageUrl}
+                                                                    alt={organizer.name}
+                                                                    fill
+                                                                    className="object-cover"
+                                                                    sizes="32px"
+                                                                />
+                                                            )}
                                                         </div>
-                                                    );
-                                                })}
-                                            </div>
+                                                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400 max-w-[80px] truncate">
+                                                            {organizer.name}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
-                                    )}
-                                    <div className="flex items-center justify-between pt-6">
-                                        <p className="text-5xl font-black bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
-                                            <p>{camp.price === '฿0' ? 'ฟรี' : camp.price}</p>
-                                        </p>
-                                        
-                                        {/* 🔧 FIX: แสดงปุ่มตามสถานะที่ถูกต้อง */}
+                                    </div>
+                                )}
+
+                                {/* Footer: Price & Button (ดันลงล่างสุดถ้ามีความสูงเหลือ) */}
+                                <div className="mt-6 flex flex-col sm:flex-row items-end sm:items-center justify-between gap-4">
+                                    {/* Price: ลดขนาด */}
+                                    <p className="text-3xl font-extrabold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+                                        {camp.price === '฿0' ? 'ฟรี' : camp.price}
+                                    </p>
+
+                                    {/* Buttons: ลด size เป็น md */}
+                                    <div className="w-full sm:w-auto">
                                         {checkingRegistration ? (
-                                            <Button
-                                                isDisabled
-                                                className="bg-gray-200 dark:bg-gray-700"
-                                                size="lg"
-                                            >
+                                            <Button isDisabled className="w-full sm:w-auto bg-gray-200 dark:bg-gray-700" size="md">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
-                                                    <span>กำลังตรวจสอบ...</span>
+                                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600"></div>
+                                                    <span className="text-sm">กำลังตรวจสอบ...</span>
                                                 </div>
                                             </Button>
                                         ) : isRegistered ? (
                                             canGetTicket ? (
                                                 <Button
-                                                    className="bg-gradient-to-r from-green-500 to-emerald-500 font-bold text-white shadow-lg"
-                                                    size="lg"
+                                                    className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-emerald-500 font-bold text-white shadow-md"
+                                                    size="md"
                                                     startContent={<FaTicketAlt />}
                                                     onPress={handleTicketClick}
                                                 >
@@ -280,8 +293,8 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                             ) : (
                                                 <Button
                                                     isDisabled
-                                                    className="bg-yellow-500/50 font-bold text-gray-700"
-                                                    size="lg"
+                                                    className="w-full sm:w-auto bg-yellow-500/50 font-bold text-gray-700"
+                                                    size="md"
                                                     startContent={<FaHourglassHalf />}
                                                 >
                                                     รอตรวจสอบ
@@ -289,47 +302,33 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                             )
                                         ) : (
                                             <Button
-                                                className="bg-[#F2B33D] font-bold text-gray-900"
+                                                className="w-full sm:w-auto bg-[#F2B33D] font-bold text-gray-900"
                                                 color="warning"
                                                 variant="shadow"
-                                                size="lg"
+                                                size="md"
                                                 onPress={() => setIsModalOpen(true)}
                                             >
                                                 สมัครเข้าร่วม
                                             </Button>
                                         )}
                                     </div>
-                                    
-                                    {/* แสดงข้อความสถานะ */}
-                                    {isRegistered && (
-                                        <div className={`mt-4 p-3 rounded-lg border-2 ${
-                                            canGetTicket 
-                                                ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
-                                                : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-500'
-                                        }`}>
-                                            <div className={`flex items-center gap-2 ${
-                                                canGetTicket 
-                                                    ? 'text-green-700 dark:text-green-400'
-                                                    : 'text-yellow-700 dark:text-yellow-400'
-                                            }`}>
-                                                {canGetTicket ? <FaCheckCircle /> : <FaHourglassHalf className="animate-pulse" />}
-                                                <span className="font-semibold">
-                                                    {canGetTicket ? 'คุณได้สมัครค่ายนี้แล้ว' : 'สมัครแล้ว - รอการตรวจสอบ'}
-                                                </span>
-                                            </div>
-                                            <p className={`text-sm mt-1 ${
-                                                canGetTicket 
-                                                    ? 'text-green-600 dark:text-green-500'
-                                                    : 'text-yellow-600 dark:text-yellow-500'
-                                            }`}>
-                                                {canGetTicket 
-                                                    ? 'กดปุ่ม "รับ Ticket" เพื่อดาวน์โหลดบัตรเข้าค่าย'
-                                                    : (ticketMessage || 'รอ Organizer ตรวจสอบและอนุมัติสลิปการชำระเงิน')
-                                                }
-                                            </p>
-                                        </div>
-                                    )}
                                 </div>
+
+                                {/* Status Message: ทำให้ Compact ขึ้น */}
+                                {isRegistered && (
+                                    <div className={`mt-3 px-3 py-2 rounded border flex items-center gap-2 text-xs ${canGetTicket
+                                            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 text-green-700 dark:text-green-400'
+                                            : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 text-yellow-700 dark:text-yellow-400'
+                                        }`}>
+                                        {canGetTicket ? <FaCheckCircle /> : <FaHourglassHalf className="animate-pulse" />}
+                                        <span className="truncate flex-1">
+                                            {canGetTicket
+                                                ? 'สมัครสำเร็จ: กดปุ่ม "รับ Ticket" เพื่อดาวน์โหลดบัตร'
+                                                : (ticketMessage || 'สมัครแล้ว: รอ Organizer ตรวจสอบสลิป')
+                                            }
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -361,11 +360,10 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                     <button
                                         key={i}
                                         onClick={() => setSelectedImage(img)}
-                                        className={`relative w-full h-32 rounded-lg overflow-hidden transition-all duration-300 focus:outline-none ${
-                                            selectedImage === img
+                                        className={`relative w-full h-32 rounded-lg overflow-hidden transition-all duration-300 focus:outline-none ${selectedImage === img
                                                 ? 'ring-4 ring-amber-500 ring-offset-2 ring-offset-gray-50 dark:ring-offset-gray-900'
                                                 : 'opacity-70 hover:opacity-100'
-                                        }`}
+                                            }`}
                                     >
                                         <Image
                                             src={img}
@@ -421,7 +419,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                             <p>{camp.location}</p>
                         </InfoCard>
                         {camp.activityFormat !== 'Online' && (
-                            <LocationMap 
+                            <LocationMap
                                 location={camp.location}
                                 height="h-64"
                                 className="mt-6"
@@ -453,9 +451,9 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                 {Object.entries(currentCamp.ratingBreakdown).reverse().map(([stars, count]) => (
                                     <div key={stars} className="flex items-center gap-2">
                                         <span className="text-sm text-gray-500">{stars} ★</span>
-                                        <Progress 
-                                            value={((count as number) / (currentCamp.reviews.length || 1)) * 100} 
-                                            classNames={{ indicator: "bg-amber-400" }} 
+                                        <Progress
+                                            value={((count as number) / (currentCamp.reviews.length || 1)) * 100}
+                                            classNames={{ indicator: "bg-amber-400" }}
                                         />
                                     </div>
                                 ))}
@@ -495,7 +493,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                     </div>
                 </section>
             </div>
-            
+
             <BookingModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}

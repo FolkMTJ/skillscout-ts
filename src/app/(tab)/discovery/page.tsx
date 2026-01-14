@@ -8,7 +8,7 @@ import { FiTrendingUp, FiTarget, FiBook, FiAward, FiArrowRight } from 'react-ico
 import SkillPieChart from '@/components/discovery/SkillPieChart';
 import RIASECProfile from '@/components/discovery/RIASECProfile';
 import CareerCard from '@/components/discovery/CareerCard';
-import RecommendedCamps from '@/components/discovery/RecommendedCamps';
+import CampCard from '@/components/(card)/CampCard';
 
 interface DiscoveryData {
   campsAttended: number;
@@ -43,12 +43,32 @@ interface DiscoveryData {
   }[];
 }
 
+interface CampData {
+  _id: string;
+  name: string;
+  image: string;
+  date: string;
+  location: string;
+  price: string;
+  deadline: string;
+  registrationDeadline?: string;
+  description: string;
+  category: string;
+  avgRating: number;
+  reviews: unknown[];
+  capacity?: number;
+  participantCount?: number;
+  enrolled?: number;
+}
+
 export default function DiscoveryPathPage() {
   const { status } = useSession();
   const router = useRouter();
   const [data, setData] = useState<DiscoveryData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [recommendedCampsData, setRecommendedCampsData] = useState<CampData[]>([]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
@@ -58,7 +78,7 @@ export default function DiscoveryPathPage() {
     if (status === 'authenticated') {
       fetchDiscoveryData();
     }
-  }, [status, router]);
+  }, [status, router, fetchDiscoveryData]);
 
   const fetchDiscoveryData = async () => {
     try {
@@ -67,6 +87,11 @@ export default function DiscoveryPathPage() {
         const result = await res.json();
         console.log('Discovery data:', result);
         setData(result);
+        
+        // Fetch full camp data
+        if (result.recommendedCamps && result.recommendedCamps.length > 0) {
+          fetchRecommendedCamps(result.recommendedCamps);
+        }
       } else {
         console.error('Failed to fetch:', res.status, await res.text());
       }
@@ -74,6 +99,56 @@ export default function DiscoveryPathPage() {
       console.error('Error fetching discovery data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRecommendedCamps = async (campIds: { id: string }[]) => {
+    try {
+      const campsRes = await fetch('/api/camps');
+      if (campsRes.ok) {
+        const allCamps: CampData[] = await campsRes.json();
+        const recommended = allCamps
+          .filter((camp) => campIds.some(c => c.id === camp._id))
+          .slice(0, 4)
+          .map((camp): CampData => {
+            const calculateDaysLeft = () => {
+              if (!camp.deadline && !camp.registrationDeadline) return 0;
+              try {
+                const deadlineDate = camp.registrationDeadline 
+                  ? new Date(camp.registrationDeadline) 
+                  : new Date(camp.deadline);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                deadlineDate.setHours(0, 0, 0, 0);
+                const diffTime = deadlineDate.getTime() - today.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays > 0 ? diffDays : 0;
+              } catch {
+                return 0;
+              }
+            };
+
+            return {
+              id: camp._id,
+              name: camp.name,
+              image: camp.image,
+              date: camp.date,
+              location: camp.location,
+              price: camp.price,
+              deadline: camp.deadline,
+              daysLeft: calculateDaysLeft(),
+              description: camp.description,
+              category: camp.category,
+              avgRating: camp.avgRating,
+              reviews: camp.reviews,
+              capacity: camp.capacity || camp.participantCount,
+              enrolled: camp.enrolled || 0
+            };
+          });
+        setRecommendedCampsData(recommended);
+      }
+    } catch (error) {
+      console.error('Error fetching recommended camps:', error);
     }
   };
 
@@ -168,52 +243,60 @@ export default function DiscoveryPathPage() {
 
           {/* Stats Overview */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="bg-gradient-to-br from-blue-500 to-blue-600">
-              <CardBody className="p-6 text-white">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 rounded-lg bg-white/20">
-                    <FiBook className="text-2xl" />
+            <Card className="border-2 border-blue-500 bg-white">
+              <CardBody className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-blue-600 mb-2">ค่ายที่เข้าร่วม</div>
+                    <div className="text-3xl font-bold text-blue-700">{data.campsAttended}</div>
                   </div>
-                  <div className="text-sm font-medium opacity-90">ค่ายที่เข้าร่วม</div>
+                  <div className="bg-blue-50 p-4 rounded-xl">
+                    <FiBook className="text-2xl text-blue-500" />
+                  </div>
                 </div>
-                <div className="text-3xl font-bold">{data.campsAttended}</div>
               </CardBody>
             </Card>
 
-            <Card className="bg-gradient-to-br from-green-500 to-green-600">
-              <CardBody className="p-6 text-white">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 rounded-lg bg-white/20">
-                    <FiTarget className="text-2xl" />
+            <Card className="border-2 border-green-500 bg-white">
+              <CardBody className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-green-600 mb-2">ทักษะที่ได้</div>
+                    <div className="text-3xl font-bold text-green-700">{data.skillProfile.length}</div>
                   </div>
-                  <div className="text-sm font-medium opacity-90">ทักษะที่ได้</div>
+                  <div className="bg-green-50 p-4 rounded-xl">
+                    <FiTarget className="text-2xl text-green-500" />
+                  </div>
                 </div>
-                <div className="text-3xl font-bold">{data.skillProfile.length}</div>
               </CardBody>
             </Card>
 
-            <Card className="bg-gradient-to-br from-purple-500 to-purple-600">
-              <CardBody className="p-6 text-white">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 rounded-lg bg-white/20">
-                    <FiTrendingUp className="text-2xl" />
+            <Card className="border-2 border-purple-500 bg-white">
+              <CardBody className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-purple-600 mb-2">อาชีพที่แนะนำ</div>
+                    <div className="text-3xl font-bold text-purple-700">{data.recommendedCareers.length}</div>
                   </div>
-                  <div className="text-sm font-medium opacity-90">อาชีพที่แนะนำ</div>
+                  <div className="bg-purple-50 p-4 rounded-xl">
+                    <FiTrendingUp className="text-2xl text-purple-500" />
+                  </div>
                 </div>
-                <div className="text-3xl font-bold">{data.recommendedCareers.length}</div>
               </CardBody>
             </Card>
 
-            <Card className="bg-gradient-to-br from-[#F2B33D] to-orange-500">
-              <CardBody className="p-6 text-white">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 rounded-lg bg-white/20">
-                    <FiAward className="text-2xl" />
+            <Card className="border-2 border-orange-500 bg-white">
+              <CardBody className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-orange-600 mb-2">Match สูงสุด</div>
+                    <div className="text-3xl font-bold text-orange-700">
+                      {data.recommendedCareers[0]?.matchScore || 0}%
+                    </div>
                   </div>
-                  <div className="text-sm font-medium opacity-90">Match สูงสุด</div>
-                </div>
-                <div className="text-3xl font-bold">
-                  {data.recommendedCareers[0]?.matchScore || 0}%
+                  <div className="bg-orange-50 p-4 rounded-xl">
+                    <FiAward className="text-2xl text-orange-500" />
+                  </div>
                 </div>
               </CardBody>
             </Card>
@@ -273,7 +356,7 @@ export default function DiscoveryPathPage() {
           </div>
 
           {/* Recommended Camps */}
-          {data.recommendedCamps.length > 0 && (
+          {recommendedCampsData.length > 0 && (
             <div className="space-y-6">
               <div>
                 <Chip color="warning" variant="flat" size="sm" className="mb-3">
@@ -281,7 +364,11 @@ export default function DiscoveryPathPage() {
                 </Chip>
                 <h2 className="text-2xl font-bold">ค่ายที่แนะนำเพื่อพัฒนาตัวเอง</h2>
               </div>
-              <RecommendedCamps camps={data.recommendedCamps} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {recommendedCampsData.map((camp) => (
+                  <CampCard key={camp.id} camp={camp} variant="compact" />
+                ))}
+              </div>
             </div>
           )}
 

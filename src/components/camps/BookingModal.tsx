@@ -583,7 +583,7 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
             <ModalHeader>
               <div className="w-full">
                 <h2 className="text-2xl font-black text-gray-900 dark:text-white">
-                  💳 สแกน QR เพื่อชำระเงิน
+                  สแกน QR เพื่อชำระเงิน
                 </h2>
                 <p className="text-sm font-normal text-gray-600 dark:text-gray-400 mt-1">
                   ชำระผ่าน PromptPay
@@ -667,7 +667,7 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
             <ModalHeader>
               <div className="w-full">
                 <h2 className="text-2xl font-black text-gray-900 dark:text-white">
-                  📝 ข้อมูลผู้สมัคร
+                  ข้อมูลผู้สมัคร
                 </h2>
                 <p className="text-sm font-normal text-gray-600 dark:text-gray-400 mt-1">
                   {camp.name}
@@ -684,47 +684,56 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
 
                 {/* Form Fields */}
                 <div className="space-y-4">
-                  <Input 
-                    label="ชื่อ - นามสกุล" 
-                    placeholder="กรอกชื่อ - นามสกุล" 
-                    value={formData.name} 
-                    onValueChange={(v) => setFormData({ ...formData, name: v })} 
-                    required 
-                    size="lg"
-                    variant="bordered"
-                    classNames={{ 
-                      inputWrapper: "border-2 border-gray-300 hover:border-orange-400" 
-                    }} 
-                  />
+                  <div className="w-full">
+                    <Input 
+                      label="ชื่อ - นามสกุล" 
+                      placeholder="กรอกชื่อ - นามสกุล" 
+                      value={formData.name} 
+                      onValueChange={(v) => setFormData({ ...formData, name: v })} 
+                      required 
+                      size="lg"
+                      variant="bordered"
+                      classNames={{ 
+                        base: "max-w-full",
+                        inputWrapper: "border-2 border-gray-300 hover:border-orange-400" 
+                      }} 
+                    />
+                  </div>
                   
-                  <Input 
-                    type="email" 
-                    label="อีเมล" 
-                    placeholder="yourmail@example.com" 
-                    value={formData.email} 
-                    onValueChange={(v) => setFormData({ ...formData, email: v })} 
-                    required 
-                    size="lg"
-                    variant="bordered"
-                    classNames={{ 
-                      inputWrapper: "border-2 border-gray-300 hover:border-orange-400" 
-                    }} 
-                  />
+                  <div className="w-full">
+                    <Input 
+                      type="email" 
+                      label="อีเมล" 
+                      placeholder="yourmail@example.com" 
+                      value={formData.email} 
+                      onValueChange={(v) => setFormData({ ...formData, email: v })} 
+                      required 
+                      size="lg"
+                      variant="bordered"
+                      classNames={{ 
+                        base: "max-w-full",
+                        inputWrapper: "border-2 border-gray-300 hover:border-orange-400" 
+                      }} 
+                    />
+                  </div>
                   
-                  <Input 
-                    type="tel" 
-                    label="เบอร์โทรศัพท์" 
-                    placeholder="0812345678" 
-                    value={formData.phone} 
-                    onValueChange={(v) => setFormData({ ...formData, phone: v })} 
-                    required 
-                    size="lg"
-                    variant="bordered"
-                    classNames={{ 
-                      inputWrapper: "border-2 border-gray-300 hover:border-orange-400" 
-                    }}
-                    description={formData.phone ? "ใช้เบอร์จากการตั้งค่าโปรไฟล์" : "กรุณาตั้งค่าเบอร์โทรศัพท์ในโปรไฟล์"}
-                  />
+                  <div className="w-full">
+                    <Input 
+                      type="tel" 
+                      label="เบอร์โทรศัพท์" 
+                      placeholder="0812345678" 
+                      value={formData.phone} 
+                      onValueChange={(v) => setFormData({ ...formData, phone: v })} 
+                      required 
+                      size="lg"
+                      variant="bordered"
+                      classNames={{ 
+                        base: "max-w-full",
+                        inputWrapper: "border-2 border-gray-300 hover:border-orange-400" 
+                      }}
+                      description={formData.phone ? "ใช้เบอร์จากการตั้งค่าโปรไฟล์" : "กรุณาตั้งค่าเบอร์โทรศัพท์ในโปรไฟล์"}
+                    />
+                  </div>
                 </div>
 
                 <Divider className="my-2" />
@@ -860,22 +869,18 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
                 </Card>
               </div>
             </ModalBody>
-            <ModalFooter>
-              <Button 
-                color="danger" 
-                variant="light" 
-                onPress={handleClose}
-              >
-                ยกเลิก
-              </Button>
+            <ModalFooter className="flex-wrap gap-2">
+              
               <Button
                 type="submit"
-                className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold shadow-lg"
+                className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold shadow-lg flex-1 min-w-0"
                 endContent={isFree ? <FiGift /> : <FiCreditCard />}
                 isLoading={isSubmitting}
                 size="lg"
               >
-                {isSubmitting ? 'กำลังดำเนินการ...' : (isFree ? 'ยืนยันการสมัคร (ฟรี)' : 'ยืนยันและชำระเงิน')}
+                <span className="truncate">
+                  {isSubmitting ? 'กำลังดำเนินการ...' : (isFree ? 'ยืนยันการสมัคร (ฟรี)' : 'ยืนยันและชำระเงิน')}
+                </span>
               </Button>
             </ModalFooter>
           </form>

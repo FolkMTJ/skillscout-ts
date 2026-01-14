@@ -96,9 +96,8 @@ export default function NavBar(props: NavbarProps) {
         <>
             <Navbar
                 {...props}
-                isBordered
                 classNames={{
-                    base: cn("border-default-100", { "bg-default-200 dark:bg-default-100/50": isMenuOpen }),
+                    base: cn("bg-[#2C2C2C]", { "bg-[#2C2C2C]": isMenuOpen }),
                     wrapper: "w-full justify-center bg-transparent",
                     item: "hidden md:flex",
                 }}
@@ -113,7 +112,7 @@ export default function NavBar(props: NavbarProps) {
                         <div className="text-background rounded-full flex items-center justify-center">
                             {mounted && (
                                 <Image
-                                    src={theme === 'dark' ? '/skillscoutLogo.png' : '/skillscoutLogo-black.png'}
+                                    src={theme === 'dark' ? '/skillscoutLogo.png' : '/skillscoutLogo.png'}
                                     alt="Skillscout Logo"
                                     width={60}
                                     height={52}
@@ -125,14 +124,14 @@ export default function NavBar(props: NavbarProps) {
                 </NavbarBrand>
 
                 <NavbarContent
-                    className="border-small border-default-200/20 bg-background/60 shadow-medium dark:bg-default-100/50 hidden h-11 gap-8 rounded-full px-9 backdrop-blur-md backdrop-saturate-150 md:flex"
+                    className="hidden h-11 gap-8 md:flex"
                     justify="center"
                 >
                     {navLinks.map((link) => (
                         <NavbarItem key={link.href} isActive={pathname === link.href}>
                             <Link
-                                color={pathname === link.href ? "foreground" : undefined}
-                                className="text-default-500"
+                                color={pathname === link.href ? "warning" : undefined}
+                                className={pathname === link.href ? "text-[#F2B33D] font-semibold" : "text-white/80 hover:text-white"}
                                 href={link.href}
                                 size="sm"
                                 aria-current={pathname === link.href ? "page" : undefined}
@@ -155,11 +154,14 @@ export default function NavBar(props: NavbarProps) {
                                     <Avatar
                                         as="button"
                                         className="transition-transform hover:scale-110"
-                                        color="primary"
+                                        color="warning"
                                         name={session.user?.name || 'User'}
                                         size="sm"
                                         src={userData?.profileImage || session.user?.image || undefined}
                                         isBordered
+                                        classNames={{
+                                            base: "ring-[#F2B33D] ring-2"
+                                        }}
                                     />
                                 </DropdownTrigger>
                                 <DropdownMenu aria-label="User Actions" variant="flat">

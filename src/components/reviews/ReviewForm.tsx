@@ -124,7 +124,7 @@ export default function ReviewForm({ campId, onReviewSubmitted, userName }: Revi
 
       <Button
         type="submit"
-        className="bg-gradient-to-tr from-pink-500 to-yellow-500 text-white font-bold shadow-lg"
+        className="bg-gradient-to-tr from-[#F2B33D] to-[#F2B33D] text-white font-bold shadow-lg"
         size="lg"
         fullWidth
         isLoading={isSubmitting}
