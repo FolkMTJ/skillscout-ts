@@ -1,13 +1,14 @@
 // src/app/(tab)/path-finder/careers/[id]/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Card, CardBody, Button, Chip, Spinner, Tabs, Tab } from '@heroui/react';
 import { FiArrowLeft, FiCheckCircle, FiTarget, FiTrendingUp } from 'react-icons/fi';
-import { Career, RoadmapStep } from '@/data/path-finder';
+import { Career } from '@/data/path-finder';
 import { IT_CAREERS } from '@/data/path-finder/careers';
-import { RIASEC_TYPES } from '@/data/riasec';
+// import { RIASEC_TYPES } from '@/data/riasec';
 import { Camp } from '@/types';
 
 export default function CareerDetailPage() {
@@ -20,23 +21,7 @@ export default function CareerDetailPage() {
   const [recommendedCamps, setRecommendedCamps] = useState<(Camp & { matchScore?: number; matchingTags?: string[] })[]>([]);
   const [loadingCamps, setLoadingCamps] = useState(false);
 
-  useEffect(() => {
-    // ดึงข้อมูลอาชีพจาก local data
-    const foundCareer = IT_CAREERS.find((c) => c.id === careerId);
-    if (foundCareer) {
-      setCareer(foundCareer);
-    } else {
-      router.push('/path-finder/careers');
-    }
-  }, [careerId, router]);
-
-  useEffect(() => {
-    if (career) {
-      fetchRecommendedCamps();
-    }
-  }, [career, selectedLevel]);
-
-  const fetchRecommendedCamps = async () => {
+  const fetchRecommendedCamps = useCallback(async () => {
     if (!career) return;
 
     setLoadingCamps(true);
@@ -53,7 +38,23 @@ export default function CareerDetailPage() {
     } finally {
       setLoadingCamps(false);
     }
-  };
+  }, [career, selectedLevel]);
+
+  useEffect(() => {
+    // ดึงข้อมูลอาชีพจาก local data
+    const foundCareer = IT_CAREERS.find((c) => c.id === careerId);
+    if (foundCareer) {
+      setCareer(foundCareer);
+    } else {
+      router.push('/path-finder/careers');
+    }
+  }, [careerId, router]);
+
+  useEffect(() => {
+    if (career) {
+      fetchRecommendedCamps();
+    }
+  }, [career, fetchRecommendedCamps]);
 
   if (!career) {
     return (
@@ -66,7 +67,7 @@ export default function CareerDetailPage() {
   const currentRoadmapStep = career.roadmapSteps.find((step) => step.level === selectedLevel);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-white to-orange-50 py-12">
+    <div className="min-h-screen bg-white py-12">
       <div className="container mx-auto px-4 max-w-7xl">
         {/* Header */}
         <div className="mb-8">
@@ -179,14 +180,13 @@ export default function CareerDetailPage() {
           {/* Level Tabs */}
           <Tabs
             selectedKey={selectedLevel}
-            onSelectionChange={(key) => setSelectedLevel(key as any)}
-            color="warning"
+            onSelectionChange={(key) => setSelectedLevel(key as 'beginner' | 'intermediate' | 'advanced')}
             size="lg"
             className="mb-6"
           >
-            <Tab key="beginner" title="พื้นฐาน (Beginner)" />
-            <Tab key="intermediate" title="กลาง (Intermediate)" />
-            <Tab key="advanced" title="ขั้นสูง (Advanced)" />
+            <Tab key="beginner" title="Step 1"/>
+            <Tab key="intermediate" title="Step 2" />
+            <Tab key="advanced" title="Step 3" />
           </Tabs>
 
           {/* Current Step Details */}
@@ -250,10 +250,12 @@ export default function CareerDetailPage() {
                   <CardBody className="p-0">
                     {/* Camp Image */}
                     <div className="relative h-48 overflow-hidden">
-                      <img
+                      <Image
                         src={camp.image}
                         alt={camp.name}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       />
                       {camp.matchScore && camp.matchScore > 0 && (
                         <div className="absolute top-3 right-3">

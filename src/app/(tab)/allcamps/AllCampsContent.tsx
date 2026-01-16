@@ -1,8 +1,9 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Button, Input, Chip, Spinner } from "@heroui/react";
-import { FaSearch, FaTrophy, FaClock, FaFire, FaChevronDown, FaFilter, FaTimes } from "react-icons/fa";
+import { Button, Input, Chip } from "@heroui/react";
+import { FaSearch, FaTrophy, FaFilter, FaTimes } from "react-icons/fa";
 import CampCard from "@/components/(card)/CampCard";
+import Pagination from "@/components/Pagination";
 import { Camp } from "@/types/camp";
 import { useSearchParams } from 'next/navigation';
 
@@ -85,13 +86,17 @@ export default function AllCampsContent() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState(searchFromUrl);
   const [selectedCategory, setSelectedCategory] = useState("ทั้งหมด");
-  const [showMore, setShowMore] = useState(false);
+  // const [showMore, setShowMore] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   
   // 🎯 NEW: Filter & Sort States
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
 
   // 🔧 Helper function to check if camp is expired
   function isCampExpired(camp: Camp): boolean {
@@ -227,29 +232,35 @@ export default function AllCampsContent() {
     });
 
     setFilteredCamps(result);
+    setCurrentPage(1); // Reset to first page when filters change
   }, [searchQuery, selectedCategory, selectedTags, sortBy, priceRange, allCamps]);
 
-  const urgentCamps = [...filteredCamps]
-    .filter(camp => camp.deadline)
-    .sort((a, b) => {
-      const dateA = new Date(a.deadline).getTime();
-      const dateB = new Date(b.deadline).getTime();
-      return dateA - dateB;
-    })
-    .slice(0, 6)
-    .map(campToCampData);
+  // const urgentCamps = [...filteredCamps]
+  //   .filter(camp => camp.deadline)
+  //   .sort((a, b) => {
+  //     const dateA = new Date(a.deadline).getTime();
+  //     const dateB = new Date(b.deadline).getTime();
+  //     return dateA - dateB;
+  //   })
+  //   .slice(0, 6)
+  //   .map(campToCampData);
 
-  const trendingCamps = [...filteredCamps]
-    .sort((a, b) => {
-      const viewsA = a.views || 0;
-      const viewsB = b.views || 0;
-      return viewsB - viewsA;
-    })
-    .slice(0, 6)
-    .map(campToCampData);
+  // const trendingCamps = [...filteredCamps]
+  //   .sort((a, b) => {
+  //     const viewsA = a.views || 0;
+  //     const viewsB = b.views || 0;
+  //     return viewsB - viewsA;
+  //   })
+  //   .slice(0, 6)
+  //   .map(campToCampData);
 
   const sortedAllCamps = filteredCamps.map(campToCampData);
-  const displayedCamps = showMore ? sortedAllCamps : sortedAllCamps.slice(0, 9);
+  
+  // Pagination Logic
+  const totalPages = Math.ceil(sortedAllCamps.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const displayedCamps = sortedAllCamps.slice(startIndex, endIndex);
 
   // 🎯 Clear All Filters
   const clearFilters = () => {
@@ -258,6 +269,7 @@ export default function AllCampsContent() {
     setSortBy('newest');
     setPriceRange([0, 10000]);
     setSearchQuery('');
+    setCurrentPage(1); // Reset page when clearing filters
   };
 
   const hasActiveFilters = 
@@ -269,7 +281,7 @@ export default function AllCampsContent() {
     searchQuery !== '';
 
   return (
-    <div className="max-w-[1536px] mx-auto px-6 py-12">
+    <div className="max-w-[1536px] mx-auto px-6 py-12 mb-30">
       <section className="mb-12">
         <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg p-6 border border-gray-200/50 dark:border-gray-700/50">
           
@@ -478,11 +490,43 @@ export default function AllCampsContent() {
         )}
       </div>
 
-      {/* Loading State */}
+      {/* Loading State - Skeleton */}
       {loading && (
-        <div className="flex justify-center items-center py-20">
-          <Spinner size="lg" color="warning" label="กำลังโหลดค่าย..." />
-        </div>
+        <section>
+          <div className="flex items-center gap-3 mb-8">
+            <FaTrophy className="text-3xl text-yellow-500" />
+            <div>
+              <h2 className="text-2xl font-black text-gray-800 dark:text-white">
+                ค่ายทั้งหมด
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400">
+                สำรวจค่ายที่น่าสนใจทั้งหมด
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-pulse">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700">
+                <div className="h-48 bg-gray-200 dark:bg-gray-700"></div>
+                <div className="p-5 space-y-3">
+                  <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-16"></div>
+                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-16"></div>
+                  </div>
+                  <div className="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-700">
+                    <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+                    <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-xl w-28"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* No Results */}
@@ -498,7 +542,7 @@ export default function AllCampsContent() {
       )}
 
       {/* Urgent Camps */}
-      {!loading && urgentCamps.length > 0 && (
+      {/* {!loading && urgentCamps.length > 0 && (
         <section className="mb-16">
           <div className="flex items-center gap-3 mb-8">
             <FaClock className="text-3xl text-red-500 animate-pulse" />
@@ -517,10 +561,10 @@ export default function AllCampsContent() {
             ))}
           </div>
         </section>
-      )}
+      )} */}
 
       {/* Trending Camps */}
-      {!loading && trendingCamps.length > 0 && (
+      {/* {!loading && trendingCamps.length > 0 && (
         <section className="mb-16">
           <div className="flex items-center gap-3 mb-8">
             <FaFire className="text-3xl text-orange-500" />
@@ -539,7 +583,7 @@ export default function AllCampsContent() {
             ))}
           </div>
         </section>
-      )}
+      )} */}
 
       {/* All Camps */}
       {!loading && displayedCamps.length > 0 && (
@@ -561,21 +605,12 @@ export default function AllCampsContent() {
             ))}
           </div>
 
-          {/* Show More Button */}
-          {sortedAllCamps.length > 9 && (
-            <div className="flex justify-center mt-12">
-              <Button
-                size="lg"
-                color="primary"
-                variant={showMore ? "bordered" : "solid"}
-                onPress={() => setShowMore(!showMore)}
-                endContent={<FaChevronDown className={`transition-transform ${showMore ? 'rotate-180' : ''}`} />}
-                className="px-8 font-bold"
-              >
-                {showMore ? 'แสดงน้อยลง' : `แสดงเพิ่มเติม (${sortedAllCamps.length - 9} ค่าย)`}
-              </Button>
-            </div>
-          )}
+          {/* Pagination Component */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
         </section>
       )}
     </div>

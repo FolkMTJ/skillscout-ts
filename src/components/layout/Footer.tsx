@@ -8,16 +8,7 @@ import { BsFillPeopleFill } from "react-icons/bs";
 
 export default function Footer() {
   return (
-    <footer className="w-full relative overflow-hidden">
-      {/* Decorative Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black dark:from-black dark:via-gray-900 dark:to-black">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl" />
-      </div>
-      
-      {/* Top Border Accent */}
-      <div className="w-full h-1 bg-gradient-to-r from-transparent via-orange-500 to-transparent" />
-      
+    <footer className="w-full relative overflow-hidden bg-[#2C2C2C]">
       <div className="relative">
         <FooterBody />
         <FooterBottom />

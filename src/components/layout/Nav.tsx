@@ -2,7 +2,7 @@
 
 import type { NavbarProps } from "@heroui/react";
 import Image from "next/image";
-import ToggleTheme from "./ToggleTheme";
+// import ToggleTheme from "./ToggleTheme";
 import {
     Navbar,
     NavbarBrand,
@@ -143,7 +143,7 @@ export default function NavBar(props: NavbarProps) {
                 </NavbarContent>
 
                 <NavbarContent justify="end">
-                    {mounted && <ToggleTheme />}
+                    {/* {mounted && <ToggleTheme />} */}
                     
                     <NavbarItem className="ml-2 flex! gap-2">
                         {status === 'loading' ? (

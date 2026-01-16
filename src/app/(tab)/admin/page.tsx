@@ -237,8 +237,67 @@ export default function AdminDashboard() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F2B33D]"></div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
+        <div className="max-w-7xl mx-auto">
+          {/* Header Skeleton */}
+          <div className="mb-8 animate-pulse">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+              <div className="h-10 bg-gray-200 rounded w-80"></div>
+            </div>
+            <div className="h-5 bg-gray-200 rounded w-64"></div>
+          </div>
+
+          {/* Stats Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8 animate-pulse">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
+                  <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                </div>
+                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tabs Skeleton */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm">
+            <div className="flex gap-6 mb-6 animate-pulse">
+              <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+              <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+              <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+            </div>
+
+            {/* Table Skeleton */}
+            <div className="space-y-4 animate-pulse">
+              {/* Search Bar */}
+              <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
+              
+              {/* Table Header */}
+              <div className="grid grid-cols-6 gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                ))}
+              </div>
+              
+              {/* Table Rows */}
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <div key={i} className="grid grid-cols-6 gap-4 py-4 border-b border-gray-100 dark:border-gray-700">
+                  <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-20"></div>
+                  <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-20"></div>
+                  <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  <div className="flex gap-2">
+                    <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-20"></div>
+                    <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-20"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

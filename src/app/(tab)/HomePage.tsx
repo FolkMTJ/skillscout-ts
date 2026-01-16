@@ -148,22 +148,33 @@ export default function HomePage() {
       {/* Hero Banner - SKILL SCOUT */}
       <HeroBanner />
 
-      {/* Loading State */}
-      {loading && (
-        <section className="max-w-[1536px] mx-auto px-6 py-16">
-          <div className="flex flex-col items-center justify-center">
-            <Spinner size="lg" color="warning" className="mb-4" />
-            <p className="text-gray-600 dark:text-gray-400 font-semibold">กำลังโหลดค่าย...</p>
-          </div>
-        </section>
-      )}
-
       {/* Urgent Registration Section */}
-      {!loading && urgentCamps.length > 0 && (
-        <section className="max-w-[1536px] mx-auto px-6 py-8">
+      <section className="max-w-[1536px] mx-auto px-6 py-8">
+        {loading ? (
+          // Skeleton for Carousel
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded-lg w-64 mb-6"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm">
+                  <div className="h-48 bg-gray-200"></div>
+                  <div className="p-4 space-y-3">
+                    <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                    <div className="flex justify-between items-center pt-2">
+                      <div className="h-6 bg-gray-200 rounded w-20"></div>
+                      <div className="h-8 bg-gray-200 rounded-full w-24"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : urgentCamps.length > 0 ? (
           <CampCarousel camps={urgentCamps} title="กำลังจะปิดรับเร็วๆนี้!" />
-        </section>
-      )}
+        ) : null}
+      </section>
 
       {/* Hero Section */}
       <section className="py-6">
@@ -171,29 +182,56 @@ export default function HomePage() {
       </section>
 
       {/* Trending Section - 2 การ์ดต่อแถว */}
-      {!loading && trendingCamps.length > 0 && (
-        <section className="bg-white dark:from-[#1a1a1a] dark:to-[#0a0a0a] py-15 border-y border-[#F2B33D]/10 dark:border-amber-500/10">
-          <div className="max-w-[1536px] mx-auto px-6">
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#F2B33D]/10 backdrop-blur-md border border-[#F2B33D]/30 dark:bg-amber-500/10 dark:border-amber-500/20 mb-2 hover:scale-105 transition-transform">
-                <FaStar className="text-[#F2B33D] dark:text-amber-400" size={12} />
-                <span className="font-bold text-[#2C2C2C] dark:text-white text-xs">ยอดนิยม</span>
-              </div>
-              <h2 className="text-2xl md:text-3xl font-black text-[#2C2C2C] dark:text-white mb-1.5">
-                ค่ายที่กำลัง<span className="text-[#F2B33D] dark:text-amber-400">มาแรง!</span>
-              </h2>
-              <p className="text-zinc-600 dark:text-zinc-400 text-sm max-w-xl mx-auto">
-                ค่ายยอดนิยมที่ได้รับความสนใจสูงสุดในเดือนนี้
-              </p>
+      <section className="bg-white dark:from-[#1a1a1a] dark:to-[#0a0a0a] py-15 border-y border-[#F2B33D]/10 dark:border-amber-500/10">
+        <div className="max-w-[1536px] mx-auto px-6">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#F2B33D]/10 backdrop-blur-md border border-[#F2B33D]/30 dark:bg-amber-500/10 dark:border-amber-500/20 mb-2 hover:scale-105 transition-transform">
+              <FaStar className="text-[#F2B33D] dark:text-amber-400" size={12} />
+              <span className="font-bold text-[#2C2C2C] dark:text-white text-xs">ยอดนิยม</span>
             </div>
+            <h2 className="text-2xl md:text-3xl font-black text-[#2C2C2C] dark:text-white mb-1.5">
+              ค่ายที่กำลัง<span className="text-[#F2B33D] dark:text-amber-400">มาแรง!</span>
+            </h2>
+            <p className="text-zinc-600 dark:text-zinc-400 text-sm max-w-xl mx-auto">
+              ค่ายยอดนิยมที่ได้รับความสนใจสูงสุดในเดือนนี้
+            </p>
+          </div>
+          
+          {loading ? (
+            // Skeleton for Trending Camps
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-pulse">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+                  <div className="flex flex-col md:flex-row">
+                    <div className="md:w-2/5 h-48 md:h-auto bg-gray-200"></div>
+                    <div className="p-6 flex-1 space-y-4">
+                      <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                      <div className="space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-full"></div>
+                        <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="h-6 bg-gray-200 rounded-full w-16"></div>
+                        <div className="h-6 bg-gray-200 rounded-full w-16"></div>
+                      </div>
+                      <div className="flex justify-between items-center pt-4">
+                        <div className="h-8 bg-gray-200 rounded w-24"></div>
+                        <div className="h-10 bg-gray-200 rounded-full w-32"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : trendingCamps.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {trendingCamps.map((camp) => (
                 <CampCard key={camp.id} camp={camp} variant="detailed" />
               ))}
             </div>
-          </div>
-        </section>
-      )}
+          ) : null}
+        </div>
+      </section>
 
       {/* Empty State */}
       {!loading && urgentCamps.length === 0 && trendingCamps.length === 0 && (

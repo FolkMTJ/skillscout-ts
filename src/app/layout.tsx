@@ -24,7 +24,7 @@ export default function RootLayout({
     <html lang="th" suppressHydrationWarning>
       <body className={`${notoSansTH.variable} antialiased`}>
         <Providers>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} forcedTheme="light">
             <UIProviders>
               {children}
             </UIProviders>

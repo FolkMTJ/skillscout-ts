@@ -7,6 +7,7 @@ import { FiCalendar, FiMapPin, FiCheckCircle, FiClock, FiStar } from 'react-icon
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import HeroBanner from '@/components/HeroBanner';
 
 interface CampDetails {
   name?: string;
@@ -158,8 +159,34 @@ export default function MyCampsPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen bg-white">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          {/* Tabs Skeleton */}
+          <div className="flex gap-4 mb-6 animate-pulse">
+            <div className="h-12 bg-gray-200 rounded-xl w-48"></div>
+            <div className="h-12 bg-gray-200 rounded-xl w-48"></div>
+          </div>
+
+          {/* Cards Grid Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="bg-white rounded-2xl overflow-hidden border border-gray-200">
+                <div className="h-48 bg-gray-200"></div>
+                <div className="p-4 space-y-3">
+                  <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-full"></div>
+                    <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                  </div>
+                  <div className="space-y-2 pt-2">
+                    <div className="h-10 bg-gray-200 rounded-xl"></div>
+                    <div className="h-10 bg-gray-200 rounded-xl"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -178,24 +205,22 @@ export default function MyCampsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">
-            ค่ายของฉัน
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            จัดการและยืนยันการเข้าร่วมค่าย
-          </p>
-        </div>
+    <div className="min-h-screen bg-white">
+      {/* Hero Banner */}
+      <HeroBanner
+        badge="My Journey"
+        title="MY"
+        titleHighlight="CAMPS"
+        subtitle="ค่ายทั้งหมดของคุณ"
+        description="จัดการและยืนยันการเข้าร่วมค่าย"
+        showButtons={false}
+      />
 
+      <div className="container mx-auto px-6 h-full mt-8">
         <Tabs
           selectedKey={activeTab}
           onSelectionChange={(key) => setActiveTab(key as string)}
-          className="mb-6"
         >
-          
-
           <Tab
             key="upcoming"
             title={
@@ -275,7 +300,7 @@ export default function MyCampsPage() {
               </div>
             }
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-2">
               {attendedCamps.length === 0 ? (
                 <div className="col-span-full text-center py-12">
                   <p className="text-gray-500">ยังไม่มีค่ายที่เข้าร่วม</p>

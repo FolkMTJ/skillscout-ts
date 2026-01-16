@@ -330,10 +330,84 @@ export default function OrganizerDashboard() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">กำลังโหลด...</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
+        <div className="max-w-7xl mx-auto">
+          {/* Header Skeleton */}
+          <div className="mb-8 animate-pulse">
+            <div className="h-10 bg-gray-200 rounded w-96 mb-2"></div>
+            <div className="h-5 bg-gray-200 rounded w-64"></div>
+          </div>
+
+          {/* Stats Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8 animate-pulse">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="bg-white rounded-2xl p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="h-4 bg-gray-200 rounded w-20"></div>
+                  <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                </div>
+                <div className="h-8 bg-gray-200 rounded w-16"></div>
+              </div>
+            ))}
+          </div>
+
+          {/* Content Grid Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Sidebar Skeleton */}
+            <div className="lg:col-span-1 space-y-6 animate-pulse">
+              {/* Quick Actions */}
+              <div className="bg-white rounded-2xl p-6 shadow-sm">
+                <div className="h-6 bg-gray-200 rounded w-32 mb-4"></div>
+                <div className="space-y-3">
+                  <div className="h-12 bg-gray-200 rounded-xl"></div>
+                  <div className="h-12 bg-gray-200 rounded-xl"></div>
+                  <div className="h-12 bg-gray-200 rounded-xl"></div>
+                </div>
+              </div>
+
+              {/* Pending Camps */}
+              <div className="bg-white rounded-2xl p-6 shadow-sm">
+                <div className="h-6 bg-gray-200 rounded w-40 mb-4"></div>
+                <div className="space-y-3">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                      <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                      <div className="h-6 bg-gray-200 rounded-full w-24"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Main Content Skeleton */}
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="h-6 bg-gray-200 rounded w-32"></div>
+                  <div className="h-5 bg-gray-200 rounded w-16"></div>
+                </div>
+
+                {/* Camp Cards Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="bg-gray-50 rounded-2xl overflow-hidden border border-gray-200">
+                      <div className="h-48 bg-gray-200"></div>
+                      <div className="p-4 space-y-3">
+                        <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-4 bg-gray-200 rounded w-full"></div>
+                        <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                        <div className="flex gap-2 pt-2">
+                          <div className="h-8 bg-gray-200 rounded-lg flex-1"></div>
+                          <div className="h-8 bg-gray-200 rounded-lg flex-1"></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
