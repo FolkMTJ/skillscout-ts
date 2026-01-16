@@ -365,10 +365,8 @@ export default function CareerDetailPage() {
                       </div>
                    </CardBody>
                 </Card>
-
              </div>
           </div>
-
         </div>
       </div>
     </div>

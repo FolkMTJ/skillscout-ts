@@ -82,6 +82,13 @@ interface CampData {
   enrolled?: number;
 }
 
+interface StatCardProps {
+  title: string;
+  value: number | string;
+  icon: React.ElementType;
+  colorClass: string;
+}
+
 export default function DiscoveryPathPage() {
   const { status } = useSession();
   const router = useRouter();
@@ -174,9 +181,40 @@ export default function DiscoveryPathPage() {
     }
   }, [status, router, fetchDiscoveryData]);
 
+  const ModernStatCard = ({ title, value, icon: Icon, colorClass }: StatCardProps) => {
+    // Map สีเพื่อให้ icon ชัดเจน
+    const iconColorMap: Record<string, string> = {
+      'bg-[#F2B33D]': 'text-[#F2B33D]',
+      'bg-green-500': 'text-green-600',
+      'bg-purple-500': 'text-purple-600',
+      'bg-orange-500': 'text-orange-600',
+    };
+    
+    const iconColor = iconColorMap[colorClass] || colorClass.replace('bg-', 'text-');
+    
+    return (
+      <Card className="border-none shadow-sm hover:shadow-md transition-all duration-300 bg-white">
+        <div className="p-5 flex items-start justify-between">
+          <div>
+            <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
+            <h3 className="text-3xl font-bold text-gray-800">{value}</h3>
+          </div>
+          <div className="p-3 rounded-xl">
+            <Icon className={`w-10 h-10 ${iconColor}`} />
+          </div>
+        </div>
+        <div className={`h-1 w-full bg-opacity-20 ${colorClass}`}>
+          <div className={`h-full ${colorClass} w-[70%]`}></div>
+        </div>
+      </Card>
+    );
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-[#F8F9FA]">
+        <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-orange-50 to-transparent -z-10" />
+        
         {/* Hero Banner - แสดงจริง */}
         <HeroBanner
           badge="Find your Path"
@@ -187,102 +225,25 @@ export default function DiscoveryPathPage() {
           showButtons={false}
         />
 
-        <div className="container mx-auto px-4 py-12">
-          <div className="max-w-8xl mx-auto space-y-8">
-            {/* Stats Overview Skeleton */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="animate-pulse space-y-8">
+            {/* Stats Grid Skeleton */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="bg-white border-2 border-gray-200 rounded-2xl p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 space-y-3">
-                      <div className="h-4 bg-gray-200 rounded w-24"></div>
-                      <div className="h-8 bg-gray-200 rounded w-16"></div>
-                    </div>
-                    <div className="w-14 h-14 bg-gray-200 rounded-xl"></div>
+                <div key={i} className="bg-white rounded-2xl p-6 shadow-sm">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="h-4 bg-gray-200 rounded w-20"></div>
+                    <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
                   </div>
+                  <div className="h-8 bg-gray-200 rounded w-16"></div>
                 </div>
               ))}
             </div>
 
-            {/* RIASEC Profile Skeleton */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 animate-pulse">
-              <div className="space-y-4 mb-6">
-                <div className="h-6 bg-gray-200 rounded w-32"></div>
-                <div className="h-8 bg-gray-200 rounded w-80"></div>
-                <div className="h-4 bg-gray-200 rounded w-96"></div>
-              </div>
+            {/* Content Skeleton */}
+            <div className="bg-white rounded-2xl p-8 shadow-sm">
+              <div className="h-6 bg-gray-200 rounded w-64 mb-6"></div>
               <div className="h-64 bg-gray-200 rounded-xl"></div>
-            </div>
-
-            {/* Skill Profile Skeleton */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 animate-pulse">
-              <div className="space-y-4 mb-6">
-                <div className="h-6 bg-gray-200 rounded w-24"></div>
-                <div className="h-8 bg-gray-200 rounded w-72"></div>
-                <div className="h-4 bg-gray-200 rounded w-full max-w-2xl"></div>
-              </div>
-              <div className="h-80 bg-gray-200 rounded-xl"></div>
-            </div>
-
-            {/* Career Recommendations Skeleton */}
-            <div className="space-y-6 animate-pulse">
-              <div className="space-y-3">
-                <div className="h-6 bg-gray-200 rounded w-32"></div>
-                <div className="h-8 bg-gray-200 rounded w-64"></div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-white border border-gray-200 rounded-2xl p-6">
-                    <div className="flex items-start gap-4 mb-4">
-                      <div className="w-12 h-12 bg-gray-200 rounded-xl"></div>
-                      <div className="flex-1 space-y-2">
-                        <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                      </div>
-                    </div>
-                    <div className="space-y-2 mb-4">
-                      <div className="h-4 bg-gray-200 rounded w-full"></div>
-                      <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                    </div>
-                    <div className="flex gap-2 mb-4">
-                      <div className="h-6 bg-gray-200 rounded-full w-20"></div>
-                      <div className="h-6 bg-gray-200 rounded-full w-20"></div>
-                      <div className="h-6 bg-gray-200 rounded-full w-20"></div>
-                    </div>
-                    <div className="h-10 bg-gray-200 rounded-xl w-full"></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Recommended Camps Skeleton */}
-            <div className="space-y-6 animate-pulse">
-              <div className="space-y-3">
-                <div className="h-6 bg-gray-200 rounded w-24"></div>
-                <div className="h-8 bg-gray-200 rounded w-80"></div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[1, 2].map((i) => (
-                  <div key={i} className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-                    <div className="h-48 bg-gray-200"></div>
-                    <div className="p-6 space-y-4">
-                      <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-                      <div className="space-y-2">
-                        <div className="h-4 bg-gray-200 rounded w-full"></div>
-                        <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                      </div>
-                      <div className="flex gap-2">
-                        <div className="h-6 bg-gray-200 rounded-full w-24"></div>
-                        <div className="h-6 bg-gray-200 rounded-full w-24"></div>
-                      </div>
-                      <div className="flex justify-between items-center pt-4">
-                        <div className="h-8 bg-gray-200 rounded w-24"></div>
-                        <div className="h-10 bg-gray-200 rounded-xl w-28"></div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         </div>
@@ -292,28 +253,30 @@ export default function DiscoveryPathPage() {
 
   if (!data || data.campsAttended === 0) {
     return (
-      <div className="min-h-screen bg-white">
-        <div className="container mx-auto px-4 py-16">
+      <div className="min-h-screen bg-[#F8F9FA]">
+        <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-orange-50 to-transparent -z-10" />
+        
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="max-w-2xl mx-auto">
-            <Card>
+            <Card className="border-none shadow-lg">
               <CardBody className="text-center p-12">
                 <div className="mb-6">
-                  <div className="w-24 h-24 rounded-full bg-warning-100 flex items-center justify-center mx-auto mb-4">
-                    <FiTarget className="w-12 h-12 text-warning-600" />
+                  <div className="w-24 h-24 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-4">
+                    <FiTarget className="w-12 h-12 text-[#F2B33D]" />
                   </div>
                   <h1 className="text-3xl font-bold mb-3">ยังไม่มีข้อมูลเพียงพอ</h1>
                   <p className="text-lg text-gray-600 mb-6">
                     คุณต้องเข้าร่วมค่ายที่{' '}
-                    <Chip color="success" size="sm" variant="flat">
+                    <Chip className="bg-green-100 text-green-600" size="sm" variant="flat">
                       Check-in แล้ว
                     </Chip>{' '}
                     อย่างน้อย 1 ค่าย
                   </p>
                 </div>
 
-                <Card className="bg-warning-50 mb-6">
+                <Card className="bg-orange-50 mb-6 border-none">
                   <CardBody>
-                    <p className="font-semibold text-warning-900 mb-3">💡 ขั้นตอนการเข้าร่วมค่าย:</p>
+                    <p className="font-semibold text-[#2C2C2C] mb-3">💡 ขั้นตอนการเข้าร่วมค่าย:</p>
                     <ol className="list-decimal list-inside space-y-2 text-left text-gray-700">
                       <li>สมัครค่ายและชำระเงิน</li>
                       <li>อัปโหลดสลิปโอนเงิน</li>
@@ -322,14 +285,14 @@ export default function DiscoveryPathPage() {
                     </ol>
                     <Divider className="my-3" />
                     <p className="text-sm text-gray-600">
-                      ตรวจสอบสถานะได้ที่เมนู <strong> ค่ายของฉัน </strong>
+                      ตรวจสอบสถานะได้ที่เมนู <strong>ค่ายของฉัน</strong>
                     </p>
                   </CardBody>
                 </Card>
 
                 <Button
                   size="lg"
-                  color="warning"
+                  className="bg-[#F2B33D] text-white font-bold shadow-lg"
                   endContent={<FiArrowRight />}
                   onPress={() => router.push('/allcamps')}
                 >
@@ -344,7 +307,10 @@ export default function DiscoveryPathPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#F8F9FA] pb-12">
+      {/* Decorative Background Blob */}
+      <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-orange-50 to-transparent -z-10" />
+
       {/* Hero Banner */}
       <HeroBanner
         badge="Find your Path"
@@ -355,141 +321,106 @@ export default function DiscoveryPathPage() {
         showButtons={false}
       />
 
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-8xl mx-auto space-y-8">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-8">
 
-          {/* Stats Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="border-2 border-blue-500 bg-white">
-              <CardBody className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-blue-600 mb-2">ค่ายที่เข้าร่วม</div>
-                    <div className="text-3xl font-bold text-blue-700">{data.campsAttended}</div>
-                  </div>
-                  <div className="bg-blue-50 p-4 rounded-xl">
-                    <FiBook className="text-2xl text-blue-500" />
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
+        {/* Stats Grid - Modern Style */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <ModernStatCard
+            title="ค่ายที่เข้าร่วม"
+            value={data.campsAttended}
+            icon={FiBook}
+            colorClass="bg-[#F2B33D]"
+          />
+          <ModernStatCard
+            title="ทักษะที่ได้"
+            value={data.skillProfile.length}
+            icon={FiTarget}
+            colorClass="bg-green-500"
+          />
+          <ModernStatCard
+            title="อาชีพที่แนะนำ"
+            value={data.recommendedCareers.length}
+            icon={FiTrendingUp}
+            colorClass="bg-purple-500"
+          />
+          <ModernStatCard
+            title="Match สูงสุด"
+            value={`${data.recommendedCareers[0]?.matchScore || 0}%`}
+            icon={FiAward}
+            colorClass="bg-orange-500"
+          />
+        </div>
 
-            <Card className="border-2 border-green-500 bg-white">
-              <CardBody className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-green-600 mb-2">ทักษะที่ได้</div>
-                    <div className="text-3xl font-bold text-green-700">{data.skillProfile.length}</div>
-                  </div>
-                  <div className="bg-green-50 p-4 rounded-xl">
-                    <FiTarget className="text-2xl text-green-500" />
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
+        {/* RIASEC Profile */}
+        <Card className="mb-8 shadow-sm border-none">
+          <CardHeader className="flex flex-col items-start gap-2 p-8 pb-4">
+            <Chip className="bg-purple-100 text-purple-600" variant="flat" size="sm">
+              บุคลิกภาพ
+            </Chip>
+            <h2 className="text-2xl font-bold text-gray-800">RIASEC Personality Profile</h2>
+            <p className="text-gray-600 text-sm">
+              บุคลิกภาพและความชอบในการทำงานของคุณ (วิเคราะห์จากค่ายที่เข้าร่วม)
+            </p>
+          </CardHeader>
+          <Divider />
+          <CardBody className="p-8 pt-6">
+            <RIASECProfile scores={data.riasecProfile} />
+          </CardBody>
+        </Card>
 
-            <Card className="border-2 border-purple-500 bg-white">
-              <CardBody className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-purple-600 mb-2">อาชีพที่แนะนำ</div>
-                    <div className="text-3xl font-bold text-purple-700">{data.recommendedCareers.length}</div>
-                  </div>
-                  <div className="bg-purple-50 p-4 rounded-xl">
-                    <FiTrendingUp className="text-2xl text-purple-500" />
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
+        {/* Skill Profile */}
+        <Card className="mb-8 shadow-sm border-none">
+          <CardHeader className="flex flex-col items-start gap-2 p-8 pb-4">
+            <Chip className="bg-orange-100 text-[#F2B33D]" variant="flat" size="sm">
+              ทักษะ
+            </Chip>
+            <h2 className="text-2xl font-bold text-gray-800">สัดส่วนประสบการณ์ของคุณ</h2>
+            <p className="text-gray-600 text-sm">
+              แสดงสัดส่วนทักษะจากค่ายทั้งหมดที่เข้าร่วม (ไม่ใช่การวัดความเก่งจริง)
+            </p>
+          </CardHeader>
+          <Divider />
+          <CardBody className="p-8 pt-6">
+            <SkillPieChart skills={data.skillProfile} />
+          </CardBody>
+        </Card>
 
-            <Card className="border-2 border-orange-500 bg-white">
-              <CardBody className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-orange-600 mb-2">Match สูงสุด</div>
-                    <div className="text-3xl font-bold text-orange-700">
-                      {data.recommendedCareers[0]?.matchScore || 0}%
-                    </div>
-                  </div>
-                  <div className="bg-orange-50 p-4 rounded-xl">
-                    <FiAward className="text-2xl text-orange-500" />
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
+        {/* Career Recommendations */}
+        <div className="mb-8">
+          <div className="mb-6">
+            <Chip className="bg-green-100 text-green-600 mb-3" variant="flat" size="sm">
+              แนะนำอาชีพ
+            </Chip>
+            <h2 className="text-2xl font-bold text-gray-800">อาชีพที่เหมาะกับคุณ</h2>
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {data.recommendedCareers.map((career, index) => (
+              <CareerCard
+                key={career.id}
+                career={career}
+                rank={index + 1}
+              />
+            ))}
+          </div>
+        </div>
 
-          {/* RIASEC Profile */}
-          <Card>
-            <CardHeader className="flex flex-col items-start gap-2 pb-4">
-              <Chip color="secondary" variant="flat" size="sm">
-                บุคลิกภาพ
+        {/* Recommended Camps */}
+        {recommendedCampsData.length > 0 && (
+          <div className="mb-8">
+            <div className="mb-6">
+              <Chip className="bg-orange-100 text-[#F2B33D] mb-3" variant="flat" size="sm">
+                ค่ายแนะนำ
               </Chip>
-              <h2 className="text-2xl font-bold">RIASEC Personality Profile</h2>
-              <p className="text-gray-600 text-sm">
-                บุคลิกภาพและความชอบในการทำงานของคุณ (วิเคราะห์จากค่ายที่เข้าร่วม)
-              </p>
-            </CardHeader>
-            <Divider />
-            <CardBody className="pt-6">
-              <RIASECProfile scores={data.riasecProfile} />
-            </CardBody>
-          </Card>
-
-          {/* Skill Profile */}
-          <Card>
-            <CardHeader className="flex flex-col items-start gap-2 pb-4">
-              <Chip color="warning" variant="flat" size="sm">
-                ทักษะ
-              </Chip>
-              <h2 className="text-2xl font-bold">สัดส่วนประสบการณ์ของคุณ</h2>
-              <p className="text-gray-600 text-sm">
-                แสดงสัดส่วนทักษะจากค่ายทั้งหมดที่เข้าร่วม (ไม่ใช่การวัดความเก่งจริง)
-              </p>
-            </CardHeader>
-            <Divider />
-            <CardBody className="pt-6">
-              <SkillPieChart skills={data.skillProfile} />
-            </CardBody>
-          </Card>
-
-          {/* Career Recommendations */}
-          <div className="space-y-6">
-            <div>
-              <Chip color="success" variant="flat" size="sm" className="mb-3">
-                แนะนำอาชีพ
-              </Chip>
-              <h2 className="text-2xl font-bold">อาชีพที่เหมาะกับคุณ</h2>
+              <h2 className="text-2xl font-bold text-gray-800">ค่ายที่แนะนำเพื่อพัฒนาตัวเอง</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {data.recommendedCareers.map((career, index) => (
-                <CareerCard
-                  key={career.id}
-                  career={career}
-                  rank={index + 1}
-                />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {recommendedCampsData.map((camp) => (
+                <CampCard key={camp.id} camp={camp} variant="compact" />
               ))}
             </div>
           </div>
+        )}
 
-          {/* Recommended Camps */}
-          {recommendedCampsData.length > 0 && (
-            <div className="space-y-6">
-              <div>
-                <Chip color="warning" variant="flat" size="sm" className="mb-3">
-                  ค่ายแนะนำ
-                </Chip>
-                <h2 className="text-2xl font-bold">ค่ายที่แนะนำเพื่อพัฒนาตัวเอง</h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {recommendedCampsData.map((camp) => (
-                  <CampCard key={camp.id} camp={camp} variant="compact" />
-                ))}
-              </div>
-            </div>
-          )}
-
-        </div>
       </div>
     </div>
   );
