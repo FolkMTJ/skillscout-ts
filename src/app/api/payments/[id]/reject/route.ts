@@ -37,7 +37,7 @@ export async function POST(
     }
 
     // ลบ Payment
-    await PaymentModel.delete(id);
+    await PaymentModel.deleteById(id);
 
     // ลบ Registration ด้วย
     await RegistrationModel.delete(payment.registrationId);

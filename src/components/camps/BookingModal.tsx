@@ -13,9 +13,8 @@ import {
   Divider,
   Image,
   Progress,
-  Card,
 } from '@heroui/react';
-import { FiCheckCircle, FiTag, FiCreditCard, FiUpload, FiImage, FiClock, FiInfo, FiSmartphone, FiGift, FiX, FiCheck } from 'react-icons/fi';
+import { FiCheckCircle, FiTag, FiUpload, FiImage, FiSmartphone, FiX, FiCheck } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 interface CampData {
@@ -50,7 +49,7 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
   const [discount, setDiscount] = useState(0);
-  const [promoMessage, setPromoMessage] = useState('');
+  const [, setPromoMessage] = useState('');
   const [isValidatingPromo, setIsValidatingPromo] = useState(false);
 
   const [qrCodeUrl, setQrCodeUrl] = useState('');
@@ -110,7 +109,7 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
       toast.error('กรุณากรอกรหัสโปรโมชั่น');
       return;
     }
-    
+
     setIsValidatingPromo(true);
     setPromoMessage('');
 
@@ -118,15 +117,15 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
       const response = await fetch('/api/payment/validate-promo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          code: promoCode, 
-          amount: basePrice, 
-          campId: camp._id 
+        body: JSON.stringify({
+          code: promoCode,
+          amount: basePrice,
+          campId: camp._id
         }),
       });
-      
+
       const result = await response.json();
-      
+
       if (result.valid) {
         setDiscount(result.discount);
         setPromoApplied(true);
@@ -157,12 +156,12 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
 
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (isFree) {
       await handleFreeRegistration();
       return;
     }
-    
+
     setStep(2);
     await generateQRCode();
   };
@@ -170,7 +169,7 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
   const handleFreeRegistration = async () => {
     setIsSubmitting(true);
     setError('');
-    
+
     try {
       const regResponse = await fetch('/api/registrations', {
         method: 'POST',
@@ -189,19 +188,19 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
       }
 
       const registration = await regResponse.json();
-      
+
       const registrationId = registration.registration._id;
-      await fetch(`/api/registrations/${registrationId}`, { 
+      await fetch(`/api/registrations/${registrationId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           status: 'approved',
           reviewedBy: 'system',
           reviewedAt: new Date().toISOString(),
           notes: 'อนุมัติอัตโนมัติสำหรับค่ายฟรี'
         })
       });
-      
+
       toast.success('สมัครสำเร็จ!');
       setStep(4);
       onRegistrationSuccess?.();
@@ -221,14 +220,14 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
       const response = await fetch('/api/payment/generate-qr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          amount: finalPrice, 
-          phoneNumber: '0813259525' 
+        body: JSON.stringify({
+          amount: finalPrice,
+          phoneNumber: '0813259525'
         }),
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
         setQrCodeUrl(data.qrCode);
       } else {
@@ -270,7 +269,7 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
 
     setIsSubmitting(true);
     setError('');
-    
+
     try {
       const regResponse = await fetch('/api/registrations', {
         method: 'POST',
@@ -307,11 +306,11 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
           promoCode: promoApplied ? promoCode : undefined,
         }),
       });
-      
+
       if (!paymentResponse.ok) {
         throw new Error('ไม่สามารถสร้างรายการชำระเงินได้');
       }
-      
+
       const payment = await paymentResponse.json();
       setPaymentId(payment.payment._id);
       setStep(3);
@@ -329,7 +328,7 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
       toast.error('กรุณาเลือกไฟล์สลิป');
       return;
     }
-    
+
     setIsUploading(true);
     setError('');
     setUploadProgress(0);
@@ -354,19 +353,19 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
       if (!uploadResponse.ok) {
         throw new Error('ไม่สามารถอัปโหลดสลิปได้');
       }
-      
+
       const uploadData = await uploadResponse.json();
       const slipUrl = uploadData.secure_url;
 
       const updateResponse = await fetch(`/api/payment/${paymentId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          slipUrl: slipUrl, 
-          status: 'pending' 
+        body: JSON.stringify({
+          slipUrl: slipUrl,
+          status: 'pending'
         }),
       });
-      
+
       if (!updateResponse.ok) {
         throw new Error('ไม่สามารถบันทึกข้อมูลได้');
       }
@@ -412,478 +411,303 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      size="2xl"
+      size="lg"
       scrollBehavior="inside"
       isDismissable={!isSubmitting && !isUploading}
+      backdrop="blur"
       classNames={{
-        base: "bg-white dark:bg-gray-900",
-        header: "border-b-3 border-orange-400",
-        body: "py-6",
-        footer: "border-t-3 border-orange-400",
+        base: "bg-white dark:bg-gray-900 rounded-3xl shadow-2xl",
+        header: "border-b border-gray-100 dark:border-gray-800 p-6",
+        body: "p-6",
+        footer: "border-t border-gray-100 dark:border-gray-800 p-6 bg-gray-50/50 dark:bg-gray-900",
+        closeButton: "hover:bg-gray-100 active:bg-gray-200 text-gray-500",
       }}
     >
       <ModalContent>
-        {/* Step 4: Success */}
-        {step === 4 && (
-          <div className="p-12 text-center">
-            <div className="flex justify-center mb-6">
-              <div className="w-24 h-24 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <FiCheckCircle className="text-green-500 text-6xl" />
-              </div>
+        {/* --- Step 4: Success State (Full Screen Override) --- */}
+        {step === 4 ? (
+          <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-8 animate-appearance-in">
+            <div className="w-24 h-24 rounded-full bg-[#F2B33D]/10 flex items-center justify-center mb-6">
+              <FiCheckCircle className="text-5xl text-[#F2B33D]" />
             </div>
-            <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-3">
-              {isFree ? '🎉 สมัครสำเร็จ!' : '✅ อัปโหลดสลิปสำเร็จ!'}
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-2">
-              {isFree 
-                ? 'คุณได้ลงทะเบียนเข้าร่วมค่ายเรียบร้อยแล้ว' 
-                : 'เรากำลังตรวจสอบการชำระเงินของคุณ'}
-            </p>
-            <p className="text-sm text-gray-500 mb-6">
-              คุณจะได้รับอีเมลยืนยัน{isFree ? 'ในไม่ช้า' : 'ภายใน 24 ชั่วโมง'}
-            </p>
-            
-            {!isFree && (
-              <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border-2 border-amber-200 dark:border-amber-800">
-                <div className="flex items-start gap-3 text-left">
-                  <FiClock className="text-amber-600 mt-1 flex-shrink-0" size={20} />
-                  <div className="text-sm text-amber-800 dark:text-amber-200">
-                    <p className="font-bold mb-2">🔒 ระบบ Escrow Protection</p>
-                    <p className="text-xs leading-relaxed">
-                      เงินจะถูกโอนให้ผู้จัดค่ายหลังจาก:<br/>
-                      • คุณยืนยันการเข้าร่วมค่ายเสร็จสิ้น หรือ<br/>
-                      • 15 วันนับจากวันจบค่าย (อัตโนมัติ)
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
 
-        {/* Step 3: Upload Slip */}
-        {step === 3 && (
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              {isFree ? 'ลงทะเบียนสำเร็จ!' : 'อัปโหลดสลิปเรียบร้อย'}
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 max-w-xs mx-auto mb-8">
+              {isFree
+                ? 'ขอบคุณที่เข้าร่วมกิจกรรม เตรียมตัวให้พร้อมแล้วเจอกัน!'
+                : 'ระบบได้รับข้อมูลแล้ว กำลังตรวจสอบความถูกต้อง'}
+            </p>
+
+            <Button
+              fullWidth
+              className="max-w-xs font-bold bg-[#F2B33D] text-white shadow-lg shadow-[#F2B33D]/20"
+              size="lg"
+              onPress={handleClose}
+            >
+              ตกลง, ปิดหน้าต่าง
+            </Button>
+          </div>
+        ) : (
           <>
-            <ModalHeader>
-              <div className="w-full">
-                <h2 className="text-2xl font-black text-gray-900 dark:text-white">
-                  📤 อัปโหลดสลิปการโอนเงิน
-                </h2>
-                <p className="text-sm font-normal text-gray-600 dark:text-gray-400 mt-1">
-                  แนบสลิปเพื่อยืนยันการชำระเงิน ฿{finalPrice.toLocaleString()}
-                </p>
-              </div>
+            {/* --- Header & Stepper --- */}
+            <ModalHeader className="flex flex-col gap-2 items-center justify-center">
+              {!isFree && (
+                <div className="flex gap-2 mb-1">
+                  {[1, 2, 3].map((s) => (
+                    <div
+                      key={s}
+                      className={`h-2 rounded-full transition-all duration-300 ${step >= s ? "w-8 bg-[#F2B33D]" : "w-2 bg-gray-200 dark:bg-gray-700"
+                        }`}
+                    />
+                  ))}
+                </div>
+              )}
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                {step === 1 && "กรอกข้อมูลผู้สมัคร"}
+                {step === 2 && "ชำระเงิน"}
+                {step === 3 && "ยืนยันการโอน"}
+              </h2>
             </ModalHeader>
+
             <ModalBody>
-              <div className="space-y-6">
-                {error && (
-                  <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-500 rounded-xl p-3">
-                    <p className="text-red-600 dark:text-red-400 text-sm font-semibold">{error}</p>
-                  </div>
-                )}
-                
-                <div className="border-3 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl p-8 text-center hover:border-orange-400 hover:bg-orange-50/50 dark:hover:bg-orange-900/10 transition-all">
-                  {slipPreview ? (
-                    <div className="space-y-4">
-                      <div className="relative inline-block">
-                        <Image 
-                          src={slipPreview} 
-                          alt="Slip Preview" 
-                          className="mx-auto max-h-80 rounded-xl border-3 border-orange-300" 
-                        />
+              {/* --- Step 1: Form --- */}
+              {step === 1 && (
+                <form id="regis-form" onSubmit={handleSubmitForm} className="space-y-6">
+                  {/* Camp Info (Small Card) */}
+                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
+                    {camp.image ? (
+                      <Image src={camp.image} alt="camp" className="w-14 h-14 rounded-xl object-cover" />
+                    ) : (
+                      <div className="w-14 h-14 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                        <FiTag className="text-[#F2B33D]" />
                       </div>
-                      <Button 
-                        color="warning" 
-                        variant="flat"
-                        onPress={() => { 
-                          setSlipFile(null); 
-                          setSlipPreview(''); 
-                        }}
-                        startContent={<FiX />}
-                      >
-                        เปลี่ยนไฟล์
-                      </Button>
+                    )}
+                    <div>
+                      <h3 className="font-bold text-sm text-gray-900 dark:text-white line-clamp-1">{camp.name}</h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{camp.date} • {camp.location}</p>
                     </div>
-                  ) : (
-                    <label className="cursor-pointer block">
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={handleFileChange} 
-                        className="hidden" 
+                  </div>
+
+                  {/* Inputs */}
+                  <div className="space-y-4">
+                    <Input
+                      label="ชื่อ-นามสกุล"
+                      placeholder="กรอกชื่อจริง"
+                      value={formData.name}
+                      onValueChange={(v) => setFormData({ ...formData, name: v })}
+                      required
+                      variant="bordered"
+                      labelPlacement="outside"
+                      classNames={{ inputWrapper: "border-gray-200 focus-within:!border-[#F2B33D]" }}
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Input
+                        type="email"
+                        label="อีเมล"
+                        placeholder="name@example.com"
+                        value={formData.email}
+                        onValueChange={(v) => setFormData({ ...formData, email: v })}
+                        required
+                        variant="bordered"
+                        labelPlacement="outside"
+                        classNames={{ inputWrapper: "border-gray-200 focus-within:!border-[#F2B33D]" }}
                       />
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                          <FiUpload className="text-4xl text-orange-500" />
-                        </div>
-                        <div>
-                          <p className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-1">
-                            คลิกเพื่ออัปโหลดสลิป
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            รองรับ JPG, PNG (สูงสุด 5MB)
-                          </p>
-                        </div>
+                      <Input
+                        type="tel"
+                        label="เบอร์โทรศัพท์"
+                        placeholder="0xx-xxx-xxxx"
+                        value={formData.phone}
+                        onValueChange={(v) => setFormData({ ...formData, phone: v })}
+                        required
+                        variant="bordered"
+                        labelPlacement="outside"
+                        classNames={{ inputWrapper: "border-gray-200 focus-within:!border-[#F2B33D]" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Pricing Section */}
+                  {!isFree && (
+                    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-5 rounded-2xl shadow-sm space-y-4">
+                      {/* Promo Input */}
+                      <div className="flex gap-2">
+                        {promoApplied ? (
+                          <div className="flex-1 flex items-center justify-between bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 px-3 py-2 rounded-xl text-sm font-medium border border-green-200 dark:border-green-800">
+                            <span className="flex items-center gap-2"><FiCheckCircle /> {promoCode}</span>
+                            <button onClick={handleRemovePromo} className="hover:text-green-900"><FiX /></button>
+                          </div>
+                        ) : (
+                          <>
+                            <Input
+                              placeholder="กรอกโค้ดส่วนลด (ถ้ามี)"
+                              value={promoCode}
+                              onValueChange={setPromoCode}
+                              size="sm"
+                              variant="flat"
+                              classNames={{ input: "text-sm", inputWrapper: "bg-gray-100 dark:bg-gray-700" }}
+                            />
+                            <Button
+                              size="sm"
+                              onPress={handleValidatePromo}
+                              isLoading={isValidatingPromo}
+                              isDisabled={!promoCode}
+                              className="bg-gray-800 dark:bg-gray-600 text-white min-w-[80px]"
+                            >
+                              ใช้โค้ด
+                            </Button>
+                          </>
+                        )}
                       </div>
-                    </label>
+
+                      <Divider className="my-2" />
+
+                      {/* Total Price */}
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <p className="text-xs text-gray-500">ยอดชำระสุทธิ</p>
+                          {discount > 0 && <p className="text-xs text-green-600">ลดไป ฿{discount.toLocaleString()}</p>}
+                        </div>
+                        <span className="text-3xl font-black tracking-tight text-[#F2B33D]">
+                          ฿{finalPrice.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </form>
+              )}
+
+              {/* --- Step 2: Payment QR --- */}
+              {step === 2 && (
+                <div className="flex flex-col items-center justify-center py-4 space-y-6 animate-appearance-in">
+                  {isGeneratingQR ? (
+                    <div className="py-12 flex flex-col items-center">
+                      <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#F2B33D]"></div>
+                      <p className="text-gray-400 text-sm mt-4">กำลังสร้าง QR Code...</p>
+                    </div>
+                  ) : qrCodeUrl ? (
+                    <>
+                      <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-xl shadow-gray-200/50 dark:shadow-none dark:bg-gray-800 dark:border-gray-700">
+                        <Image src={qrCodeUrl} alt="QR Code" width={220} height={220} className="rounded-xl" />
+                      </div>
+
+                      <div className="text-center">
+                        <p className="text-gray-500 text-sm mb-1">ยอดชำระ</p>
+                        <p className="text-3xl font-black text-[#F2B33D]">฿{finalPrice.toLocaleString()}</p>
+                      </div>
+
+                      <div className="w-full bg-[#F2B33D]/10 rounded-xl p-4 flex items-start gap-3">
+                        <FiSmartphone className="text-[#F2B33D] mt-1 shrink-0" size={18} />
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                          สแกนด้วยแอปธนาคารได้ทุกธนาคาร <strong>เมื่อโอนเสร็จแล้วให้บันทึกสลิป</strong> เพื่อใช้อัปโหลดในขั้นตอนถัดไป
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-red-500">ไม่สามารถสร้าง QR Code ได้</p>
                   )}
                 </div>
-                
-                {isUploading && (
-                  <div className="space-y-2">
-                    <Progress 
-                      value={uploadProgress} 
-                      color="warning" 
-                      className="w-full" 
-                      size="lg"
-                    />
-                    <p className="text-sm text-center text-gray-600 font-semibold">
-                      กำลังอัปโหลด... {uploadProgress}%
-                    </p>
-                  </div>
-                )}
-                
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border-2 border-blue-200 dark:border-blue-800">
-                  <div className="flex items-start gap-2">
-                    <FiInfo className="text-blue-500 mt-0.5 flex-shrink-0" size={18} />
-                    <div className="text-sm text-blue-800 dark:text-blue-200">
-                      <p className="font-bold mb-1">💡 เคล็ดลับ:</p>
-                      <p>ตรวจสอบให้แน่ใจว่าสลิปแสดงยอดเงิน <strong>฿{finalPrice.toLocaleString()}</strong> และข้อมูลชัดเจน</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </ModalBody>
-            <ModalFooter>
-              <Button 
-                color="danger" 
-                variant="light" 
-                onPress={() => setStep(2)} 
-                isDisabled={isUploading}
-              >
-                ย้อนกลับ
-              </Button>
-              <Button 
-                color="warning" 
-                className="bg-gradient-to-r from-orange-500 to-amber-500 font-bold text-white shadow-lg" 
-                onPress={handleUploadSlip} 
-                isLoading={isUploading} 
-                isDisabled={!slipFile} 
-                endContent={<FiImage />}
-              >
-                {isUploading ? 'กำลังอัปโหลด...' : 'ยืนยันและอัปโหลด'}
-              </Button>
-            </ModalFooter>
-          </>
-        )}
+              )}
 
-        {/* Step 2: Payment QR */}
-        {step === 2 && (
-          <>
-            <ModalHeader>
-              <div className="w-full">
-                <h2 className="text-2xl font-black text-gray-900 dark:text-white">
-                  สแกน QR เพื่อชำระเงิน
-                </h2>
-                <p className="text-sm font-normal text-gray-600 dark:text-gray-400 mt-1">
-                  ชำระผ่าน PromptPay
-                </p>
-              </div>
-            </ModalHeader>
-            <ModalBody>
-              <div className="text-center space-y-6">
-                {isGeneratingQR ? (
-                  <div className="py-12">
-                    <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-orange-500 mx-auto mb-4"></div>
-                    <p className="text-gray-600 dark:text-gray-400 font-semibold">กำลังสร้าง QR Code...</p>
-                  </div>
-                ) : qrCodeUrl ? (
-                  <>
-                    <div className="bg-white p-8 rounded-2xl shadow-2xl inline-block border-3 border-orange-300">
-                      <Image 
-                        src={qrCodeUrl} 
-                        alt="QR Code" 
-                        width={280} 
-                        height={280} 
-                        className="mx-auto" 
-                      />
-                    </div>
-                    
-                    <Card className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-3 border-orange-300">
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">ยอดชำระ</p>
-                      <p className="text-5xl font-black bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
-                        ฿{finalPrice.toLocaleString()}
-                      </p>
-                    </Card>
-                    
-                    <div className="text-sm text-left bg-gray-50 dark:bg-gray-800 p-5 rounded-xl border-2 border-gray-200 dark:border-gray-700">
-                      <p className="font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
-                        <FiSmartphone className="text-blue-500" />
-                        วิธีการชำระเงิน:
-                      </p>
-                      <ol className="space-y-2 text-gray-600 dark:text-gray-400">
-                        <li>1. เปิดแอพธนาคารของคุณ</li>
-                        <li>2. เลือกเมนู <strong>สแกน QR Code</strong></li>
-                        <li>3. สแกน QR Code ด้านบน</li>
-                        <li>4. ตรวจสอบยอดเงินให้ถูกต้อง</li>
-                        <li>5. ยืนยันการโอนเงิน</li>
-                        <li>6. <strong>ถ่ายภาพสลิป</strong>หรือบันทึกหน้าจอ</li>
-                      </ol>
-                    </div>
-                  </>
-                ) : (
-                  <div className="py-12">
-                    <p className="text-red-600 font-semibold">❌ ไม่สามารถสร้าง QR Code ได้</p>
-                  </div>
-                )}
-              </div>
-            </ModalBody>
-            <ModalFooter>
-              <Button 
-                color="danger" 
-                variant="light" 
-                onPress={() => setStep(1)} 
-                isDisabled={isSubmitting}
-              >
-                ย้อนกลับ
-              </Button>
-              <Button 
-                color="warning" 
-                className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold shadow-lg" 
-                onPress={handleProceedToUpload} 
-                isLoading={isSubmitting} 
-                isDisabled={!qrCodeUrl} 
-                endContent={<FiUpload />}
-              >
-                {isSubmitting ? 'กำลังดำเนินการ...' : 'โอนเงินแล้ว - อัปโหลดสลิป'}
-              </Button>
-            </ModalFooter>
-          </>
-        )}
+              {/* --- Step 3: Upload Slip --- */}
+              {step === 3 && (
+                <div className="space-y-6 animate-appearance-in">
+                  <div
+                    className={`relative border-2 border-dashed rounded-3xl p-8 text-center transition-all cursor-pointer group
+                    ${slipPreview ? 'border-[#F2B33D] bg-[#F2B33D]/5' : 'border-gray-300 hover:border-[#F2B33D] hover:bg-gray-50 dark:hover:bg-gray-800'}
+                  `}
+                  >
+                    <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer" />
 
-        {/* Step 1: Form */}
-        {step === 1 && (
-          <form onSubmit={handleSubmitForm}>
-            <ModalHeader>
-              <div className="w-full">
-                <h2 className="text-2xl font-black text-gray-900 dark:text-white">
-                  ข้อมูลผู้สมัคร
-                </h2>
-                <p className="text-sm font-normal text-gray-600 dark:text-gray-400 mt-1">
-                  {camp.name}
-                </p>
-              </div>
-            </ModalHeader>
-            <ModalBody>
-              <div className="space-y-6">
-                {error && (
-                  <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-500 rounded-xl p-3">
-                    <p className="text-red-600 dark:text-red-400 text-sm font-semibold">{error}</p>
-                  </div>
-                )}
-
-                {/* Form Fields */}
-                <div className="space-y-4">
-                  <div className="w-full">
-                    <Input 
-                      label="ชื่อ - นามสกุล" 
-                      placeholder="กรอกชื่อ - นามสกุล" 
-                      value={formData.name} 
-                      onValueChange={(v) => setFormData({ ...formData, name: v })} 
-                      required 
-                      size="lg"
-                      variant="bordered"
-                      classNames={{ 
-                        base: "max-w-full",
-                        inputWrapper: "border-2 border-gray-300 hover:border-orange-400" 
-                      }} 
-                    />
-                  </div>
-                  
-                  <div className="w-full">
-                    <Input 
-                      type="email" 
-                      label="อีเมล" 
-                      placeholder="yourmail@example.com" 
-                      value={formData.email} 
-                      onValueChange={(v) => setFormData({ ...formData, email: v })} 
-                      required 
-                      size="lg"
-                      variant="bordered"
-                      classNames={{ 
-                        base: "max-w-full",
-                        inputWrapper: "border-2 border-gray-300 hover:border-orange-400" 
-                      }} 
-                    />
-                  </div>
-                  
-                  <div className="w-full">
-                    <Input 
-                      type="tel" 
-                      label="เบอร์โทรศัพท์" 
-                      placeholder="0812345678" 
-                      value={formData.phone} 
-                      onValueChange={(v) => setFormData({ ...formData, phone: v })} 
-                      required 
-                      size="lg"
-                      variant="bordered"
-                      classNames={{ 
-                        base: "max-w-full",
-                        inputWrapper: "border-2 border-gray-300 hover:border-orange-400" 
-                      }}
-                      description={formData.phone ? "ใช้เบอร์จากการตั้งค่าโปรไฟล์" : "กรุณาตั้งค่าเบอร์โทรศัพท์ในโปรไฟล์"}
-                    />
-                  </div>
-                </div>
-
-                <Divider className="my-2" />
-
-                {/* Camp Info Card */}
-                <Card className="p-4 border-2 border-gray-200 dark:border-gray-700">
-                  <div className="flex gap-3">
-                    {camp.image && (
-                      <Image 
-                        src={camp.image} 
-                        alt={camp.name} 
-                        className="w-24 h-24 object-cover rounded-lg flex-shrink-0" 
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2 truncate">
-                        {camp.name}
-                      </h3>
-                      <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
-                        <p>📅 {camp.date}</p>
-                        <p>📍 {camp.location}</p>
-                        <p>⏰ ปิดรับ: {camp.deadline}</p>
+                    {slipPreview ? (
+                      <div className="relative">
+                        <Image src={slipPreview} alt="Slip" className="max-h-64 mx-auto rounded-lg shadow-sm" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                          <span className="text-white font-medium flex items-center gap-2"><FiUpload /> เปลี่ยนรูป</span>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Promo Code Section */}
-                {!isFree && (
-                  <>
-                    <Divider className="my-2" />
-                    
-                    <div>
-                      <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
-                        <FiTag className="text-orange-500" />
-                        รหัสโปรโมชั่น
-                      </h3>
-                      
-                      {!promoApplied ? (
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder="กรอกรหัสส่วนลด"
-                            value={promoCode}
-                            onValueChange={setPromoCode}
-                            variant="bordered"
-                            classNames={{ 
-                              inputWrapper: "border-2 border-gray-300" 
-                            }}
-                            size="lg"
-                          />
-                          <Button
-                            color="warning"
-                            className="font-bold px-6"
-                            onPress={handleValidatePromo}
-                            isLoading={isValidatingPromo}
-                            isDisabled={!promoCode.trim()}
-                            size="lg"
-                            endContent={<FiCheck />}
-                          >
-                            ใช้
-                          </Button>
+                    ) : (
+                      <div className="py-8 flex flex-col items-center gap-3">
+                        <div className="w-16 h-16 rounded-full bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-[#F2B33D]">
+                          <FiImage size={32} />
                         </div>
-                      ) : (
-                        <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 border-2 border-green-500 rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <FiCheckCircle className="text-green-600" />
-                            <div>
-                              <p className="font-bold text-green-700 dark:text-green-400">
-                                {promoCode}
-                              </p>
-                              <p className="text-sm text-green-600 dark:text-green-500">
-                                {promoMessage}
-                              </p>
-                            </div>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="flat"
-                            color="danger"
-                            isIconOnly
-                            onPress={handleRemovePromo}
-                          >
-                            <FiX />
-                          </Button>
+                        <div>
+                          <p className="font-bold text-gray-700 dark:text-gray-200">แตะเพื่ออัปโหลดสลิป</p>
+                          <p className="text-xs text-gray-400 mt-1">รองรับไฟล์ JPG, PNG</p>
                         </div>
-                      )}
-                    </div>
-                  </>
-                )}
-
-                <Divider className="my-2" />
-
-                {/* Price Summary */}
-                <Card className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-3 border-orange-300 shadow-lg">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-600 dark:text-gray-400">ค่าค่าย</span>
-                      <span className="font-semibold text-gray-800 dark:text-gray-200">
-                        {basePrice === 0 ? (
-                          <span className="flex items-center gap-1 text-green-600">
-                            <FiGift />
-                            ฟรี!
-                          </span>
-                        ) : (
-                          `฿${basePrice.toLocaleString()}`
-                        )}
-                      </span>
-                    </div>
-                    
-                    {discount > 0 && (
-                      <div className="flex justify-between items-center text-sm text-green-600 dark:text-green-400">
-                        <span>ส่วนลด</span>
-                        <span className="font-semibold">-฿{discount.toLocaleString()}</span>
                       </div>
                     )}
-                    
-                    <Divider />
-                    
-                    <div className="flex justify-between items-center pt-2">
-                      <span className="font-bold text-gray-800 dark:text-gray-200">รวมทั้งหมด</span>
-                      <span className="text-3xl font-black bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
-                        {isFree ? (
-                          <span className="flex items-center gap-1 text-green-600">
-                            <FiGift />
-                            ฟรี!
-                          </span>
-                        ) : (
-                          `฿${finalPrice.toLocaleString()}`
-                        )}
-                      </span>
-                    </div>
                   </div>
-                </Card>
-              </div>
+
+                  {isUploading && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs font-semibold text-gray-500">
+                        <span>กำลังอัปโหลด...</span>
+                        <span>{uploadProgress}%</span>
+                      </div>
+                      <Progress value={uploadProgress} size="sm" classNames={{ indicator: "bg-[#F2B33D]" }} aria-label="uploading" />
+                    </div>
+                  )}
+
+                  {error && <p className="text-red-500 text-sm text-center bg-red-50 p-2 rounded-lg">{error}</p>}
+                </div>
+              )}
             </ModalBody>
-            <ModalFooter className="flex-wrap gap-2">
-              
-              <Button
-                type="submit"
-                className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold shadow-lg flex-1 min-w-0"
-                endContent={isFree ? <FiGift /> : <FiCreditCard />}
-                isLoading={isSubmitting}
-                size="lg"
-              >
-                <span className="truncate">
-                  {isSubmitting ? 'กำลังดำเนินการ...' : (isFree ? 'ยืนยันการสมัคร (ฟรี)' : 'ยืนยันและชำระเงิน')}
-                </span>
-              </Button>
+
+            {/* --- Footer Buttons --- */}
+            <ModalFooter>
+              {step > 1 && (
+                <Button
+                  variant="light"
+                  onPress={() => setStep(step - 1)}
+                  isDisabled={isSubmitting || isUploading}
+                  className="text-gray-500 font-medium"
+                >
+                  ย้อนกลับ
+                </Button>
+              )}
+
+              {step === 1 && (
+                <Button
+                  className="bg-[#F2B33D] text-white font-bold shadow-lg shadow-[#F2B33D]/20"
+                  fullWidth
+                  size="lg"
+                  onPress={() => (document.getElementById('regis-form') as HTMLFormElement)?.requestSubmit()}
+                  isLoading={isSubmitting}
+                >
+                  {isFree ? 'ยืนยันการสมัครฟรี' : 'ดำเนินการต่อ'}
+                </Button>
+              )}
+
+              {step === 2 && (
+                <Button
+                  className="bg-[#F2B33D] text-white font-bold shadow-lg shadow-[#F2B33D]/20"
+                  fullWidth
+                  size="lg"
+                  onPress={handleProceedToUpload}
+                  isDisabled={!qrCodeUrl}
+                  endContent={<FiUpload />}
+                >
+                  โอนเงินแล้ว (แนบสลิป)
+                </Button>
+              )}
+
+              {step === 3 && (
+                <Button
+                  className="bg-[#F2B33D] text-white font-bold shadow-lg shadow-[#F2B33D]/20"
+                  fullWidth
+                  size="lg"
+                  onPress={handleUploadSlip}
+                  isDisabled={!slipFile}
+                  isLoading={isUploading}
+                  endContent={<FiCheck />}
+                >
+                  ยืนยันการโอนเงิน
+                </Button>
+              )}
             </ModalFooter>
-          </form>
+          </>
         )}
       </ModalContent>
     </Modal>

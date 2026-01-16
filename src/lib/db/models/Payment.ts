@@ -156,4 +156,12 @@ export class PaymentModel {
     
     return payments.map(doc => this.toPublic(doc));
   }
+
+  static async deleteById(id: string): Promise<boolean> {
+    const collection = await getCollection<PaymentDoc>(this.collectionName);
+    const filter: Filter<PaymentDoc> = { _id: new ObjectId(id) } as Filter<PaymentDoc>;
+    
+    const result = await collection.deleteOne(filter);
+    return result.deletedCount > 0;
+  }
 }

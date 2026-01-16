@@ -97,13 +97,28 @@ export default function PaymentsPage() {
     }
   };
 
-  const pendingPayments = payments.filter(p => 
-    p.requiresManualReview && !p.slipVerified && p.slipUrl
-  );
+  const pendingPayments = payments.filter(p => {
+    console.log('Payment:', {
+      id: p._id,
+      requiresManualReview: p.requiresManualReview,
+      slipVerified: p.slipVerified,
+      slipUrl: p.slipUrl,
+      status: p.status
+    });
+    // รอตรวจสอบ = มี slipUrl และ status เป็น pending และยังไม่ได้ verify
+    return p.slipUrl && p.status === 'pending' && !p.slipVerified;
+  });
   
-  const approvedPayments = payments.filter(p => p.slipVerified);
+  // อนุมัติแล้ว = slipVerified หรือ status เป็น completed
+  const approvedPayments = payments.filter(p => p.slipVerified || p.status === 'completed');
   
   const allPayments = payments;
+  
+  console.log('=== PAYMENTS DEBUG ===');
+  console.log('Total payments:', payments.length);
+  console.log('Pending payments:', pendingPayments.length);
+  console.log('Approved payments:', approvedPayments.length);
+  console.log('=====================');
 
   if (status === 'loading' || loading) {
     return (
