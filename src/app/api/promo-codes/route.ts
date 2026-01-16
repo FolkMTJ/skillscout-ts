@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     }
 
     // สร้างโปรโมชั่น
-    console.log('🚀 Creating promo code with:', {
+    console.log('Creating promo code with:', {
       code,
       createdBy: session.user.id,
       createdByRole: session.user.role,
@@ -120,17 +120,16 @@ export async function POST(request: NextRequest) {
         code,
         discountType,
         discountValue: parseFloat(discountValue),
-        maxUses: parseInt(maxUses),
+        usageLimit: parseInt(maxUses),
         validFrom: new Date(validFrom),
         validUntil: new Date(validUntil),
-        applicableToAllCamps: applicableToAllCamps || false,
+        isActive: true,
         applicableCamps: applicableCamps || [],
         description,
-        minPurchaseAmount: minPurchaseAmount ? parseFloat(minPurchaseAmount) : undefined,
-        maxDiscountAmount: maxDiscountAmount ? parseFloat(maxDiscountAmount) : undefined,
+        minAmount: minPurchaseAmount ? parseFloat(minPurchaseAmount) : undefined,
+        maxDiscount: maxDiscountAmount ? parseFloat(maxDiscountAmount) : undefined,
       },
-      session.user.id,
-      session.user.role as 'admin' | 'organizer'
+      session.user.id
     );
 
     console.log('✅ Promo code created successfully:', promoCode);

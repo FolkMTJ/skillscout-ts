@@ -4,14 +4,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Card, Button, useDisclosure, Chip, Modal, ModalContent, ModalHeader, ModalBody } from '@heroui/react';
-import { FiCalendar, FiUsers, FiCheckCircle, FiPlus, FiClock, FiUserCheck, FiCreditCard, FiTarget, FiZap, FiBook, FiAlertCircle, FiTag } from 'react-icons/fi';
+import { Card, Button, useDisclosure, Chip, Modal, ModalContent, ModalHeader, ModalBody, Input } from '@heroui/react';
+import { FiCalendar, FiUsers, FiCheckCircle, FiPlus, FiClock, FiUserCheck, FiCreditCard, FiZap, FiBook, FiAlertCircle, FiTag, FiSearch } from 'react-icons/fi';
 import { Camp, Registration, RegistrationStatus } from '@/types';
 import {
-  CampFormModal, CampDetailModal, CampCardWithImage, StatCard, EmptyState
+  CampFormModal, CampDetailModal, CampCardWithImage, EmptyState
 } from '@/components/organizer';
 import PromoCodeManager from '@/components/organizer/PromoCodeManager';
 import toast from 'react-hot-toast';
+
+interface StatCardProps {
+  title: string;
+  value: number | string;
+  icon: React.ElementType; // ใช้สำหรับ Component Icon (เช่น FiCalendar)
+  colorClass: string;
+  trend?: string; // เครื่องหมาย ? หมายถึงมีหรือไม่มีก็ได้ (Optional)
+}
 
 export default function OrganizerDashboard() {
   const { data: session, status } = useSession();
@@ -146,7 +154,7 @@ export default function OrganizerDashboard() {
       if (!response.ok) {
         const errorData = await response.json();
         console.error('API Error Response:', errorData);
-        
+
         // แสดง validation errors ถ้ามี
         if (errorData.issues && Array.isArray(errorData.issues)) {
           const errorMessages = errorData.issues.map((issue: { path: string[]; message: string }) => {
@@ -160,7 +168,7 @@ export default function OrganizerDashboard() {
             };
             return `${fieldNames[field] || field}: ${issue.message}`;
           }).join('\n');
-          
+
           toast.error(
             <div>
               <div className="font-bold mb-2">ข้อมูลไม่ถูกต้อง:</div>
@@ -170,7 +178,7 @@ export default function OrganizerDashboard() {
           );
           return;
         }
-        
+
         throw new Error(errorData.message || errorData.error || 'Failed to create camp');
       }
 
@@ -440,192 +448,305 @@ export default function OrganizerDashboard() {
 
   const attendedRegs = registrations.filter(r => r.status === RegistrationStatus.CONFIRMED).length;
 
+  const ModernStatCard = ({ title, value, icon: Icon, colorClass}: StatCardProps) => {
+    // Map สีเพื่อให้ icon ชัดเจน
+    const iconColorMap: Record<string, string> = {
+      'bg-[#F2B33D]': 'text-[#F2B33D]',
+      'bg-green-500': 'text-green-600',
+      'bg-orange-500': 'text-orange-600',
+      'bg-gray-500': 'text-gray-600',
+      'bg-purple-500': 'text-purple-600',
+    };
+    
+    const iconColor = iconColorMap[colorClass] || colorClass.replace('bg-', 'text-');
+    
+    return (
+      <Card className="border-none shadow-sm hover:shadow-md transition-all duration-300 bg-white">
+        <div className="p-5 flex items-start justify-between">
+          <div>
+            <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
+            <h3 className="text-3xl font-bold text-gray-800">{value}</h3>
+          </div>
+          {/* ลบ bg-opacity-10 และ ${colorClass} ออกจาก background */}
+          <div className="p-3 rounded-xl">
+            <Icon className={`w-10 h-10 ${iconColor}`} />
+          </div>
+        </div>
+        {/* Optional: Add a subtle progress bar or trend line at bottom */}
+        <div className={`h-1 w-full bg-opacity-20 ${colorClass}`}>
+          <div className={`h-full ${colorClass} w-[70%]`}></div>
+        </div>
+      </Card>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center gap-3">
-            <FiTarget className="text-orange-500" />
-            Organizer Dashboard
-          </h1>
-          <p className="text-gray-600">จัดการค่ายและผู้สมัครของคุณ</p>
+    <div className="min-h-screen bg-[#F8F9FA] pb-12">
+      {/* Decorative Background Blob */}
+      <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-orange-50 to-transparent -z-10" />
+
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3">
+              Organizer Dashboard
+              {/* <Chip color="warning" variant="flat" size="sm" className="bg-[#F2B33D]/20 text-[#F2B33D]">PRO</Chip> */}
+            </h1>
+            <p className="text-gray-500 mt-1">ยินดีต้อนรับกลับ! จัดการค่ายและติดตามผลลัพธ์ของคุณได้ที่นี่</p>
+          </div>
+          <div className="flex gap-3">
+            {/* <Button
+              className="bg-white text-gray-700 font-medium shadow-sm border border-gray-200"
+              startContent={<FiSettings />}
+            >
+              ตั้งค่า
+            </Button> */}
+            <Button
+              className="bg-[#F2B33D] text-white font-bold shadow-lg shadow-orange-200"
+              startContent={<FiPlus />}
+              onPress={handleOpenCreateModal}
+            >
+              สร้างค่ายใหม่
+            </Button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-          <StatCard title="ค่ายทั้งหมด" value={camps.length} icon={FiCalendar} gradient="bg-gradient-to-br from-blue-500 to-blue-600" />
-          <StatCard title="ผู้เข้าร่วมทั้งหมด" value={totalEnrolled} icon={FiUsers} gradient="bg-gradient-to-br from-green-500 to-green-600" />
-          <StatCard title="ค่ายรอตรวจสอบ" value={pendingCamps.length} icon={FiClock} gradient="bg-gradient-to-br from-orange-500 to-orange-600" />
-          <StatCard title="ค่ายที่จบแล้ว" value={completedCamps.length} icon={FiCheckCircle} gradient="" />
-          <StatCard title="เช็คอินแล้ว" value={attendedRegs} icon={FiUserCheck} gradient="bg-gradient-to-br from-pink-500 to-purple-600" />
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+          <ModernStatCard
+            title="ค่ายทั้งหมด"
+            value={camps.length}
+            icon={FiCalendar}
+            colorClass="bg-[#F2B33D]"
+          />
+          <ModernStatCard
+            title="ผู้เข้าร่วมรวม"
+            value={totalEnrolled}
+            icon={FiUsers}
+            colorClass="bg-green-500"
+          />
+          <ModernStatCard
+            title="รอตรวจสอบ"
+            value={pendingCamps.length}
+            icon={FiClock}
+            colorClass="bg-orange-500"
+          />
+          <ModernStatCard
+            title="จบกิจกรรมแล้ว"
+            value={completedCamps.length}
+            icon={FiCheckCircle}
+            colorClass="bg-gray-500"
+          />
+          <ModernStatCard
+            title="เช็คอินแล้ว"
+            value={attendedRegs}
+            icon={FiUserCheck}
+            colorClass="bg-purple-500"
+          />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 space-y-6">
-            <Card className="p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <FiZap className="text-yellow-500" />
-                Quick Actions
-              </h2>
-              <div className="space-y-3">
-                <Button color="primary" size="lg" startContent={<FiPlus className="w-5 h-5" />} onPress={handleOpenCreateModal} className="w-full">
-                  สร้างค่ายใหม่
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+
+          {/* --- Left Sidebar Column (Actions & Alerts) --- */}
+          <div className="xl:col-span-1 space-y-6">
+
+            {/* Quick Actions Panel */}
+            <Card className="border-none shadow-sm bg-white overflow-hidden">
+              <div className="p-5 border-b border-gray-100">
+                <h2 className="font-bold text-gray-800 flex items-center gap-2">
+                  <FiZap className="text-[#F2B33D]" />
+                  เมนูด่วน
+                </h2>
+              </div>
+              <div className="p-4 grid grid-cols-2 gap-3">
+                <Button
+                  variant="flat"
+                  className="h-auto py-4 flex flex-col gap-2 bg-orange-50 text-orange-700 hover:bg-orange-100"
+                  onPress={handleOpenCreateModal}
+                >
+                  <div className="p-2 bg-white rounded-full shadow-sm"><FiPlus /></div>
+                  <span className="text-xs font-semibold">สร้างค่าย</span>
                 </Button>
-                <Button size="lg" startContent={<FiTag className="w-5 h-5" />} onPress={onPromoModalOpen} className="w-full bg-[#F2B33D]">
-                  จัดการรหัสโปรโมชั่น
+                <Button
+                  variant="flat"
+                  className="h-auto py-4 flex flex-col gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                  onPress={onPromoModalOpen}
+                >
+                  <div className="p-2 bg-white rounded-full shadow-sm"><FiTag /></div>
+                  <span className="text-xs font-semibold">คูปอง</span>
                 </Button>
-                <Button color="secondary" size="lg" startContent={<FiCreditCard className="w-5 h-5" />} onPress={() => router.push('/organizer/payments')} className="w-full">
-                  ตรวจสอบสลิป
+                <Button
+                  variant="flat"
+                  className="h-auto py-4 flex flex-col gap-2 bg-green-50 text-green-700 hover:bg-green-100 col-span-2"
+                  onPress={() => router.push('/organizer/payments')}
+                >
+                  <div className="p-2 bg-white rounded-full shadow-sm"><FiCreditCard /></div>
+                  <span className="text-xs font-semibold">ตรวจสอบการชำระเงิน</span>
                 </Button>
               </div>
             </Card>
 
-            <Card className="p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <FiClock className="text-orange-500" />
-                ค่ายรอตรวจสอบ
-              </h2>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {pendingCamps.map(camp => (
-                  <Card key={camp._id} className="p-4 border-2 border-orange-200 bg-orange-50">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-bold text-gray-800 line-clamp-1">{camp.name}</h3>
-                        <p className="text-sm text-gray-600 mt-1">
-                          <FiCalendar className="inline mr-1" />
-                          {camp.date}
+            {/* Pending Camps Feed */}
+            <Card className="border-none shadow-sm bg-white h-fit">
+              <div className="p-5 border-b border-gray-100 flex justify-between items-center">
+                <h2 className="font-bold text-gray-800 flex items-center gap-2">
+                  <FiClock className="text-gray-400" />
+                  สถานะการตรวจสอบ
+                </h2>
+                <span className="text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-500">{pendingCamps.length}</span>
+              </div>
+              <div className="p-0">
+                {pendingCamps.length === 0 ? (
+                  <div className="p-8 text-center text-gray-400">
+                    <FiCheckCircle className="w-12 h-12 mx-auto mb-2 text-green-100" />
+                    <p className="text-sm">ไม่มีค่ายรอตรวจสอบ</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-50">
+                    {pendingCamps.map(camp => (
+                      <div key={camp._id} className="p-4 hover:bg-gray-50 transition-colors cursor-pointer group">
+                        <div className="flex justify-between items-start mb-1">
+                          <h3 className="font-bold text-gray-800 text-sm line-clamp-1 group-hover:text-[#F2B33D] transition-colors">
+                            {camp.name}
+                          </h3>
+                          <div className="w-2 h-2 rounded-full bg-orange-400 mt-1.5"></div>
+                        </div>
+                        <p className="text-xs text-gray-500 flex items-center gap-1 mb-2">
+                          <FiCalendar size={10} /> {camp.date}
                         </p>
-                        <Chip size="sm" color="warning" variant="flat" className="mt-2 ">
-                          รอ Admin ตรวจสอบ
-                        </Chip>
+                        <Chip size="sm" className="bg-orange-100 text-orange-600 text-[10px] h-6">รอ Admin</Chip>
                       </div>
-                    </div>
-                  </Card>
-                ))}
-                {pendingCamps.length === 0 && (
-                  <EmptyState
-                    icon={FiCheckCircle}
-                    title="ไม่มีค่ายรอตรวจสอบ"
-                    description="ค่ายทั้งหมดได้รับการอนุมัติแล้ว"
-                  />
+                    ))}
+                  </div>
                 )}
               </div>
             </Card>
 
+            {/* Rejected Camps Alert */}
             {rejectedCamps.length > 0 && (
-              <Card className="p-6 border-2 border-red-200">
-                <h2 className="text-xl font-bold text-red-600 mb-4 flex items-center gap-2">
-                  <FiAlertCircle className="text-red-500" />
-                  ค่ายที่ถูกปฏิเสธ
-                </h2>
-                <div className="space-y-3 max-h-96 overflow-y-auto">
+              <div className="bg-red-50 border border-red-100 rounded-xl p-4">
+                <h3 className="text-red-700 font-bold flex items-center gap-2 mb-3">
+                  <FiAlertCircle /> ต้องแก้ไข ({rejectedCamps.length})
+                </h3>
+                <div className="space-y-2">
                   {rejectedCamps.map(camp => (
-                    <Card key={camp._id} className="p-4 border-2 border-red-200 bg-red-50">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-bold text-gray-800 line-clamp-1">{camp.name}</h3>
-                          <p className="text-sm text-gray-600 mt-1">
-                            <FiCalendar className="inline mr-1" />
-                            {camp.date}
-                          </p>
-                          <Chip size="sm" color="danger" variant="flat" className="mt-2">
-                            ถูกปฏิเสธ
-                          </Chip>
-                          <Button
-                            size="sm"
-                            color="primary"
-                            variant="flat"
-                            className="mt-3 w-full"
-                            onPress={() => {
-                              // แก้ไขและส่งใหม่
-                              handleEditCamp(camp);
-                            }}
-                          >
-                            แก้ไขและส่งใหม่
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
+                    <div key={camp._id} className="bg-white p-3 rounded-lg shadow-sm border border-red-100">
+                      <p className="text-sm font-semibold text-gray-800 mb-1">{camp.name}</p>
+                      <Button
+                        size="sm"
+                        className="w-full bg-red-100 text-red-600 font-medium"
+                        onPress={() => handleEditCamp(camp)}
+                      >
+                        แก้ไขทันที
+                      </Button>
+                    </div>
                   ))}
                 </div>
-              </Card>
+              </div>
             )}
           </div>
 
-          <div className="lg:col-span-2">
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                  <FiBook className="text-blue-500" />
-                  ค่ายของฉัน
-                </h2>
-                {camps.length > 0 && <p className="text-sm text-gray-500">{camps.length} ค่าย</p>}
+          {/* --- Main Content Column (Camp Grid) --- */}
+          <div className="xl:col-span-3">
+            <Card className="border-none shadow-sm bg-white min-h-[600px]">
+              <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <FiBook className="text-[#F2B33D]" />
+                    ค่ายของฉัน
+                  </h2>
+                  <p className="text-sm text-gray-500">จัดการรายละเอียดและผู้สมัครในค่ายของคุณ</p>
+                </div>
+
+                {/* Filter / Search Placeholder */}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="ค้นหาค่าย..."
+                    startContent={<FiSearch className="text-gray-400" />}
+                    size="sm"
+                    variant="bordered"
+                    className="w-full sm:w-64"
+                    classNames={{ inputWrapper: "border-gray-200" }}
+                  />
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {camps.map(camp => {
-                  const campRegs = registrations.filter(r => r.campId === camp._id);
-                  const pending = campRegs.filter(r => r.status === RegistrationStatus.PENDING).length;
-                  return (
-                    <CampCardWithImage
-                      key={camp._id} camp={camp} pendingCount={pending}
-                      onEdit={() => handleEditCamp(camp)}
-                      onDelete={() => handleDeleteCamp(camp._id)}
-                      onView={() => handleViewCamp(camp)}
-                      onComplete={() => handleCompleteCamp(camp._id, camp.name)}
-                    />
-                  );
-                })}
-
-                {camps.length === 0 && (
-                  <div className="col-span-2">
-                    <EmptyState
-                      icon={FiCalendar} title="ยังไม่มีค่าย"
-                      description="เริ่มต้นสร้างค่ายแรกของคุณเพื่อเข้าถึงผู้เรียน"
-                      actionLabel="สร้างค่ายแรก" onAction={handleOpenCreateModal}
-                    />
+              <div className="p-6">
+                {camps.length === 0 ? (
+                  <EmptyState
+                    icon={FiCalendar}
+                    title="ยังไม่มีค่ายที่สร้างไว้"
+                    description="เริ่มต้นสร้างค่ายแรกของคุณเพื่อเปิดโอกาสให้ผู้เรียน"
+                    actionLabel="สร้างค่ายแรก"
+                    onAction={handleOpenCreateModal}
+                  />
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {camps.map(camp => {
+                      const campRegs = registrations.filter(r => r.campId === camp._id);
+                      const pending = campRegs.filter(r => r.status === RegistrationStatus.PENDING).length;
+                      return (
+                        // Wrapper to ensure specific spacing/hover effects if needed
+                        <div key={camp._id} className="h-full">
+                          <CampCardWithImage
+                            camp={camp}
+                            pendingCount={pending}
+                            onEdit={() => handleEditCamp(camp)}
+                            onDelete={() => handleDeleteCamp(camp._id)}
+                            onView={() => handleViewCamp(camp)}
+                            onComplete={() => handleCompleteCamp(camp._id, camp.name)}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
             </Card>
           </div>
+
         </div>
       </div>
 
+      {/* Modals */}
       <CampFormModal
-        isOpen={isFormModalOpen} onClose={onFormModalClose}
-        formData={formData} onFormDataChange={setFormData}
+        isOpen={isFormModalOpen}
+        onClose={onFormModalClose}
+        formData={formData}
+        onFormDataChange={setFormData}
         onSubmit={editingCamp ? handleUpdateCamp : handleCreateCamp}
         isEditing={!!editingCamp}
       />
 
       {viewingCamp && (
         <CampDetailModal
-          isOpen={isDetailModalOpen} onClose={onDetailModalClose}
+          isOpen={isDetailModalOpen}
+          onClose={onDetailModalClose}
           camp={viewingCamp}
           registrations={registrations.filter(r => r.campId === viewingCamp._id)}
         />
       )}
 
-      {/* Promo Code Modal */}
-      <Modal
-        isOpen={isPromoModalOpen}
-        onClose={onPromoModalClose}
-        size="5xl"
-        scrollBehavior="inside"
-      >
+      <Modal isOpen={isPromoModalOpen} onClose={onPromoModalClose} size="4xl" scrollBehavior="inside" backdrop="blur">
         <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-              <FiTag className="text-orange-500" />
+          <ModalHeader className="border-b border-gray-100 p-6">
+            <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
+              <div className="p-2 bg-orange-100 rounded-lg text-[#F2B33D]">
+                <FiTag />
+              </div>
               จัดการรหัสโปรโมชั่น
             </h2>
           </ModalHeader>
-          <ModalBody>
-            <PromoCodeManager
-              userId={session?.user?.id || ''}
-              userRole={(session?.user?.role as 'admin' | 'organizer') || 'organizer'}
-              camps={camps}
-            />
+          <ModalBody className="p-0 bg-gray-50/50">
+            <div className="p-6">
+              <PromoCodeManager
+                userId={session?.user?.id || ''}
+                userRole={(session?.user?.role as 'admin' | 'organizer') || 'organizer'}
+                camps={camps}
+              />
+            </div>
           </ModalBody>
         </ModalContent>
       </Modal>

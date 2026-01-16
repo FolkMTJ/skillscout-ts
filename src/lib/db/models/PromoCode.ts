@@ -34,7 +34,7 @@ export class PromoCodeModel {
 
   static async create(
     promoData: Omit<PromoCode, '_id' | 'usedCount' | 'createdAt' | 'createdBy'>,
-    createdBy: string,
+    createdBy: string
   ): Promise<PromoCode> {
     const collection = await getCollection<PromoCodeDoc>(this.collectionName);
 

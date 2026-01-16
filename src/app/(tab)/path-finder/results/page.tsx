@@ -230,6 +230,15 @@ export default function PathFinderResultsPage() {
       info: RIASEC_TYPES[code as keyof typeof RIASEC_TYPES],
     }));
 
+  // คำนวณคะแนนรวมทั้งหมด
+  const totalScore = sortedRIASEC.reduce((sum, item) => sum + item.score, 0);
+  
+  // คำนวณเปอร์เซ็นต์จากคะแนนรวม (100% จากทั้งหมด)
+  const normalizedRIASEC = sortedRIASEC.map(item => ({
+    ...item,
+    percentage: totalScore > 0 ? Math.round((item.score / totalScore) * 100) : 0
+  }));
+
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Banner */}
@@ -272,7 +281,7 @@ export default function PathFinderResultsPage() {
 
             <div className="space-y-4">
               {/* 2 อันดับแรก - แสดงตลอด */}
-              {sortedRIASEC.slice(0, 2).map(({ code, score, info }) => (
+              {normalizedRIASEC.slice(0, 2).map(({ code, score, percentage, info }) => (
                 <div key={code} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center gap-3">
@@ -284,10 +293,10 @@ export default function PathFinderResultsPage() {
                         <p className="text-sm text-gray-600">{info.name}</p>
                       </div>
                     </div>
-                    <span className="font-bold text-xl text-[#F2B33D]">{score}%</span>
+                    <span className="font-bold text-xl text-[#F2B33D]">{percentage}%</span>
                   </div>
                   <Progress
-                    value={score}
+                    value={percentage}
                     color="warning"
                     className="h-3"
                   />
@@ -301,7 +310,7 @@ export default function PathFinderResultsPage() {
                   }`}
               >
                 <div className="space-y-4 pt-4">
-                  {sortedRIASEC.slice(2).map(({ code, score, info }, index) => (
+                  {normalizedRIASEC.slice(2).map(({ code, score, percentage, info }, index) => (
                     <div
                       key={code}
                       className="rounded-lg transition-all duration-200 animate-in fade-in slide-in-from-bottom-4"
@@ -317,10 +326,10 @@ export default function PathFinderResultsPage() {
                             <p className="text-sm text-gray-500">{info.name}</p>
                           </div>
                         </div>
-                        <span className="font-bold text-base text-gray-500">{score}%</span>
+                        <span className="font-bold text-base text-gray-500">{percentage}%</span>
                       </div>
                       <Progress
-                        value={score}
+                        value={percentage}
                         color="default"
                         className="h-2"
                         classNames={{ indicator: 'bg-gray-300' }}

@@ -460,7 +460,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                             </div>
                             {session?.user?.name && isRegistered ? (
                                 <Button
-                                    className="bg-gradient-to-tr from-pink-500 to-yellow-500 text-white shadow-lg mt-5 h-12"
+                                    className="bg-yellow-500 text-white shadow-lg mt-5 h-12"
                                     fullWidth
                                     radius="full"
                                     onPress={() => setShowReviewForm(!showReviewForm)}
@@ -471,7 +471,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                 <Button
                                     className="bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 mt-5 h-12"
                                     fullWidth
-                                    radius="full"
+                                    radius="md"
                                     isDisabled
                                 >
                                     {!session ? 'เข้าสู่ระบบเพื่อเขียนรีวิว' : 'สมัครค่ายเพื่อเขียนรีวิว'}

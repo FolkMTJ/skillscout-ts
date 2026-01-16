@@ -1,8 +1,16 @@
 // src/components/organizer/CampCardWithImage.tsx
 'use client';
 
-import { Card, Button, Chip } from '@heroui/react';
-import { FiEdit2, FiTrash2, FiEye, FiCheckCircle } from 'react-icons/fi';
+import { Button, Tooltip, Progress } from '@heroui/react';
+import { 
+  FiEdit2, 
+  FiTrash2, 
+  FiCheckCircle, 
+  FiMapPin, 
+  FiCalendar, 
+  FiUsers, 
+  FiClock 
+} from 'react-icons/fi';
 import { Camp } from '@/types';
 import Image from 'next/image';
 
@@ -12,7 +20,7 @@ interface CampCardWithImageProps {
   onEdit: () => void;
   onDelete: () => void;
   onView: () => void;
-  onComplete?: () => void; // เพิ่มฟังก์ชันจบค่าย
+  onComplete?: () => void;
 }
 
 export default function CampCardWithImage({ 
@@ -23,198 +31,171 @@ export default function CampCardWithImage({
   onView,
   onComplete
 }: CampCardWithImageProps) {
-  const enrollmentPercentage = ((camp.enrolled || 0) / (camp.capacity || camp.participantCount)) * 100;
+  // คำนวณ % ความคืบหน้า
+  const capacity = camp.capacity || camp.participantCount || 1;
+  const enrolled = camp.enrolled || 0;
+  const enrollmentPercentage = Math.min((enrolled / capacity) * 100, 100);
   
-  // ตรวจสอบว่าค่ายจบแล้วหรือยัง
+  // เช็คสถานะ
   const isCompleted = camp.status === 'completed' || (camp.endDate && new Date(camp.endDate) < new Date());
   const isActive = camp.status === 'active';
+  const isPending = camp.status === 'pending';
+  const isRejected = camp.status === 'rejected';
+
+  // กำหนดสีตามสถานะ
+  const getStatusConfig = () => {
+    if (isCompleted) return { label: 'จบแล้ว', color: 'bg-gray-500', text: 'text-gray-500', border: 'border-gray-200' };
+    if (isRejected) return { label: 'ถูกปฏิเสธ', color: 'bg-red-500', text: 'text-red-500', border: 'border-red-200' };
+    if (isPending) return { label: 'รอตรวจสอบ', color: 'bg-orange-500', text: 'text-orange-500', border: 'border-orange-200' };
+    return { label: 'เปิดรับสมัคร', color: 'bg-green-500', text: 'text-green-500', border: 'border-green-200' };
+  };
+
+  const statusConfig = getStatusConfig();
 
   return (
-    <Card className="overflow-hidden hover:shadow-xl transition-all border border-gray-100 flex flex-col h-full">
-      {/* รูปปก */}
-      <div className="relative h-48 bg-gray-200">
+    <div 
+      onClick={onView}
+      className="group relative flex flex-col h-full w-full min-w-[300px] bg-white border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden cursor-pointer"
+    >
+      {/* --- Image Section --- */}
+      <div className="relative h-48 w-full overflow-hidden bg-gray-100">
         {camp.image ? (
           <Image
             src={camp.image}
             alt={camp.name}
             fill
-            className="object-cover"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-            <span className="text-gray-400 text-lg">ไม่มีรูปภาพ</span>
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-300">
+             <FiCalendar size={48} />
+             <span className="text-xs mt-2">No Image</span>
           </div>
         )}
         
-        {/* Action Buttons Overlay */}
-        <div className="absolute top-2 right-2 flex gap-2">
-          <Button
-            isIconOnly
-            size="sm"
-            color="primary"
-            variant="shadow"
-            onPress={onView}
-          >
-            <FiEye className="w-4 h-4" />
-          </Button>
-          <Button
-            isIconOnly
-            size="sm"
-            color="warning"
-            variant="shadow"
-            onPress={onEdit}
-          >
-            <FiEdit2 className="w-4 h-4" />
-          </Button>
-          <Button
-            isIconOnly
-            size="sm"
-            color="danger"
-            variant="shadow"
-            onPress={onDelete}
-          >
-            <FiTrash2 className="w-4 h-4" />
-          </Button>
+        {/* Overlay Gradient (ทำให้ตัวหนังสืออ่านง่ายขึ้นเวลามีข้อความทับ) */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
+
+        {/* Status Badge (Top Left) */}
+        <div className="absolute top-3 left-3 z-10">
+           <div className={`px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm backdrop-blur-md ${statusConfig.color} bg-opacity-90`}>
+             {statusConfig.label}
+           </div>
         </div>
 
-        {/* Status Badge */}
-        <div className="absolute top-2 left-2">
-          {isCompleted ? (
-            <Chip
-              size="sm"
-              variant="shadow"
-              color="default"
-              className="bg-gray-600/90 backdrop-blur-sm text-white"
+        {/* Floating Actions (Top Right) - Show on Hover */}
+        <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20">
+          <Tooltip content="แก้ไขค่าย">
+            <button 
+              onClick={(e) => { e.stopPropagation(); onEdit(); }}
+              className="p-2 bg-white/90 backdrop-blur text-gray-700 rounded-full hover:bg-[#F2B33D] hover:text-white shadow-lg transition-colors"
             >
-              จบแล้ว
-            </Chip>
-          ) : camp.status === 'pending' ? (
-            <Chip
-              size="sm"
-              variant="shadow"
-              color="warning"
-              className="bg-orange-500/90 backdrop-blur-sm text-white"
+              <FiEdit2 size={16} />
+            </button>
+          </Tooltip>
+          <Tooltip content="ลบค่าย" color="danger">
+            <button 
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="p-2 bg-white/90 backdrop-blur text-red-500 rounded-full hover:bg-red-500 hover:text-white shadow-lg transition-colors"
             >
-              รอตรวจสอบ
-            </Chip>
-          ) : camp.status === 'active' ? (
-            <Chip
-              size="sm"
-              variant="shadow"
-              color="success"
-              className="bg-green-500/90 backdrop-blur-sm text-white"
-            >
-              เปิดรับสมัคร
-            </Chip>
-          ) : null}
+              <FiTrash2 size={16} />
+            </button>
+          </Tooltip>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-4 space-y-3 flex-1 flex flex-col">
-        <h3 className="font-bold text-lg text-gray-800 line-clamp-2 leading-tight">
+      {/* --- Content Section --- */}
+      <div className="p-5 flex flex-col flex-1">
+        {/* Tags & Price Row */}
+        <div className="flex justify-between items-start mb-2">
+           <div className="flex gap-1 overflow-hidden">
+             {camp.tags && camp.tags.slice(0, 2).map((tag, i) => (
+                <span key={i} className="text-[10px] uppercase tracking-wider font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                  {tag}
+                </span>
+             ))}
+           </div>
+           <span className="text-sm font-bold text-[#F2B33D] shrink-0">
+             {camp.price === '฿0' || camp.price === '0' ? 'ฟรี' : camp.price}
+           </span>
+        </div>
+
+        {/* Title - ชิดซ้าย */}
+        <h3 className="font-bold text-gray-800 text-lg leading-snug line-clamp-2 mb-2 group-hover:text-[#F2B33D] transition-colors text-left">
           {camp.name}
         </h3>
-        
-        <p className="text-sm text-gray-600 leading-relaxed !break-words !whitespace-normal !overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
-          {camp.description}
-        </p>
 
-        {/* Info Chips */}
-        <div className="flex flex-wrap gap-2 mb-3">
-          <Chip size="sm" variant="flat" color="primary">
-            📍 {camp.location}
-          </Chip>
-          <Chip size="sm" variant="flat" color="secondary">
-            📅 {camp.startDate ? new Date(camp.startDate).toLocaleDateString('th-TH', { 
-              day: '2-digit', 
-              month: 'short' 
-            }) : camp.date}
-          </Chip>
-          <Chip size="sm" variant="flat" color="success">
-            👥 {camp.enrolled || 0}/{camp.capacity || camp.participantCount}
-          </Chip>
-          {pendingCount > 0 && (
-            <Chip size="sm" variant="flat" color="warning">
-              ⏳ รออนุมัติ {pendingCount}
-            </Chip>
-          )}
-        </div>
-
-        {/* Tags */}
-        {camp.tags && camp.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-3">
-            {camp.tags.slice(0, 3).map((tag) => (
-              <Chip key={tag} size="sm" variant="flat" color="default">
-                {tag}
-              </Chip>
-            ))}
-            {camp.tags.length > 3 && (
-              <Chip size="sm" variant="flat" color="default">
-                +{camp.tags.length - 3}
-              </Chip>
-            )}
+        {/* Meta Info */}
+        <div className="space-y-1.5 mb-4">
+          <div className="flex items-center gap-2 text-gray-500 text-sm">
+            <FiCalendar className="shrink-0 text-[#F2B33D]" />
+            <span className="truncate">
+               {camp.startDate ? new Date(camp.startDate).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) : camp.date}
+            </span>
           </div>
-        )}
-
-        {/* Progress Bar */}
-        <div className="mb-2">
-          <div className="flex justify-between text-xs text-gray-500 mb-1">
-            <span>ความคืบหน้า</span>
-            <span className="font-semibold">{enrollmentPercentage.toFixed(0)}%</span>
-          </div>
-          <div className="bg-gray-200 rounded-full h-2">
-            <div
-              className={`h-2 rounded-full transition-all ${
-                enrollmentPercentage >= 90
-                  ? 'bg-gradient-to-r from-red-500 to-red-600'
-                  : enrollmentPercentage >= 70
-                  ? 'bg-gradient-to-r from-orange-500 to-orange-600'
-                  : 'bg-gradient-to-r from-blue-500 to-blue-600'
-              }`}
-              style={{ width: `${Math.min(enrollmentPercentage, 100)}%` }}
-            />
+          <div className="flex items-center gap-2 text-gray-500 text-sm">
+            <FiMapPin className="shrink-0 text-[#F2B33D]" />
+            <span className="truncate">{camp.location}</span>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="space-y-2 mt-auto">
-          <div className="flex justify-between items-center pt-2 border-t">
-            <div className="text-xs text-gray-500">
-              {camp.registrationDeadline ? (
-                <span>
-                  ปิดรับ: {new Date(camp.registrationDeadline).toLocaleDateString('th-TH', {
-                    day: '2-digit',
-                    month: 'short',
-                  })}
-                </span>
-              ) : (
-                <span>ปิดรับ: {camp.deadline}</span>
-              )}
-            </div>
-            {camp.price && (
-              <div className="text-sm font-bold text-primary">
-                {camp.price}
+        {/* Progress Section */}
+        <div className="mt-auto pt-4 border-t border-gray-50">
+           {/* รออนุมัติ - แสดงด้านบนสุด */}
+           {pendingCount > 0 && (
+              <div className="mb-3 flex items-center gap-2 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-lg w-fit">
+                <FiClock />
+                รออนุมัติ {pendingCount} คน
               </div>
-            )}
-          </div>
-          
-          {/* ปุ่มจบค่าย */}
-          {!isCompleted && isActive && onComplete && (
-            <Button
-              size="sm"
-              color="success"
-              variant="flat"
-              className="w-full"
-              startContent={<FiCheckCircle />}
-              onPress={onComplete}
-            >
-              จบค่าย
-            </Button>
-          )}
+           )}
+
+           <div className="flex justify-between text-xs mb-1.5">
+             <div className="flex items-center gap-1 text-gray-600 font-medium">
+               <FiUsers />
+               <span>ผู้สมัคร {enrolled}/{capacity}</span>
+             </div>
+             <span className={`${statusConfig.text} font-bold`}>{enrollmentPercentage.toFixed(0)}%</span>
+           </div>
+           
+           <Progress 
+             aria-label="Camp capacity" 
+             value={enrollmentPercentage} 
+             size="sm"
+             radius="full"
+             classNames={{
+               indicator: `${statusConfig.color}`,
+               track: "bg-gray-100",
+             }}
+           />
         </div>
+
+        {/* Action Button - เช็คสถานะแบบ exclusive */}
+        {isCompleted ? (
+           // ค่ายจบแล้ว - ปุ่ม disabled
+           <Button
+             className="w-full mt-4 font-semibold bg-gray-300 text-gray-500 cursor-not-allowed"
+             size="sm"
+             startContent={<FiCheckCircle />}
+             isDisabled
+           >
+             จบค่ายแล้ว
+           </Button>
+        ) : isActive && onComplete ? (
+           // ค่ายยังไม่จบและ active - ปุ่มกดจบค่าย
+           <Button
+             className="w-full mt-4 font-semibold bg-gray-900 text-white hover:bg-green-600 transition-colors shadow-md"
+             size="sm"
+             startContent={<FiCheckCircle />}
+             onClick={(e) => { 
+                  e.stopPropagation(); 
+                  onComplete(); 
+                }}
+           >
+             กดเพื่อจบค่ายนี้
+           </Button>
+        ) : null}
       </div>
-    </Card>
+    </div>
   );
 }
