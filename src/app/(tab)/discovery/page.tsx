@@ -1,14 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Card, CardBody, CardHeader, Button, Chip, Spinner, Divider } from '@heroui/react';
 import { FiTrendingUp, FiTarget, FiBook, FiAward, FiArrowRight } from 'react-icons/fi';
+import HeroBanner from '@/components/HeroBanner';
 import SkillPieChart from '@/components/discovery/SkillPieChart';
 import RIASECProfile from '@/components/discovery/RIASECProfile';
 import CareerCard from '@/components/discovery/CareerCard';
 import CampCard from '@/components/(card)/CampCard';
+import { Review } from '@/types/camp';
 
 interface DiscoveryData {
   campsAttended: number;
@@ -43,7 +45,7 @@ interface DiscoveryData {
   }[];
 }
 
-interface CampData {
+interface ApiCampData {
   _id: string;
   name: string;
   image: string;
@@ -55,7 +57,26 @@ interface CampData {
   description: string;
   category: string;
   avgRating: number;
-  reviews: unknown[];
+  reviews: Review[];
+  capacity?: number;
+  participantCount?: number;
+  enrolled?: number;
+}
+
+interface CampData {
+  id: string;
+  name: string;
+  image: string;
+  date: string;
+  location: string;
+  price: string;
+  deadline: string;
+  daysLeft: number;
+  registrationDeadline?: string;
+  description: string;
+  category: string;
+  avgRating: number;
+  reviews: Review[];
   capacity?: number;
   participantCount?: number;
   enrolled?: number;
@@ -68,45 +89,12 @@ export default function DiscoveryPathPage() {
   const [loading, setLoading] = useState(true);
   const [recommendedCampsData, setRecommendedCampsData] = useState<CampData[]>([]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-      return;
-    }
-
-    if (status === 'authenticated') {
-      fetchDiscoveryData();
-    }
-  }, [status, router, fetchDiscoveryData]);
-
-  const fetchDiscoveryData = async () => {
-    try {
-      const res = await fetch('/api/discovery/profile');
-      if (res.ok) {
-        const result = await res.json();
-        console.log('Discovery data:', result);
-        setData(result);
-        
-        // Fetch full camp data
-        if (result.recommendedCamps && result.recommendedCamps.length > 0) {
-          fetchRecommendedCamps(result.recommendedCamps);
-        }
-      } else {
-        console.error('Failed to fetch:', res.status, await res.text());
-      }
-    } catch (error) {
-      console.error('Error fetching discovery data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchRecommendedCamps = async (campIds: { id: string }[]) => {
+  const fetchRecommendedCamps = useCallback(async (campIds: { id: string }[]) => {
     try {
       const campsRes = await fetch('/api/camps');
       if (campsRes.ok) {
-        const allCamps: CampData[] = await campsRes.json();
+        const allCamps = await campsRes.json() as ApiCampData[];
+
         const recommended = allCamps
           .filter((camp) => campIds.some(c => c.id === camp._id))
           .slice(0, 4)
@@ -114,8 +102,8 @@ export default function DiscoveryPathPage() {
             const calculateDaysLeft = () => {
               if (!camp.deadline && !camp.registrationDeadline) return 0;
               try {
-                const deadlineDate = camp.registrationDeadline 
-                  ? new Date(camp.registrationDeadline) 
+                const deadlineDate = camp.registrationDeadline
+                  ? new Date(camp.registrationDeadline)
                   : new Date(camp.deadline);
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
@@ -137,6 +125,7 @@ export default function DiscoveryPathPage() {
               price: camp.price,
               deadline: camp.deadline,
               daysLeft: calculateDaysLeft(),
+              registrationDeadline: camp.registrationDeadline,
               description: camp.description,
               category: camp.category,
               avgRating: camp.avgRating,
@@ -150,7 +139,40 @@ export default function DiscoveryPathPage() {
     } catch (error) {
       console.error('Error fetching recommended camps:', error);
     }
-  };
+  }, []);
+
+
+  const fetchDiscoveryData = useCallback(async () => {
+    try {
+      const res = await fetch('/api/discovery/profile');
+      if (res.ok) {
+        const result = await res.json();
+        console.log('Discovery data:', result);
+        setData(result);
+
+        if (result.recommendedCamps && result.recommendedCamps.length > 0) {
+          fetchRecommendedCamps(result.recommendedCamps);
+        }
+      } else {
+        console.error('Failed to fetch:', res.status, await res.text());
+      }
+    } catch (error) {
+      console.error('Error fetching discovery data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchRecommendedCamps]);
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+      return;
+    }
+
+    if (status === 'authenticated') {
+      fetchDiscoveryData();
+    }
+  }, [status, router, fetchDiscoveryData]);
 
   if (loading) {
     return (
@@ -220,23 +242,15 @@ export default function DiscoveryPathPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-r from-[#F2B33D] via-amber-400 to-orange-400">
-        <div className="container mx-auto px-4 py-16">
-          <div className="max-w-4xl mx-auto text-center text-white">
-            <Chip color="warning" variant="solid" className="mb-4 bg-white text-[#F2B33D] font-semibold">
-              Discovery Path
-            </Chip>
-            <h1 className="text-5xl font-bold mb-4">เส้นทางอาชีพของคุณ</h1>
-            <p className="text-xl mb-2 opacity-90">
-              วิเคราะห์จากค่ายที่คุณเข้าร่วมจริง
-            </p>
-            <p className="text-lg opacity-75">
-              ข้อมูลจาก <span className="font-semibold">{data.campsAttended}</span> ค่าย
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* Hero Banner */}
+      <HeroBanner
+        badge="Find your Path"
+        title="DISCOVERY"
+        titleHighlight="PATH"
+        subtitle="เส้นทางอาชีพของคุณ"
+        description={`วิเคราะห์จากค่ายที่คุณเข้าร่วมจริง • ข้อมูลจาก ${data.campsAttended} ค่าย`}
+        showButtons={false}
+      />
 
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-6xl mx-auto space-y-8">
@@ -335,7 +349,7 @@ export default function DiscoveryPathPage() {
               <SkillPieChart skills={data.skillProfile} />
             </CardBody>
           </Card>
-    
+
           {/* Career Recommendations */}
           <div className="space-y-6">
             <div>

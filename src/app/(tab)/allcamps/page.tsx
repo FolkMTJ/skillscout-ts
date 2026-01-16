@@ -1,16 +1,25 @@
 import { Suspense } from 'react';
-import PageHeader from "@/components/layout/PageHeader";
+import HeroBanner from "@/components/HeroBanner";
 import AllCampsContent from './AllCampsContent';
 import { Spinner } from "@heroui/react";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "All Camps | SkillScout",
+  description: "ค้นหาค่าย IT ที่เหมาะกับคุณ",
+};
 
 export default function AllCampsPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-[#171717]">
-      {/* Header */}
-      <PageHeader
-        title="All Camps"
+      {/* Hero Banner */}
+      <HeroBanner
+        badge="Explore All Camps"
+        title="ALL"
+        titleHighlight="CAMPS"
         subtitle="ค่ายทั้งหมดที่เราคัดสรรมาเพื่อคุณโดยเฉพาะ"
-        category="EXPLORE"
+        description="ค้นพบค่ายกิจกรรม IT ที่เหมาะกับคุณและเริ่มต้นเส้นทางสู่อาชีพในฝัน"
+        showButtons={false}
       />
       
       {/* Content with Suspense */}

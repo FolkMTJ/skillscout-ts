@@ -10,7 +10,7 @@ import { Question } from '@/data/path-finder';
 import { PathFinderAnswer } from '@/types';
 
 export default function PathFinderQuizPage() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Map<number, number>>(new Map());
@@ -98,7 +98,6 @@ export default function PathFinderQuizPage() {
       });
 
       if (res.ok) {
-        const data = await res.json();
         router.push('/path-finder/results');
       } else {
         alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
@@ -159,8 +158,7 @@ export default function PathFinderQuizPage() {
 
         {/* Questions */}
         <div className="space-y-6 mb-8">
-          {getCurrentQuestions().map((question, index) => {
-            const globalIndex = currentPage * questionsPerPage + index;
+          {getCurrentQuestions().map((question) => {
             const currentAnswer = answers.get(question.id);
 
             return (

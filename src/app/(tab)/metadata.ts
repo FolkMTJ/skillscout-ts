@@ -1,11 +1,6 @@
 import type { Metadata } from "next";
-import HomePage from "./HomePage";
 
 export const metadata: Metadata = {
-  title: "Skill Scout",
+  title: "SkillScout",
   description: "ค้นพบค่าย IT ที่เหมาะกับคุณ - พัฒนาทักษะสู่อาชีพในฝัน",
 };
-
-export default function Page() {
-  return <HomePage />;
-}

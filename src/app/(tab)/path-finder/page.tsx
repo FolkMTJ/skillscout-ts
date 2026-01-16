@@ -1,27 +1,19 @@
 // src/app/(tab)/path-finder/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Card, CardBody, Button, Spinner } from '@heroui/react';
 import { FiCompass, FiArrowRight, FiTarget } from 'react-icons/fi';
 
 export default function PathFinderLandingPage() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
-  const [hasResult, setHasResult] = useState(false);
+  const [hasResult] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (status === 'authenticated') {
-      checkExistingResult();
-    } else if (status === 'unauthenticated') {
-      setLoading(false);
-    }
-  }, [status, router]);
-
-  const checkExistingResult = async () => {
+  const checkExistingResult = useCallback(async () => {
     try {
       const res = await fetch('/api/path-finder/results');
       if (res.ok) {
@@ -34,7 +26,15 @@ export default function PathFinderLandingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      checkExistingResult();
+    } else if (status === 'unauthenticated') {
+      setLoading(false);
+    }
+  }, [status, checkExistingResult]);
 
   const handleStartTest = () => {
     if (status === 'unauthenticated') {

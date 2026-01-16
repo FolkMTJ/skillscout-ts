@@ -151,7 +151,7 @@ function getCareerRecommendations(
       name: 'Frontend Developer',
       riasec: { I: 60, A: 80, C: 50 },
       requiredSkills: ['HTML/CSS', 'JavaScript', 'React', 'UI/UX'],
-      salary: '30,000 - 80,000 บาท/เดือน',
+      salary: '30,000 - 80,000 บาท',
       description: 'สร้างและพัฒนาส่วนที่ผู้ใช้มองเห็นและโต้ตอบกับเว็บไซต์',
       growthOutlook: 'สูงมาก'
     },
@@ -160,7 +160,7 @@ function getCareerRecommendations(
       name: 'Backend Developer',
       riasec: { I: 80, C: 70, E: 30 },
       requiredSkills: ['Node.js', 'Python', 'Database', 'API'],
-      salary: '35,000 - 90,000 บาท/เดือน',
+      salary: '35,000 - 90,000 บาท',
       description: 'พัฒนาระบบฝั่งเซิร์ฟเวอร์และจัดการข้อมูล',
       growthOutlook: 'สูงมาก'
     },
@@ -169,7 +169,7 @@ function getCareerRecommendations(
       name: 'Full-stack Developer',
       riasec: { I: 75, A: 50, C: 60 },
       requiredSkills: ['JavaScript', 'React', 'Node.js', 'Database'],
-      salary: '40,000 - 100,000 บาท/เดือน',
+      salary: '40,000 - 100,000 บาท',
       description: 'พัฒนาทั้งส่วน Frontend และ Backend ของแอปพลิเคชัน',
       growthOutlook: 'สูงมาก'
     },
@@ -178,7 +178,7 @@ function getCareerRecommendations(
       name: 'Data Scientist',
       riasec: { I: 95, C: 60, A: 40 },
       requiredSkills: ['Python', 'Machine Learning', 'Statistics', 'Data Visualization'],
-      salary: '45,000 - 120,000 บาท/เดือน',
+      salary: '45,000 - 120,000 บาท',
       description: 'วิเคราะห์ข้อมูลและสร้างโมเดล Machine Learning',
       growthOutlook: 'สูงมาก'
     },
@@ -187,7 +187,7 @@ function getCareerRecommendations(
       name: 'UI/UX Designer',
       riasec: { A: 90, S: 60, I: 40 },
       requiredSkills: ['Figma', 'UI/UX', 'Design Thinking', 'Prototyping'],
-      salary: '28,000 - 75,000 บาท/เดือน',
+      salary: '28,000 - 75,000 บาท',
       description: 'ออกแบบประสบการณ์ผู้ใช้และส่วนติดต่อผู้ใช้',
       growthOutlook: 'สูง'
     },
@@ -196,7 +196,7 @@ function getCareerRecommendations(
       name: 'DevOps Engineer',
       riasec: { C: 80, I: 70, R: 50 },
       requiredSkills: ['Docker', 'Kubernetes', 'CI/CD', 'Cloud'],
-      salary: '40,000 - 110,000 บาท/เดือน',
+      salary: '40,000 - 110,000 บาท',
       description: 'จัดการโครงสร้างพื้นฐานและระบบ Deployment',
       growthOutlook: 'สูงมาก'
     }

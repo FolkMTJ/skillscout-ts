@@ -501,9 +501,9 @@ export default function AllCampsContent() {
       {!loading && urgentCamps.length > 0 && (
         <section className="mb-16">
           <div className="flex items-center gap-3 mb-8">
-            <FaClock className="text-4xl text-red-500 animate-pulse" />
+            <FaClock className="text-3xl text-red-500 animate-pulse" />
             <div>
-              <h2 className="text-3xl font-black text-gray-800 dark:text-white">
+              <h2 className="text-2xl font-black text-gray-800 dark:text-white">
                 ใกล้ปิดรับสมัคร!
               </h2>
               <p className="text-gray-600 dark:text-gray-400">
@@ -523,9 +523,9 @@ export default function AllCampsContent() {
       {!loading && trendingCamps.length > 0 && (
         <section className="mb-16">
           <div className="flex items-center gap-3 mb-8">
-            <FaFire className="text-4xl text-orange-500" />
+            <FaFire className="text-3xl text-orange-500" />
             <div>
-              <h2 className="text-3xl font-black text-gray-800 dark:text-white">
+              <h2 className="text-2xl font-black text-gray-800 dark:text-white">
                 ค่ายยอดนิยม
               </h2>
               <p className="text-gray-600 dark:text-gray-400">
@@ -545,9 +545,9 @@ export default function AllCampsContent() {
       {!loading && displayedCamps.length > 0 && (
         <section>
           <div className="flex items-center gap-3 mb-8">
-            <FaTrophy className="text-4xl text-yellow-500" />
+            <FaTrophy className="text-3xl text-yellow-500" />
             <div>
-              <h2 className="text-3xl font-black text-gray-800 dark:text-white">
+              <h2 className="text-2xl font-black text-gray-800 dark:text-white">
                 ค่ายทั้งหมด
               </h2>
               <p className="text-gray-600 dark:text-gray-400">
