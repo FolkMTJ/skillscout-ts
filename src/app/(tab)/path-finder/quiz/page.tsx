@@ -172,13 +172,13 @@ export default function PathFinderQuizPage() {
                     <p className="text-lg md:text-xl mb-6 font-medium text-gray-700 text-center">{question.text}</p>
 
                     {/* Custom Rating Buttons */}
-                    <div className="flex justify-center items-center gap-4 md:gap-5 max-w-2xl mx-auto">
+                    <div className="flex justify-center items-center gap-6 md:gap-8 max-w-2xl mx-auto">
                       {[
-                        { value: 1, label: 'ไม่ชอบ', color: 'bg-[#E0A849]', size: 'w-15 h-15 md:w-17 md:h-17' },
-                        { value: 2, label: 'ไม่ค่อยชอบ', color: 'bg-[#ECC576]', size: 'w-14 h-14 md:w-15 md:h-15' },
-                        { value: 3, label: 'เฉยๆ', color: 'bg-[#F5E5B8]', size: 'w-13 h-13 md:w-13 md:h-13' },
-                        { value: 4, label: 'ชอบ', color: 'bg-[#ECC576]', size: 'w-14 h-14 md:w-15 md:h-15' },
-                        { value: 5, label: 'ชอบมาก', color: 'bg-[#E0A849]', size: 'w-15 h-15 md:w-17 md:h-17' }
+                        { value: 1, label: 'ไม่ชอบ', color: 'border-red-400 bg-red-50 hover:bg-red-100', selectedColor: 'bg-red-400' },
+                        { value: 2, label: 'ไม่ค่อยชอบ', color: 'border-orange-300 bg-orange-50 hover:bg-orange-100', selectedColor: 'bg-orange-300' },
+                        { value: 3, label: 'เฉยๆ', color: 'border-gray-300 bg-gray-50 hover:bg-gray-100', selectedColor: 'bg-gray-300' },
+                        { value: 4, label: 'ชอบ', color: 'border-green-300 bg-green-50 hover:bg-green-100', selectedColor: 'bg-green-300' },
+                        { value: 5, label: 'ชอบมาก', color: 'border-emerald-400 bg-emerald-50 hover:bg-emerald-100', selectedColor: 'bg-emerald-400' }
                       ].map((option) => {
                         const isSelected = currentAnswer === option.value;
                         return (
@@ -186,19 +186,17 @@ export default function PathFinderQuizPage() {
                             key={option.value}
                             type="button"
                             onClick={() => handleAnswer(question.id, option.value)}
-                            className="flex flex-col items-center gap-2 group transition-all"
+                            className="flex flex-col items-center gap-3 group transition-all"
                           >
                             <div
-                              className={`${option.size} rounded-full flex items-center justify-center font-bold text-white text-base md:text-lg transition-all duration-300 ${option.color
-                                } ${isSelected
-                                  ? 'shadow-2xl scale-110 ring-4 ring-[#F2B33D]/40 brightness-110'
-                                  : 'opacity-100  hover:scale-105 hover:shadow-lg'
+                              className={`w-10 h-10 md:w-12 md:h-12 rounded-full border-2 transition-all duration-300 ${isSelected
+                                  ? `${option.color.split(' ')[0]} ${option.selectedColor} scale-110 shadow-md ring-2 ring-offset-2 ring-transparent`
+                                  : `${option.color} opacity-80 hover:opacity-100 hover:scale-105`
                                 }`}
-                            >
-                              {option.value}
-                            </div>
-                            <span className={`text-xs md:text-sm font-medium transition-colors text-center whitespace-nowrap ${isSelected ? 'text-[#E0A849] font-bold' : 'text-gray-500 group-hover:text-[#E0A849]'
+                            />
+                            <span className={`text-xs md:text-sm font-medium transition-colors text-center whitespace-nowrap ${isSelected ? 'text-gray-900 font-bold' : 'text-gray-400 group-hover:text-gray-600'
                               }`}>
+                              {option.value}<br />
                               {option.label}
                             </span>
                           </button>

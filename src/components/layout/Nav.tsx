@@ -144,7 +144,7 @@ export default function NavBar(props: NavbarProps) {
 
                 <NavbarContent justify="end">
                     {/* {mounted && <ToggleTheme />} */}
-                    
+
                     <NavbarItem className="ml-2 flex! gap-2">
                         {status === 'loading' ? (
                             <div className="w-8 h-8 rounded-full bg-default-200 animate-pulse" />
@@ -175,12 +175,12 @@ export default function NavBar(props: NavbarProps) {
                                         startContent={<LayoutDashboard className="w-4 h-4" />}
                                         href={
                                             session.user?.role === 'admin' ? '/admin' :
-                                            session.user?.role === 'organizer' ? '/organizer' : '/profile'
+                                                session.user?.role === 'organizer' ? '/organizer' : '/profile'
                                         }
                                     >
                                         {
                                             session.user?.role === 'admin' ? 'Admin Dashboard' :
-                                            session.user?.role === 'organizer' ? 'แดชบอร์ด' : 'โปรไฟล์'
+                                                session.user?.role === 'organizer' ? 'แดชบอร์ด' : 'โปรไฟล์'
                                         }
                                     </DropdownItem>
                                     {session.user?.role === 'admin' ? (
@@ -223,7 +223,7 @@ export default function NavBar(props: NavbarProps) {
                                 <Button
                                     as={Link}
                                     href="/login"
-                                    className="bg-default-100 text-default-700 sm:text-default-500 sm:bg-transparent"
+                                    className="text-white/90 hover:text-white font-medium hover:bg-white/10"
                                     radius="full"
                                     variant="light"
                                 >
@@ -232,11 +232,9 @@ export default function NavBar(props: NavbarProps) {
                                 <Button
                                     as={Link}
                                     href="/register"
-                                    className="border-small border-yellow-500/20 bg-yellow-500/10 text-yellow-800 hidden sm:flex"
-                                    color="primary"
+                                    className="bg-[#F2B33D] text-[#2C2C2C] font-bold shadow-lg hover:shadow-xl hover:bg-[#ffc145] transition-all transform hover:-translate-y-0.5 border border-[#F2B33D]/50 hidden sm:flex"
                                     radius="full"
-                                    style={{ boxShadow: "inset 0 0 4px #ffe70c70" }}
-                                    variant="flat"
+                                    variant="solid"
                                 >
                                     สมัครสมาชิก
                                 </Button>
@@ -256,9 +254,9 @@ export default function NavBar(props: NavbarProps) {
                 >
                     {navLinks.map((link) => (
                         <NavbarMenuItem key={link.href}>
-                            <Link 
-                                className="text-default-500 w-full" 
-                                href={link.href} 
+                            <Link
+                                className="text-default-500 w-full"
+                                href={link.href}
                                 size="md"
                                 color={pathname === link.href ? "primary" : "foreground"}
                             >
@@ -266,7 +264,7 @@ export default function NavBar(props: NavbarProps) {
                             </Link>
                         </NavbarMenuItem>
                     ))}
-                    
+
                     {session ? (
                         <>
                             <NavbarMenuItem key="dashboard-menu">
@@ -274,13 +272,13 @@ export default function NavBar(props: NavbarProps) {
                                     className="text-default-500 w-full"
                                     href={
                                         session.user?.role === 'admin' ? '/admin' :
-                                        session.user?.role === 'organizer' ? '/organizer' : '/profile'
+                                            session.user?.role === 'organizer' ? '/organizer' : '/profile'
                                     }
                                     size="md"
                                 >
                                     {
                                         session.user?.role === 'admin' ? 'Admin Dashboard' :
-                                        session.user?.role === 'organizer' ? 'แดชบอร์ด' : 'โปรไฟล์'
+                                            session.user?.role === 'organizer' ? 'แดชบอร์ด' : 'โปรไฟล์'
                                     }
                                 </Link>
                             </NavbarMenuItem>
@@ -326,17 +324,19 @@ export default function NavBar(props: NavbarProps) {
                         </>
                     ) : null}
                 </NavbarMenu>
-            </Navbar>
+            </Navbar >
 
             {/* Profile Modal */}
-            {userData && (
-                <ProfileModal
-                    isOpen={isProfileModalOpen}
-                    onClose={() => setIsProfileModalOpen(false)}
-                    user={userData}
-                    onUpdate={handleProfileUpdate}
-                />
-            )}
+            {
+                userData && (
+                    <ProfileModal
+                        isOpen={isProfileModalOpen}
+                        onClose={() => setIsProfileModalOpen(false)}
+                        user={userData}
+                        onUpdate={handleProfileUpdate}
+                    />
+                )
+            }
         </>
     );
 }
