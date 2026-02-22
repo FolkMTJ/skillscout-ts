@@ -270,28 +270,17 @@ export default function PathFinderResultsPage() {
         showButtons={false}
       >
         {/* Custom Buttons in Banner */}
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center flex-wrap">
+        <div className="flex flex-row flex-wrap gap-3 items-center">
           <Button
             size="lg"
-            className="bg-[#2C2C2C] text-white font-black px-10 rounded-2xl h-16 text-lg shadow-2xl hover:bg-black transition-all group"
+            className="bg-[#2C2C2C] text-white font-black px-8 rounded-2xl h-14 text-base hover:bg-black transition-all"
             onPress={() => router.push('/path-finder/quiz')}
           >
             ทำแบบทดสอบอีกครั้ง
           </Button>
-
-          <Button
-            variant="bordered"
-            size="lg"
-            className="text-[#2C2C2C] font-black text-lg group h-16 border-2 border-[#2C2C2C]/30 hover:border-[#2C2C2C] transition-all"
-            onPress={() => router.push('/path-finder/careers')}
-            endContent={<FiArrowRight className="group-hover:translate-x-1 transition-transform" />}
-          >
-            ดูอาชีพทั้งหมด
-          </Button>
-
           <ShareResultButton
             result={result}
-            filename={`skillscout - pathfinder - ${result?.topRIASECCodes?.join('') ?? 'result'} `}
+            filename={`skillscout-pathfinder-${result?.topRIASECCodes?.join('') ?? 'result'}`}
             title="ผลลัพธ์ Path Finder - SkillScout"
           />
         </div>

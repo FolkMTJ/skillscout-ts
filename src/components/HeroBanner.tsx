@@ -17,7 +17,7 @@ interface HeroBannerProps {
   secondaryButtonHref?: string;
   showButtons?: boolean;
   children?: React.ReactNode;
-  centered?: boolean; // เพิ่ม prop สำหรับจัด content ตรงกลาง
+  centered?: boolean;
 }
 
 export default function HeroBanner({
@@ -33,74 +33,77 @@ export default function HeroBanner({
   secondaryButtonHref = "/path-finder",
   showButtons = true,
   children,
-  centered = false, // default ไม่จัดกลาง
+  centered = false,
 }: HeroBannerProps) {
   return (
-    <section className="relative w-full h-[300px] md:h-[500px] overflow-hidden">
-      {/* 1. Background สีเหลือง */}
+    <section className="relative w-full overflow-hidden">
+      {/* Background */}
       <div className="absolute inset-0 bg-[#F2B33D]" />
 
-      {/* 2. Decorative Logo Overlay (รูปนกสีขาว) */}
+      {/* Bird overlay
+          md–xl  (768–1535px) = MacBook & laptop → left-[55%]
+          2xl+   (1536px+)    = large desktop    → left-[45%]
+      */}
       <div
-        className={`absolute top-[10%] w-[60%] h-[80%] bg-contain bg-no-repeat opacity-100 pointer-events-none hidden md:block ${centered ? 'right-0 bg-right' : 'right-[10%] bg-right'
-          }`}
+        className="absolute top-[10%] left-[55%] 2xl:left-[45%] w-[42%] h-[80%] bg-contain bg-no-repeat bg-right opacity-100 pointer-events-none hidden md:block"
         style={{ backgroundImage: "url('/logo-banner.png')" }}
       />
 
-      {/* 3. Content */}
-      <div className={`container mx-auto px-6 h-full relative z-10 flex items-center ${centered ? 'justify-center' : ''}`}>
-        <div className={`${centered ? 'max-w-4xl text-center' : 'max-w-3xl'}`}>
+      {/* Content */}
+      <div className={`container mx-auto px-6 py-10 md:py-16 relative z-10 ${centered ? 'flex justify-center' : ''}`}>
+        <div className={`${centered ? 'max-w-4xl text-center' : 'max-w-full md:max-w-sm lg:max-w-lg xl:max-w-xl w-full'}`}>
+
           {/* Badge */}
           {badge && (
-            <div className={`inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full mb-6 border border-white/30 ${centered ? 'mx-auto' : ''}`}>
+            <div className={`inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full mb-4 border border-white/30 ${centered ? 'mx-auto' : ''}`}>
               <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
               <span className="text-white text-[10px] font-black uppercase tracking-[0.2em]">{badge}</span>
             </div>
           )}
 
           {/* Heading */}
-          <h1 className="text-6xl md:text-8xl font-black text-white italic tracking-tighter mb-2 drop-shadow-sm">
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white italic tracking-tighter mb-2 drop-shadow-sm">
             {title} {titleHighlight && <span className="text-[#2C2C2C] not-italic">{titleHighlight}</span>}
           </h1>
 
-          <p className="text-2xl md:text-3xl font-bold text-[#2C2C2C] mb-2 leading-tight drop-shadow-sm">
+          <p className="text-xl md:text-2xl lg:text-3xl font-bold text-[#2C2C2C] mb-2 leading-tight drop-shadow-sm">
             {subtitle}
           </p>
+
           {description && (
-            <p className={`text-lg md:text-xl font-medium text-white/90 mb-8 italic drop-shadow-md ${centered ? 'max-w-3xl mx-auto' : ''}`}>
+            <p className={`text-base md:text-lg font-medium text-white/90 mb-5 italic drop-shadow-md ${centered ? 'max-w-3xl mx-auto' : ''}`}>
               {description}
             </p>
           )}
 
-          {/* Custom Children Content (เช่น search box) */}
+          {/* Custom Children */}
           {children && (
-            <div className={`mb-8 ${centered ? 'flex justify-center' : ''}`}>
+            <div className={`flex flex-row flex-wrap gap-3 items-center ${centered ? 'justify-center' : ''}`}>
               {children}
             </div>
           )}
 
-          {/* Buttons */}
+          {/* Default Buttons */}
           {showButtons && (
-            <div className={`flex flex-col sm:flex-row gap-4 items-start sm:items-center ${centered ? 'justify-center' : ''}`}>
+            <div className={`flex flex-row flex-wrap gap-3 items-center ${centered ? 'justify-center' : ''}`}>
               {primaryButtonText && primaryButtonHref && (
                 <Button
                   as={Link}
                   href={primaryButtonHref}
                   size="lg"
-                  className="bg-[#2C2C2C] text-white font-black px-10 rounded-2xl h-16 text-lg shadow-2xl hover:bg-black transition-all group"
+                  className="bg-[#2C2C2C] text-white font-black px-8 rounded-2xl h-14 text-base hover:bg-black transition-all"
                   startContent={primaryButtonIcon}
                 >
                   {primaryButtonText}
                 </Button>
               )}
-
               {secondaryButtonText && secondaryButtonHref && (
                 <Button
                   as={Link}
                   href={secondaryButtonHref}
                   variant="light"
                   size="lg"
-                  className="text-[#2C2C2C] font-black text-lg group h-16"
+                  className="text-[#2C2C2C] font-black text-base h-14"
                   endContent={<FaChevronRight className="group-hover:translate-x-1 transition-transform" />}
                 >
                   {secondaryButtonText}
@@ -108,6 +111,7 @@ export default function HeroBanner({
               )}
             </div>
           )}
+
         </div>
       </div>
     </section>

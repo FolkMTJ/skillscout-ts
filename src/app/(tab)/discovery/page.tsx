@@ -368,6 +368,13 @@ export default function DiscoveryPathPage() {
         description={`วิเคราะห์จากค่ายที่คุณเข้าร่วมจริง • ข้อมูลจาก ${data.campsAttended} ค่าย`}
         showButtons={false}
       >
+        <Button
+            size="lg"
+            className="bg-[#2C2C2C] text-white font-black px-8 rounded-2xl h-14 text-base hover:bg-black transition-all"
+            onPress={() => router.push('/path-finder/quiz')}
+          >
+            ค่ายอื่นๆที่น่าสนใจ
+        </Button>
         <ShareResultButton
           targetRef={resultRef}
           filename="skillscout-discovery-path"
