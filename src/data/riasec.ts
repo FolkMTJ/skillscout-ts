@@ -46,7 +46,7 @@ export const RIASEC_TYPES: Record<RIASECCode, RIASECType> = {
   E: {
     code: 'E',
     name: 'Enterprising',
-    thaiName: 'นักผู้นำ',
+    thaiName: 'ผู้นำ',
     description: 'ชอบวางแผน จัดการ นำทีม และสร้างธุรกิจ',
     color: 'bg-yellow-500',
     careers: ['Tech Lead', 'Startup Founder', 'Project Manager', 'Engineering Manager']

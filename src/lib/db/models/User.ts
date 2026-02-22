@@ -53,6 +53,7 @@ export class UserModel {
     address?: string;
     province?: string;
     district?: string;
+    profileImage?: string;
   }): Promise<User> {
     const collection = await getCollection<UserDoc>(this.collectionName);
     
@@ -73,6 +74,7 @@ export class UserModel {
       address: userData.address,
       province: userData.province,
       district: userData.district,
+      profileImage: userData.profileImage,
       isBanned: false,
       createdAt: now,
       updatedAt: now,

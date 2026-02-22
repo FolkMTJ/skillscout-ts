@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Card, CardBody, Button, Progress, Spinner, Chip } from '@heroui/react';
 import { FiArrowRight, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import ShareResultButton from '@/components/common/ShareResultButton';
 import HeroBanner from '@/components/HeroBanner';
 import { PathFinderResultWithDetails } from '@/types';
 import { RIASEC_TYPES } from '@/data/riasec';
@@ -28,21 +29,39 @@ export default function PathFinderResultsPage() {
   const [loading, setLoading] = useState(true);
   const [recommendedCamps, setRecommendedCamps] = useState<Camp[]>([]);
   const [campsLoading, setCampsLoading] = useState(false);
-  const [showAllRIASEC, setShowAllRIASEC] = useState(false); // State สำหรับแสดง/ซ่อน RIASEC
+  const [showAllRIASEC, setShowAllRIASEC] = useState(false);
+
 
   const fetchRecommendedCamps = useCallback(async () => {
     try {
       setCampsLoading(true);
-      const res = await fetch('/api/camps');
+      const res = await fetch('/api/path-finder/recommended-camps');
       if (res.ok) {
-        const camps: Camp[] = await res.json();
-
-        // Filter camps based on availability
-        const matchingCamps = camps
-          .filter(camp => (camp.enrolled || 0) < (camp.capacity || camp.participantCount || 0))
-          .slice(0, 4);
-
-        setRecommendedCamps(matchingCamps);
+        const data = await res.json();
+        const camps: Camp[] = (data.recommendedCamps || []).map((c: Camp) => ({
+          ...c,
+          _id: c._id || (c as Camp & { id?: string }).id || '',
+        }));
+        setRecommendedCamps(camps.slice(0, 4));
+      } else {
+        // fallback: ดึงค่ายที่ active จริง
+        const fallback = await fetch('/api/camps');
+        if (fallback.ok) {
+          const allCamps: Camp[] = await fallback.json();
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const matchingCamps = allCamps
+            .filter(camp => {
+              const notFull = (camp.enrolled || 0) < (camp.capacity || camp.participantCount || 999);
+              const deadlineDate = camp.registrationDeadline
+                ? new Date(camp.registrationDeadline)
+                : camp.deadline ? new Date(camp.deadline) : null;
+              const stillOpen = !deadlineDate || deadlineDate >= today;
+              return notFull && stillOpen;
+            })
+            .slice(0, 4);
+          setRecommendedCamps(matchingCamps);
+        }
       }
     } catch (error) {
       console.error('Error fetching camps:', error);
@@ -119,7 +138,7 @@ export default function PathFinderResultsPage() {
             {/* RIASEC Scores Section */}
             <div className="space-y-6">
               <div className="h-8 bg-gray-200 rounded w-64 mb-6"></div>
-              
+
               {/* Top 2 RIASEC Cards */}
               <div className="grid md:grid-cols-2 gap-6">
                 {[1, 2].map((i) => (
@@ -136,7 +155,7 @@ export default function PathFinderResultsPage() {
                   </div>
                 ))}
               </div>
-              
+
               {/* Remaining RIASEC Cards */}
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[1, 2, 3, 4].map((i) => (
@@ -156,7 +175,7 @@ export default function PathFinderResultsPage() {
             {/* Recommended Careers Section */}
             <div className="space-y-6">
               <div className="h-8 bg-gray-200 rounded w-80 mb-6"></div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="bg-white rounded-2xl border border-gray-100 p-5">
@@ -187,7 +206,7 @@ export default function PathFinderResultsPage() {
             {/* Recommended Camps Section */}
             <div className="space-y-6">
               <div className="h-8 bg-gray-200 rounded w-72 mb-6"></div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {[1, 2, 3, 4].map((i) => (
                   <div key={i} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
@@ -232,7 +251,7 @@ export default function PathFinderResultsPage() {
 
   // คำนวณคะแนนรวมทั้งหมด
   const totalScore = sortedRIASEC.reduce((sum, item) => sum + item.score, 0);
-  
+
   // คำนวณเปอร์เซ็นต์จากคะแนนรวม (100% จากทั้งหมด)
   const normalizedRIASEC = sortedRIASEC.map(item => ({
     ...item,
@@ -251,7 +270,7 @@ export default function PathFinderResultsPage() {
         showButtons={false}
       >
         {/* Custom Buttons in Banner */}
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center flex-wrap">
           <Button
             size="lg"
             className="bg-[#2C2C2C] text-white font-black px-10 rounded-2xl h-16 text-lg shadow-2xl hover:bg-black transition-all group"
@@ -261,14 +280,20 @@ export default function PathFinderResultsPage() {
           </Button>
 
           <Button
-            variant="light"
+            variant="bordered"
             size="lg"
-            className="text-[#2C2C2C] font-black text-lg group h-16"
+            className="text-[#2C2C2C] font-black text-lg group h-16 border-2 border-[#2C2C2C]/30 hover:border-[#2C2C2C] transition-all"
             onPress={() => router.push('/path-finder/careers')}
             endContent={<FiArrowRight className="group-hover:translate-x-1 transition-transform" />}
           >
             ดูอาชีพทั้งหมด
           </Button>
+
+          <ShareResultButton
+            result={result}
+            filename={`skillscout - pathfinder - ${result?.topRIASECCodes?.join('') ?? 'result'} `}
+            title="ผลลัพธ์ Path Finder - SkillScout"
+          />
         </div>
       </HeroBanner>
 
@@ -306,15 +331,15 @@ export default function PathFinderResultsPage() {
 
               {/* อันดับ 3-6 - แสดงเมื่อเปิด */}
               <div
-                className={`overflow-hidden transition-all duration-500 ease-in-out ${showAllRIASEC ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
-                  }`}
+                className={`overflow - hidden transition - all duration - 500 ease -in -out ${showAllRIASEC ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+                  } `}
               >
                 <div className="space-y-4 pt-4">
                   {normalizedRIASEC.slice(2).map(({ code, score, percentage, info }, index) => (
                     <div
                       key={code}
                       className="rounded-lg transition-all duration-200 animate-in fade-in slide-in-from-bottom-4"
-                      style={{ animationDelay: `${index * 100}ms` }}
+                      style={{ animationDelay: `${index * 100} ms` }}
                     >
                       <div className="flex justify-between items-center mb-2">
                         <div className="flex items-center gap-3">
@@ -409,7 +434,7 @@ export default function PathFinderResultsPage() {
                 <Card
                   key={career.id}
                   isPressable
-                  onPress={() => router.push(`/path-finder/careers/${career.id}`)}
+                  onPress={() => router.push(`/ path - finder / careers / ${career.id} `)}
                   className="group relative w-full h-full bg-white dark:bg-[#2C2C2C] border border-gray-100 dark:border-gray-700 hover:border-[#F2B33D] shadow-sm hover:shadow-xl transition-all duration-300"
                 >
                   <CardBody className="p-5 flex flex-col h-full">

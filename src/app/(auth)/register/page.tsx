@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useDisclosure } from '@heroui/react';
 import OTPModal from '@/components/auth/OTPModal';
 import { useRouter } from 'next/navigation';
-import { Input, Button, Select, SelectItem, Textarea, Tabs, Tab, Link, Image, InputOtp } from '@heroui/react';
-import { Mail, User, Phone, Building, CreditCard, MapPin, FileText, ArrowLeft } from 'lucide-react';
+import { Input, Button, Select, SelectItem, Textarea, Tabs, Tab, Link, Image } from '@heroui/react';
+import { Mail, User, Phone, Building, CreditCard, MapPin, FileText, ArrowLeft, Camera } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { UserRole } from '@/types';
 
@@ -24,9 +24,14 @@ const provinces = [
 export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const { isOpen: isOTPOpen, onOpen: onOTPOpen, onClose: onOTPClose } = useDisclosure();
-  const [pendingRegistration, setPendingRegistration] = useState<typeof formData & { role: UserRole } | null>(null);
+  const [pendingRegistration, setPendingRegistration] = useState<typeof formData & { role: UserRole; profileImage?: string } | null>(null);
   const [role, setRole] = useState<'user' | 'organizer'>('user');
+  const [profileImage, setProfileImage] = useState('');
+  const [profilePreview, setProfilePreview] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [formData, setFormData] = useState({
     email: '',
     name: '',
@@ -39,15 +44,54 @@ export default function RegisterPage() {
     district: '',
   });
 
+  const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('กรุณาเลือกไฟล์รูปภาพ');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('ไฟล์ใหญ่เกิน 5MB');
+      return;
+    }
+
+    // Preview ทันที
+    const reader = new FileReader();
+    reader.onloadend = () => setProfilePreview(reader.result as string);
+    reader.readAsDataURL(file);
+
+    // Upload to Cloudinary
+    setUploadingImage(true);
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', file);
+      formDataUpload.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'skillscout');
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        { method: 'POST', body: formDataUpload }
+      );
+      const data = await res.json() as { secure_url?: string };
+      if (data.secure_url) {
+        setProfileImage(data.secure_url);
+        toast.success('อัปโหลดรูปสำเร็จ');
+      }
+    } catch {
+      toast.error('อัปโหลดรูปไม่สำเร็จ');
+      setProfilePreview('');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Validate form data
-      if (!formData.email || !formData.name) {
-        throw new Error('กรุณากรอกอีเมลและชื่อ');
-      }
+      if (!formData.email || !formData.name) throw new Error('กรุณากรอกอีเมลและชื่อ');
 
       if (role === 'organizer') {
         if (!formData.organization || !formData.idCard || !formData.phone || !formData.lineId || !formData.address || !formData.province || !formData.district) {
@@ -55,27 +99,20 @@ export default function RegisterPage() {
         }
       }
 
-      // Send OTP
       const otpResponse = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: formData.email,
-          name: formData.name
-        }),
+        body: JSON.stringify({ email: formData.email, name: formData.name }),
       });
 
-      if (!otpResponse.ok) {
-        throw new Error('ไม่สามารถส่ง OTP ได้');
-      }
+      if (!otpResponse.ok) throw new Error('ไม่สามารถส่ง OTP ได้');
 
-      // Store registration data temporarily
       setPendingRegistration({
         ...formData,
         role: role === 'organizer' ? UserRole.ORGANIZER : UserRole.USER,
+        profileImage: profileImage || undefined,
       });
 
-      // Open OTP modal
       onOTPOpen();
       toast.success('ส่งรหัส OTP ไปยังอีเมลของคุณแล้ว');
     } catch (error) {
@@ -96,11 +133,8 @@ export default function RegisterPage() {
         body: JSON.stringify(pendingRegistration),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error);
-      }
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error);
 
       onOTPClose();
       toast.success('สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
@@ -114,23 +148,15 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen w-full flex">
-      {/* Left Side - Hero/Branding (Sticky) */}
+      {/* Left Side */}
       <div className="hidden lg:flex w-1/2 fixed left-0 top-0 bottom-0 flex-col justify-between overflow-hidden bg-[#2C2C2C] p-12 text-white z-0">
-        {/* Background Patterns - Minimal & Solid */}
         <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#F2B33D]/10 rounded-full blur-[100px] translate-x-1/2 -translate-y-1/2" />
         <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-[#F2B33D]/5 rounded-full blur-[80px] -translate-x-1/2 translate-y-1/2" />
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 brightness-100 contrast-150 mix-blend-overlay" />
 
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-10">
             <div className="bg-white/10 p-2.5 rounded-xl backdrop-blur-md border border-white/10">
-              <Image
-                src="/skillscoutLogo.png"
-                alt="SkillScout Logo"
-                width={40}
-                height={40}
-                className="object-contain"
-              />
+              <Image src="/skillscoutLogo.png" alt="SkillScout Logo" width={40} height={40} className="object-contain" />
             </div>
             <span className="text-2xl font-bold tracking-tight text-white">SkillScout</span>
           </div>
@@ -139,18 +165,15 @@ export default function RegisterPage() {
             <div className="absolute -left-4 -top-4 w-12 h-12 border-l-4 border-t-4 border-[#F2B33D] rounded-tl-xl"></div>
             <h1 className="text-6xl font-black leading-[1.1] mb-6 tracking-tight text-white">
               เปลี่ยน <br />
-              <span className="text-[#F2B33D]">
-                ความชอบ
-              </span><br />
+              <span className="text-[#F2B33D]">ความชอบ</span><br />
               ให้เป็นทักษะ
             </h1>
-            <p className="text-gray-300 font-light">
-              เข้าร่วมกับเราวันนี้ เพื่อค้นพบค่ายและกิจกรรมที่น่าสนใจมากมาย
-            </p>
-          </div>
+            <p className="text-gray-300 font-light">เข้าร่วมกับเราวันนี้ เพื่อค้นพบค่ายและกิจกรรมที่น่าสนใจมากมาย</p>
+          </div>Realistic
+
+นักปฏิบัติ
         </div>
 
-        {/* Floating Glass Stats Card */}
         <div className="relative z-10 mt-auto">
           <div className="bg-white/5 backdrop-blur-xl p-5 rounded-3xl border border-white/10 shadow-2xl">
             <div className="flex items-center gap-3 mb-3">
@@ -168,8 +191,7 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* Right Side - Scrollable Form */}
-      {/* Right Side - Scrollable Form */}
+      {/* Right Side */}
       <div className="w-full lg:w-1/2 lg:ml-[50%] flex items-center justify-center bg-white dark:bg-black min-h-screen">
         <div className="w-full max-w-2xl p-6 lg:p-12">
           <Link href="/login" className="mb-8 text-gray-500 hover:text-orange-600 flex items-center gap-2 transition-colors">
@@ -193,54 +215,96 @@ export default function RegisterPage() {
                 tabContent: "group-data-[selected=true]:text-white"
               }}
             >
-              <Tab
-                key="user"
-                title={
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    <span>ผู้ใช้งานทั่วไป</span>
-                  </div>
-                }
-              />
-              <Tab
-                key="organizer"
-                title={
-                  <div className="flex items-center gap-2">
-                    <Building className="w-4 h-4" />
-                    <span>ผู้จัดค่าย (Organizer)</span>
-                  </div>
-                }
-              />
+              <Tab key="user" title={<div className="flex items-center gap-2"><User className="w-4 h-4" /><span>ผู้ใช้งานทั่วไป</span></div>} />
+              <Tab key="organizer" title={<div className="flex items-center gap-2"><Building className="w-4 h-4" /><span>ผู้จัดค่าย (Organizer)</span></div>} />
             </Tabs>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="อีเมล"
-                placeholder="your@email.com"
-                type="email"
-                variant="bordered"
-                radius="lg"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                startContent={<Mail className="w-4 h-4 text-gray-400" />}
-                isRequired
-                classNames={{ inputWrapper: "border-1 hover:border-[#F2B33D] group-data-[focus=true]:border-[#F2B33D]" }}
-              />
 
-              <Input
-                label="ชื่อ-นามสกุล"
-                placeholder="ชื่อจริง นามสกุลจริง"
-                type="text"
-                variant="bordered"
-                radius="lg"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                startContent={<User className="w-4 h-4 text-gray-400" />}
-                isRequired
-                classNames={{ inputWrapper: "border-1 hover:border-[#F2B33D] group-data-[focus=true]:border-[#F2B33D]" }}
-              />
+            {/* Profile Image + Email/Name Row */}
+            <div className="flex items-start gap-4">
+              {/* Profile Image Upload */}
+              <div className="flex flex-col items-center gap-1 shrink-0">
+                <div className="relative">
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-24 h-24 rounded-full border-2 border-dashed border-[#F2B33D] cursor-pointer hover:border-orange-500 transition-colors overflow-hidden bg-gray-50 dark:bg-gray-900 flex items-center justify-center"
+                  >
+                    {profilePreview ? (
+                      <img src={profilePreview} alt="profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex flex-col items-center gap-1 text-gray-400">
+                        <Camera className="w-7 h-7" />
+                        <span className="text-[10px]">รูปโปรไฟล์</span>
+                      </div>
+                    )}
+                  </div>
+                  {uploadingImage && (
+                    <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleProfileImageChange}
+                />
+                <p className="text-[10px] text-gray-400 text-center leading-tight mt-1">คลิกเพื่ออัปโหลด<br/>รูปโปรไฟล์ (ไม่บังคับ)</p>
+              </div>
+
+              {/* Email + Name + Phone + LINE */}
+              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="อีเมล"
+                  placeholder="your@email.com"
+                  type="email"
+                  variant="bordered"
+                  radius="lg"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  startContent={<Mail className="w-4 h-4 text-gray-400" />}
+                  isRequired
+                  classNames={{ inputWrapper: "border-1 hover:border-[#F2B33D] group-data-[focus=true]:border-[#F2B33D]" }}
+                />
+                <Input
+                  label="ชื่อ-นามสกุล"
+                  placeholder="ชื่อจริง นามสกุลจริง"
+                  type="text"
+                  variant="bordered"
+                  radius="lg"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  startContent={<User className="w-4 h-4 text-gray-400" />}
+                  isRequired
+                  classNames={{ inputWrapper: "border-1 hover:border-[#F2B33D] group-data-[focus=true]:border-[#F2B33D]" }}
+                />
+                <Input
+                  label={role === 'user' ? 'เบอร์โทรศัพท์ (ไม่บังคับ)' : 'เบอร์โทรศัพท์'}
+                  placeholder="08x-xxx-xxxx"
+                  variant="bordered"
+                  radius="lg"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  startContent={<Phone className="w-4 h-4 text-gray-400" />}
+                  isRequired={role === 'organizer'}
+                  classNames={{ inputWrapper: "border-1 hover:border-[#F2B33D] group-data-[focus=true]:border-[#F2B33D]" }}
+                />
+                <Input
+                  label={role === 'user' ? 'LINE ID (ไม่บังคับ)' : 'LINE ID'}
+                  placeholder="ไอดีไลน์"
+                  variant="bordered"
+                  radius="lg"
+                  value={formData.lineId}
+                  onChange={(e) => setFormData({ ...formData, lineId: e.target.value })}
+                  startContent={<FileText className="w-4 h-4 text-gray-400" />}
+                  isRequired={role === 'organizer'}
+                  classNames={{ inputWrapper: "border-1 hover:border-[#F2B33D] group-data-[focus=true]:border-[#F2B33D]" }}
+                />
+              </div>
             </div>
 
             {role === 'organizer' && (
@@ -272,30 +336,8 @@ export default function RegisterPage() {
                       isRequired
                       classNames={{ inputWrapper: "bg-white dark:bg-black border-1 hover:border-orange-500 group-data-[focus=true]:border-orange-500" }}
                     />
-                    <Input
-                      label="เบอร์โทรศัพท์"
-                      placeholder="08x-xxx-xxxx"
-                      variant="bordered"
-                      radius="lg"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      startContent={<Phone className="w-4 h-4 text-gray-400" />}
-                      isRequired
-                      classNames={{ inputWrapper: "bg-white dark:bg-black border-1 hover:border-orange-500 group-data-[focus=true]:border-orange-500" }}
-                    />
-                    <Input
-                      label="LINE ID"
-                      placeholder="ไอดีไลน์"
-                      variant="bordered"
-                      radius="lg"
-                      value={formData.lineId}
-                      onChange={(e) => setFormData({ ...formData, lineId: e.target.value })}
-                      startContent={<FileText className="w-4 h-4 text-gray-400" />}
-                      isRequired
-                      classNames={{ inputWrapper: "bg-white dark:bg-black border-1 hover:border-orange-500 group-data-[focus=true]:border-orange-500" }}
-                    />
-                  </div>
 
+                  </div>
                   <div className="mt-4">
                     <Textarea
                       label="ที่อยู่"
@@ -309,7 +351,6 @@ export default function RegisterPage() {
                       classNames={{ inputWrapper: "bg-white dark:bg-black border-1 hover:border-orange-500 group-data-[focus=true]:border-orange-500" }}
                     />
                   </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     <Select
                       label="จังหวัด"
@@ -322,9 +363,7 @@ export default function RegisterPage() {
                       isRequired
                       classNames={{ trigger: "bg-white dark:bg-black border-1 hover:border-orange-500" }}
                     >
-                      {provinces.map((p) => (
-                        <SelectItem key={p}>{p}</SelectItem>
-                      ))}
+                      {provinces.map((p) => <SelectItem key={p}>{p}</SelectItem>)}
                     </Select>
                     <Input
                       label="อำเภอ/เขต"
@@ -341,35 +380,12 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {role === 'user' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-appearance-in">
-                <Input
-                  label="เบอร์โทรศัพท์ (ไม่บังคับ)"
-                  placeholder="08x-xxx-xxxx"
-                  variant="bordered"
-                  radius="lg"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  startContent={<Phone className="w-4 h-4 text-gray-400" />}
-                  classNames={{ inputWrapper: "border-1 hover:border-[#F2B33D] group-data-[focus=true]:border-[#F2B33D]" }}
-                />
-                <Input
-                  label="LINE ID (ไม่บังคับ)"
-                  placeholder="ไอดีไลน์"
-                  variant="bordered"
-                  radius="lg"
-                  value={formData.lineId}
-                  onChange={(e) => setFormData({ ...formData, lineId: e.target.value })}
-                  startContent={<FileText className="w-4 h-4 text-gray-400" />}
-                  classNames={{ inputWrapper: "border-1 hover:border-[#F2B33D] group-data-[focus=true]:border-[#F2B33D]" }}
-                />
-              </div>
-            )}
-
             <div className="flex gap-2 items-start text-xs text-gray-500 bg-gray-50 dark:bg-gray-900 p-3 rounded-lg">
               <div className="mt-1 min-w-4 w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-[10px]">i</div>
               <p>
-                การสมัครสมาชิกถือว่าคุณยอมรับ <Link href="#" className="text-[#F2B33D] text-xs">ข้อกำหนดการใช้งาน</Link> และ <Link href="#" className="text-[#F2B33D] text-xs">นโยบายความเป็นส่วนตัว</Link> ของเรา
+                การสมัครสมาชิกถือว่าคุณยอมรับ{' '}
+                <Link href="#" className="text-[#F2B33D] text-xs">ข้อกำหนดการใช้งาน</Link> และ{' '}
+                <Link href="#" className="text-[#F2B33D] text-xs">นโยบายความเป็นส่วนตัว</Link> ของเรา
               </p>
             </div>
 
@@ -380,9 +396,9 @@ export default function RegisterPage() {
               className="w-full text-white font-bold"
               size="lg"
               radius="lg"
-              isLoading={loading}
+              isLoading={loading || uploadingImage}
             >
-              สมัครสมาชิก
+              {uploadingImage ? 'กำลังอัปโหลดรูป...' : 'สมัครสมาชิก'}
             </Button>
           </form>
         </div>

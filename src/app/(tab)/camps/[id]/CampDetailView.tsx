@@ -300,6 +300,14 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                                     รอตรวจสอบ
                                                 </Button>
                                             )
+                                        ) : session?.user?.role === 'organizer' ? (
+                                            <Button
+                                                isDisabled
+                                                className="w-full sm:w-auto bg-gray-200 dark:bg-gray-700 font-bold text-gray-500 dark:text-gray-400"
+                                                size="md"
+                                            >
+                                                ผู้จัดค่ายไม่สามารถสมัครได้
+                                            </Button>
                                         ) : (
                                             <Button
                                                 className="w-full sm:w-auto bg-[#F2B33D] font-bold text-gray-900"

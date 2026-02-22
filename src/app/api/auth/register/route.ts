@@ -6,7 +6,7 @@ import { UserRole } from '@/types';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, name, role, phone, lineId, organization, idCard, address, province, district } = body;
+    const { email, name, role, phone, lineId, organization, idCard, address, province, district, profileImage } = body;
 
     if (!email || !name) {
       return NextResponse.json(
@@ -35,6 +35,7 @@ export async function POST(request: Request) {
       address,
       province,
       district,
+      profileImage,
     });
 
     return NextResponse.json({

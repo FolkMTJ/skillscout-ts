@@ -11,3 +11,4 @@ export { HighlightBox } from './HighlightBox';
 export { SectionContainer } from './SectionContainer';
 export { IconContainer } from './IconContainer';
 export { StatCard } from './StatCard';
+export { default as ShareResultButton } from './ShareResultButton';

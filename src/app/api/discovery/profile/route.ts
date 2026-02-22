@@ -140,65 +140,172 @@ export async function GET() {
   }
 }
 
-// Helper: แนะนำอาชีพตาม RIASEC
+// Helper: แนะนำอาชีพตาม RIASEC (sync กับ IT_CAREERS ใน path-finder)
 function getCareerRecommendations(
   riasecProfile: { R: number; I: number; A: number; S: number; E: number; C: number },
   skillProfile: SkillProfile[]
 ) {
+  // ใช้รายการอาชีพที่ sync กับ path-finder/careers.ts
   const careers = [
     {
-      id: 'frontend-dev',
-      name: 'Frontend Developer',
-      riasec: { I: 60, A: 80, C: 50 },
-      requiredSkills: ['HTML/CSS', 'JavaScript', 'React', 'UI/UX'],
+      id: 'software-engineer', name: 'Software Engineer',
+      riasec: { I: 85, R: 60 },
+      requiredSkills: ['Python', 'JavaScript', 'HTML/CSS'],
+      salary: '30,000 - 90,000 บาท',
+      description: 'ออกแบบ พัฒนา และทดสอบซอฟต์แวร์และแอปพลิเคชันต่างๆ',
+      growthOutlook: 'สูงมาก'
+    },
+    {
+      id: 'frontend-dev', name: 'Frontend Developer',
+      riasec: { A: 80, I: 60 },
+      requiredSkills: ['HTML/CSS', 'JavaScript', 'UI/UX'],
       salary: '30,000 - 80,000 บาท',
       description: 'สร้างและพัฒนาส่วนที่ผู้ใช้มองเห็นและโต้ตอบกับเว็บไซต์',
       growthOutlook: 'สูงมาก'
     },
     {
-      id: 'backend-dev',
-      name: 'Backend Developer',
-      riasec: { I: 80, C: 70, E: 30 },
-      requiredSkills: ['Node.js', 'Python', 'Database', 'API'],
+      id: 'backend-dev', name: 'Backend Developer',
+      riasec: { I: 80, C: 70 },
+      requiredSkills: ['Python', 'JavaScript', 'Database'],
       salary: '35,000 - 90,000 บาท',
       description: 'พัฒนาระบบฝั่งเซิร์ฟเวอร์และจัดการข้อมูล',
       growthOutlook: 'สูงมาก'
     },
     {
-      id: 'fullstack-dev',
-      name: 'Full-stack Developer',
+      id: 'fullstack-dev', name: 'Full-stack Developer',
       riasec: { I: 75, A: 50, C: 60 },
-      requiredSkills: ['JavaScript', 'React', 'Node.js', 'Database'],
+      requiredSkills: ['JavaScript', 'Python', 'HTML/CSS', 'Database'],
       salary: '40,000 - 100,000 บาท',
       description: 'พัฒนาทั้งส่วน Frontend และ Backend ของแอปพลิเคชัน',
       growthOutlook: 'สูงมาก'
     },
     {
-      id: 'data-scientist',
-      name: 'Data Scientist',
-      riasec: { I: 95, C: 60, A: 40 },
-      requiredSkills: ['Python', 'Machine Learning', 'Statistics', 'Data Visualization'],
-      salary: '45,000 - 120,000 บาท',
-      description: 'วิเคราะห์ข้อมูลและสร้างโมเดล Machine Learning',
-      growthOutlook: 'สูงมาก'
-    },
-    {
-      id: 'ui-ux-designer',
-      name: 'UI/UX Designer',
-      riasec: { A: 90, S: 60, I: 40 },
-      requiredSkills: ['Figma', 'UI/UX', 'Design Thinking', 'Prototyping'],
+      id: 'ui-ux-designer', name: 'UI/UX Designer',
+      riasec: { A: 90, S: 60 },
+      requiredSkills: ['Figma', 'UI/UX', 'Graphic Design'],
       salary: '28,000 - 75,000 บาท',
       description: 'ออกแบบประสบการณ์ผู้ใช้และส่วนติดต่อผู้ใช้',
       growthOutlook: 'สูง'
     },
     {
-      id: 'devops-engineer',
-      name: 'DevOps Engineer',
-      riasec: { C: 80, I: 70, R: 50 },
-      requiredSkills: ['Docker', 'Kubernetes', 'CI/CD', 'Cloud'],
+      id: 'devops-engineer', name: 'DevOps Engineer',
+      riasec: { R: 70, C: 80 },
+      requiredSkills: ['Docker', 'Cloud', 'DevOps'],
       salary: '40,000 - 110,000 บาท',
       description: 'จัดการโครงสร้างพื้นฐานและระบบ Deployment',
       growthOutlook: 'สูงมาก'
+    },
+    {
+      id: 'cybersecurity-analyst', name: 'Cybersecurity Analyst',
+      riasec: { I: 80, C: 75 },
+      requiredSkills: ['Cybersecurity'],
+      salary: '35,000 - 100,000 บาท',
+      description: 'ปกป้องระบบและเครือข่ายจากภัยคุกคาม',
+      growthOutlook: 'สูงมาก'
+    },
+    {
+      id: 'mobile-dev', name: 'Mobile App Developer',
+      riasec: { A: 70, I: 65 },
+      requiredSkills: ['Mobile Dev', 'JavaScript', 'UI/UX'],
+      salary: '30,000 - 85,000 บาท',
+      description: 'พัฒนาแอปพลิเคชันบนมือถือสำหรับ iOS และ Android',
+      growthOutlook: 'สูงมาก'
+    },
+    {
+      id: 'cloud-architect', name: 'Cloud Architect',
+      riasec: { I: 80, R: 60 },
+      requiredSkills: ['Cloud', 'DevOps'],
+      salary: '60,000 - 150,000 บาท',
+      description: 'ออกแบบโครงสร้างพื้นฐาน Cloud ให้กับองค์กร',
+      growthOutlook: 'สูงมาก'
+    },
+    {
+      id: 'ai-ml-engineer', name: 'AI/ML Engineer',
+      riasec: { I: 90, R: 60 },
+      requiredSkills: ['Machine Learning', 'AI', 'Python'],
+      salary: '50,000 - 130,000 บาท',
+      description: 'สร้างและ deploy โมเดล Machine Learning และ AI',
+      growthOutlook: 'สูงมาก'
+    },
+    {
+      id: 'data-analyst', name: 'Data Analyst',
+      riasec: { I: 75, C: 70 },
+      requiredSkills: ['Data Science', 'Data Visualization', 'Python'],
+      salary: '28,000 - 75,000 บาท',
+      description: 'วิเคราะห์ข้อมูลเชิงธุรกิจและสร้าง Dashboard',
+      growthOutlook: 'สูงมาก'
+    },
+    {
+      id: 'data-scientist', name: 'Data Scientist',
+      riasec: { I: 90, A: 50 },
+      requiredSkills: ['Data Science', 'Machine Learning', 'Python'],
+      salary: '45,000 - 120,000 บาท',
+      description: 'วิเคราะห์ข้อมูลขนาดใหญ่และสร้างโมเดล ML',
+      growthOutlook: 'สูงมาก'
+    },
+    {
+      id: 'game-developer', name: 'Game Developer',
+      riasec: { R: 65, A: 70 },
+      requiredSkills: ['Game Dev', 'Graphic Design'],
+      salary: '25,000 - 80,000 บาท',
+      description: 'สร้างเกมบน Mobile, PC และ Console',
+      growthOutlook: 'ปานกลาง'
+    },
+    {
+      id: 'network-engineer', name: 'Network Engineer',
+      riasec: { R: 70, I: 65 },
+      requiredSkills: ['DevOps', 'Cloud', 'Cybersecurity'],
+      salary: '30,000 - 80,000 บาท',
+      description: 'ดูแลและจัดการโครงสร้างพื้นฐานเครือข่ายในองค์กร',
+      growthOutlook: 'สูง'
+    },
+    {
+      id: 'database-administrator', name: 'Database Administrator',
+      riasec: { I: 80, C: 75 },
+      requiredSkills: ['Database'],
+      salary: '30,000 - 85,000 บาท',
+      description: 'จัดการและดูแลฐานข้อมูลขององค์กร',
+      growthOutlook: 'สูง'
+    },
+    {
+      id: 'business-analyst', name: 'Business Analyst',
+      riasec: { I: 70, S: 65 },
+      requiredSkills: ['Data Visualization'],
+      salary: '28,000 - 70,000 บาท',
+      description: 'วิเคราะห์ความต้องการทางธุรกิจและแปลงเป็นข้อกำหนดสำหรับทีมพัฒนา',
+      growthOutlook: 'สูง'
+    },
+    {
+      id: 'product-manager', name: 'Product Manager',
+      riasec: { I: 65, E: 70 },
+      requiredSkills: ['UI/UX'],
+      salary: '40,000 - 120,000 บาท',
+      description: 'วางแผนและจัดการผลิตภัณฑ์ตั้งแต่แนวคิดจนเปิดตัว',
+      growthOutlook: 'สูงมาก'
+    },
+    {
+      id: 'computer-graphics-designer', name: 'Computer Graphics Designer',
+      riasec: { R: 55, A: 80 },
+      requiredSkills: ['Graphic Design', 'Figma'],
+      salary: '22,000 - 60,000 บาท',
+      description: 'สร้างสรรค์กราฟิก ภาพเคลื่อนไหว หรือโมเดล 3D',
+      growthOutlook: 'ปานกลาง'
+    },
+    {
+      id: 'it-consultant', name: 'IT Consultant',
+      riasec: { S: 70, E: 75 },
+      requiredSkills: ['Cloud', 'DevOps'],
+      salary: '40,000 - 110,000 บาท',
+      description: 'ให้คำปรึกษาและแก้ไขปัญหาทางเทคนิคให้กับลูกค้า',
+      growthOutlook: 'สูง'
+    },
+    {
+      id: 'digital-marketing-manager', name: 'Digital Marketing Manager',
+      riasec: { A: 70, E: 75 },
+      requiredSkills: ['UI/UX', 'Graphic Design'],
+      salary: '28,000 - 80,000 บาท',
+      description: 'วางแผนและบริหารจัดการแคมเปญการตลาดออนไลน์',
+      growthOutlook: 'สูง'
     }
   ];
 
@@ -223,7 +330,9 @@ function getCareerRecommendations(
       )
     );
     
-    const skillScore = (matchedSkills.length / career.requiredSkills.length) * 100;
+    const skillScore = career.requiredSkills.length > 0
+      ? (matchedSkills.length / career.requiredSkills.length) * 100
+      : 0;
 
     // รวมคะแนน (70% RIASEC, 30% Skills)
     const matchScore = Math.round(normalizedRiasecScore * 0.7 + skillScore * 0.3);
@@ -236,7 +345,7 @@ function getCareerRecommendations(
 
   return withScores
     .sort((a, b) => b.matchScore - a.matchScore)
-    .slice(0, 3);
+    .slice(0, 6); // เพิ่มเป็น 6 อาชีพ
 }
 
 // Helper: แนะนำค่ายที่ยังไม่ได้เข้า

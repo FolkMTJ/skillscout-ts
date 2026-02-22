@@ -26,6 +26,478 @@ export interface RoadmapStep {
 
 // อาชีพตาม RIASEC Combinations
 export const IT_CAREERS: Career[] = [
+  // ─── อาชีพหลัก ───────────────────────────────────────────────────────────
+
+  // Software Engineer / Developer (I+R)
+  {
+    id: 'software-engineer',
+    name: 'Software Engineer',
+    nameTh: 'วิศวกรซอฟต์แวร์',
+    description: 'ออกแบบ พัฒนา และทดสอบซอฟต์แวร์และแอปพลิเคชันต่างๆ โดยใช้หลักการวิศวกรรมซอฟต์แวร์เพื่อสร้างระบบที่มีคุณภาพสูง',
+    personality: 'คุณชอบแก้ปัญหาเชิงตรรกะ มีความคิดวิเคราะห์ และสนใจในการสร้างสิ่งใหม่ด้วยโค้ด',
+    riasecCodes: ['I', 'R'],
+    requiredTags: ['python', 'javascript', 'html-css'],
+    recommendedTags: ['database', 'devops', 'mobile-dev'],
+    demandLevel: 'high',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'พื้นฐานการเขียนโปรแกรม',
+        description: 'เรียนรู้ภาษาโปรแกรมมิ่งพื้นฐาน โครงสร้างข้อมูล และ algorithms',
+        requiredSkills: ['Programming Basics', 'Problem Solving', 'Git'],
+        recommendedCamps: ['python', 'javascript', 'html-css'],
+        duration: '3-4 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'การพัฒนาแอปพลิเคชัน',
+        description: 'สร้าง web/mobile application และเรียนรู้ design patterns',
+        requiredSkills: ['OOP', 'Design Patterns', 'Testing', 'Database'],
+        recommendedCamps: ['javascript', 'database', 'devops'],
+        duration: '6-12 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Software Architecture',
+        description: 'ออกแบบระบบขนาดใหญ่ Microservices และ System Design',
+        requiredSkills: ['System Design', 'Microservices', 'Performance Optimization'],
+        recommendedCamps: ['devops', 'cloud', 'database'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // Frontend Developer (A+I)
+  {
+    id: 'frontend-dev',
+    name: 'Frontend Developer',
+    nameTh: 'นักพัฒนาส่วนหน้า',
+    description: 'สร้างและพัฒนาส่วนที่ผู้ใช้มองเห็นและโต้ตอบกับเว็บไซต์และแอปพลิเคชัน ให้ดูสวยงามและใช้งานง่าย',
+    personality: 'คุณมีความคิดสร้างสรรค์และชอบออกแบบ รวมกับความสามารถในการแปลงไอเดียให้เป็นโค้ดได้จริง',
+    riasecCodes: ['A', 'I'],
+    requiredTags: ['html-css', 'javascript', 'ui-ux'],
+    recommendedTags: ['figma', 'mobile-dev'],
+    demandLevel: 'high',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'HTML, CSS และ JavaScript พื้นฐาน',
+        description: 'เรียนรู้ HTML, CSS และ JavaScript เพื่อสร้างเว็บเพจพื้นฐาน',
+        requiredSkills: ['HTML5', 'CSS3', 'JavaScript Basics', 'Responsive Design'],
+        recommendedCamps: ['html-css', 'javascript'],
+        duration: '2-3 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'React/Next.js และ UI Framework',
+        description: 'เรียนรู้ React, Framework และการสร้าง UI ที่ซับซ้อน',
+        requiredSkills: ['React', 'TypeScript', 'CSS Framework', 'State Management'],
+        recommendedCamps: ['javascript', 'ui-ux', 'figma'],
+        duration: '4-6 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Performance & Advanced Patterns',
+        description: 'เพิ่มประสิทธิภาพ เรียนรู้ Testing และ Advanced Patterns',
+        requiredSkills: ['Performance Optimization', 'Testing', 'CI/CD', 'Accessibility'],
+        recommendedCamps: ['devops', 'ui-ux'],
+        duration: '6-12 เดือน'
+      }
+    ]
+  },
+
+  // Backend Developer (I+C)
+  {
+    id: 'backend-dev',
+    name: 'Backend Developer',
+    nameTh: 'นักพัฒนาส่วนหลัง',
+    description: 'พัฒนาระบบฝั่งเซิร์ฟเวอร์ จัดการข้อมูล และสร้าง API เพื่อให้ Frontend สามารถเรียกใช้งานได้',
+    personality: 'คุณชอบงานที่ต้องใช้ตรรกะและการวิเคราะห์ เหมาะกับงานที่มีความเป็นระบบและมีโครงสร้างชัดเจน',
+    riasecCodes: ['I', 'C'],
+    requiredTags: ['python', 'javascript', 'database'],
+    recommendedTags: ['devops', 'cloud', 'docker'],
+    demandLevel: 'high',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Backend Programming Basics',
+        description: 'เรียนรู้ภาษาโปรแกรมสำหรับ Backend และการจัดการข้อมูล',
+        requiredSkills: ['Python/Node.js', 'SQL Basics', 'REST API Basics'],
+        recommendedCamps: ['python', 'database'],
+        duration: '3-4 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'API Development & Database',
+        description: 'สร้าง API ที่ซับซ้อน จัดการฐานข้อมูล และ Authentication',
+        requiredSkills: ['RESTful API', 'Database Design', 'Authentication', 'Security'],
+        recommendedCamps: ['database', 'javascript', 'python'],
+        duration: '6-9 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Scalable Architecture',
+        description: 'ออกแบบระบบที่ scale ได้ Microservices และ Cloud Deployment',
+        requiredSkills: ['Microservices', 'Docker', 'Cloud Services', 'Performance'],
+        recommendedCamps: ['devops', 'cloud', 'docker'],
+        duration: '9-12 เดือน'
+      }
+    ]
+  },
+
+  // Full-stack Developer (I+A)
+  {
+    id: 'fullstack-dev',
+    name: 'Full-stack Developer',
+    nameTh: 'นักพัฒนาเต็มรูปแบบ',
+    description: 'พัฒนาทั้งส่วน Frontend และ Backend ของแอปพลิเคชัน ครอบคลุมทุกส่วนของการพัฒนาซอฟต์แวร์',
+    personality: 'คุณสนุกกับการเรียนรู้สิ่งใหม่และสามารถทำงานได้หลากหลาย ชอบเห็นผลลัพธ์ที่สมบูรณ์',
+    riasecCodes: ['I', 'A'],
+    requiredTags: ['html-css', 'javascript', 'python', 'database'],
+    recommendedTags: ['devops', 'mobile-dev', 'ui-ux'],
+    demandLevel: 'high',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Web Development Fundamentals',
+        description: 'เรียนรู้ HTML, CSS, JavaScript และ Backend เบื้องต้น',
+        requiredSkills: ['HTML/CSS', 'JavaScript', 'Basic Backend', 'Database Basics'],
+        recommendedCamps: ['html-css', 'javascript', 'python'],
+        duration: '4-6 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'Full-stack Framework',
+        description: 'เรียนรู้ Framework ทั้ง Frontend และ Backend',
+        requiredSkills: ['React/Next.js', 'Node.js/Django', 'REST API', 'SQL/NoSQL'],
+        recommendedCamps: ['javascript', 'database', 'ui-ux'],
+        duration: '6-12 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Deployment & DevOps',
+        description: 'Deploy แอปพลิเคชัน จัดการ Server และ CI/CD',
+        requiredSkills: ['Docker', 'CI/CD', 'Cloud Platforms', 'Performance'],
+        recommendedCamps: ['devops', 'cloud'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // UI/UX Designer (A+S)
+  {
+    id: 'ui-ux-designer',
+    name: 'UI/UX Designer',
+    nameTh: 'นักออกแบบ UI/UX',
+    description: 'ออกแบบประสบการณ์ผู้ใช้ (UX) และส่วนติดต่อผู้ใช้ (UI) ที่สวยงามและใช้งานง่าย เพื่อให้ผลิตภัณฑ์ดิจิทัลตอบสนองความต้องการของผู้ใช้',
+    personality: 'คุณมีความคิดสร้างสรรค์สูง ชอบเข้าใจผู้คน และสนุกกับการแก้ปัญหาด้วยการออกแบบ',
+    riasecCodes: ['A', 'S'],
+    requiredTags: ['ui-ux', 'figma', 'graphic-design'],
+    recommendedTags: ['html-css', 'mobile-dev'],
+    demandLevel: 'high',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Design Fundamentals',
+        description: 'เรียนรู้หลักการออกแบบ และเครื่องมือเบื้องต้น',
+        requiredSkills: ['Design Principles', 'Color Theory', 'Typography', 'Figma Basics'],
+        recommendedCamps: ['figma', 'graphic-design', 'ui-ux'],
+        duration: '2-3 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'UX Research & Prototyping',
+        description: 'วิจัยผู้ใช้ สร้าง Wireframe และ Prototype',
+        requiredSkills: ['User Research', 'Wireframing', 'Prototyping', 'Usability Testing'],
+        recommendedCamps: ['ui-ux', 'figma'],
+        duration: '4-6 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Advanced UX & Design Systems',
+        description: 'สร้าง Design System และ Advanced Interaction Design',
+        requiredSkills: ['Design System', 'Motion Design', 'Design Thinking', 'A/B Testing'],
+        recommendedCamps: ['ui-ux', 'mobile-dev'],
+        duration: '8-12 เดือน'
+      }
+    ]
+  },
+
+  // DevOps Engineer (R+C)
+  {
+    id: 'devops-engineer',
+    name: 'DevOps Engineer',
+    nameTh: 'วิศวกร DevOps',
+    description: 'จัดการโครงสร้างพื้นฐาน ระบบ Deployment และ CI/CD Pipeline เพื่อให้การพัฒนาและ Deploy ซอฟต์แวร์เป็นไปอย่างรวดเร็วและปลอดภัย',
+    personality: 'คุณชอบงานที่เป็นระบบ ทำงานกับเครื่องมือและโครงสร้างพื้นฐาน และชอบปรับปรุงกระบวนการ',
+    riasecCodes: ['R', 'C'],
+    requiredTags: ['devops', 'docker', 'cloud'],
+    recommendedTags: ['cybersecurity', 'kubernetes'],
+    demandLevel: 'high',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Linux & Scripting',
+        description: 'เรียนรู้ Linux, Shell Scripting และ Version Control',
+        requiredSkills: ['Linux CLI', 'Shell Scripting', 'Git', 'Basic Networking'],
+        recommendedCamps: ['devops'],
+        duration: '2-3 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'Containerization & CI/CD',
+        description: 'เรียนรู้ Docker, Kubernetes และ CI/CD Pipeline',
+        requiredSkills: ['Docker', 'CI/CD Tools', 'Cloud Basics', 'Monitoring'],
+        recommendedCamps: ['docker', 'devops', 'cloud'],
+        duration: '4-8 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Cloud Architecture & SRE',
+        description: 'บริหาร Cloud Infrastructure และ Site Reliability Engineering',
+        requiredSkills: ['Kubernetes', 'Infrastructure as Code', 'SRE Practices'],
+        recommendedCamps: ['cloud', 'cybersecurity'],
+        duration: '8-12 เดือน'
+      }
+    ]
+  },
+
+  // Cybersecurity Analyst (I+C)
+  {
+    id: 'cybersecurity-analyst',
+    name: 'Cybersecurity Analyst',
+    nameTh: 'นักวิเคราะห์ความปลอดภัยไซเบอร์',
+    description: 'ปกป้องระบบคอมพิวเตอร์และเครือข่ายจากการโจมตีและภัยคุกคามต่างๆ รวมถึงวิเคราะห์และตอบสนองต่อเหตุการณ์ด้านความปลอดภัย',
+    personality: 'คุณชอบวิเคราะห์ปัญหา คิดเหมือนแฮกเกอร์เพื่อป้องกันการโจมตี และใส่ใจในรายละเอียด',
+    riasecCodes: ['I', 'C'],
+    requiredTags: ['cybersecurity'],
+    recommendedTags: ['devops', 'cloud', 'network'],
+    demandLevel: 'high',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Security Fundamentals',
+        description: 'เรียนรู้พื้นฐาน Networking, OS และ Security Concepts',
+        requiredSkills: ['Networking Basics', 'OS Security', 'Cryptography Basics', 'Security Tools'],
+        recommendedCamps: ['cybersecurity'],
+        duration: '3-4 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'Security Assessment & Monitoring',
+        description: 'Penetration Testing, Vulnerability Assessment และ SIEM',
+        requiredSkills: ['Penetration Testing', 'Vulnerability Scanning', 'Log Analysis', 'Incident Response'],
+        recommendedCamps: ['cybersecurity', 'devops'],
+        duration: '6-9 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Advanced Threat Intelligence',
+        description: 'Threat Hunting, Malware Analysis และ Security Architecture',
+        requiredSkills: ['Threat Intelligence', 'Malware Analysis', 'Security Architecture', 'Forensics'],
+        recommendedCamps: ['cybersecurity', 'cloud'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // Mobile App Developer (A+I)
+  {
+    id: 'mobile-dev',
+    name: 'Mobile App Developer',
+    nameTh: 'นักพัฒนาแอปมือถือ',
+    description: 'พัฒนาแอปพลิเคชันบนมือถือสำหรับ iOS และ Android ทั้งแบบ Native และ Cross-platform',
+    personality: 'คุณชอบสร้างแอปที่ผู้คนใช้งานจริงในชีวิตประจำวัน สนุกกับการออกแบบ UX สำหรับ Mobile',
+    riasecCodes: ['A', 'I'],
+    requiredTags: ['mobile-dev', 'javascript'],
+    recommendedTags: ['ui-ux', 'figma', 'html-css'],
+    demandLevel: 'high',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Mobile Development Basics',
+        description: 'เรียนรู้พื้นฐาน Mobile Development และ UI Components',
+        requiredSkills: ['Programming Basics', 'Mobile UI Concepts', 'Flutter/React Native'],
+        recommendedCamps: ['mobile-dev', 'javascript'],
+        duration: '3-4 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'App Features & API Integration',
+        description: 'เพิ่มฟีเจอร์ต่างๆ เชื่อมต่อ API และจัดการ State',
+        requiredSkills: ['State Management', 'REST API Integration', 'Local Storage', 'Push Notifications'],
+        recommendedCamps: ['mobile-dev', 'ui-ux'],
+        duration: '6-9 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Publishing & Performance',
+        description: 'Publish แอปใน App Store, Performance Optimization',
+        requiredSkills: ['App Store Deployment', 'Performance Optimization', 'Testing', 'Analytics'],
+        recommendedCamps: ['mobile-dev', 'devops'],
+        duration: '6-12 เดือน'
+      }
+    ]
+  },
+
+  // Cloud Architect (I+R)
+  {
+    id: 'cloud-architect',
+    name: 'Cloud Architect',
+    nameTh: 'สถาปนิกระบบ Cloud',
+    description: 'ออกแบบและวางแผนโครงสร้างพื้นฐาน Cloud ให้กับองค์กร เพื่อให้ระบบมีความยืดหยุ่น ปลอดภัย และคุ้มค่า',
+    personality: 'คุณชอบคิดภาพรวมของระบบขนาดใหญ่ และมีความรู้เชิงเทคนิคในการจัดการโครงสร้างพื้นฐาน',
+    riasecCodes: ['I', 'R'],
+    requiredTags: ['cloud', 'devops'],
+    recommendedTags: ['docker', 'kubernetes', 'cybersecurity'],
+    demandLevel: 'high',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Cloud Fundamentals',
+        description: 'เรียนรู้พื้นฐาน Cloud Computing และ services ต่างๆ',
+        requiredSkills: ['Cloud Basics', 'Networking', 'Virtualization', 'Storage Concepts'],
+        recommendedCamps: ['cloud', 'devops'],
+        duration: '3-4 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'Cloud Services & Management',
+        description: 'ใช้งาน Cloud Services ขั้นสูง Security และ Cost Management',
+        requiredSkills: ['AWS/GCP/Azure Services', 'Security', 'Cost Optimization', 'Migration'],
+        recommendedCamps: ['cloud', 'docker'],
+        duration: '6-12 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Cloud Architecture Design',
+        description: 'ออกแบบ Multi-cloud, Hybrid Architecture และ Enterprise Solutions',
+        requiredSkills: ['Architecture Design', 'Enterprise Patterns', 'Disaster Recovery', 'Governance'],
+        recommendedCamps: ['cloud', 'devops', 'cybersecurity'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // AI/ML Engineer (I+R)
+  {
+    id: 'ai-ml-engineer',
+    name: 'AI/ML Engineer',
+    nameTh: 'วิศวกร AI และ Machine Learning',
+    description: 'สร้างและ deploy โมเดล Machine Learning และ AI เพื่อแก้ปัญหาทางธุรกิจ ตั้งแต่การเก็บข้อมูลจนถึงการนำโมเดลไปใช้งานจริง',
+    personality: 'คุณมีความสนใจด้าน Math, Statistics และชอบทดลองสิ่งใหม่ๆ เพื่อหาคำตอบจากข้อมูล',
+    riasecCodes: ['I', 'R'],
+    requiredTags: ['machine-learning', 'ai', 'python'],
+    recommendedTags: ['data-science', 'cloud'],
+    demandLevel: 'high',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Math & Programming for ML',
+        description: 'เรียนรู้ Python, Linear Algebra, Statistics สำหรับ ML',
+        requiredSkills: ['Python', 'Linear Algebra', 'Statistics', 'Data Manipulation'],
+        recommendedCamps: ['python', 'machine-learning'],
+        duration: '3-6 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'Machine Learning Models',
+        description: 'สร้างและ train โมเดล ML ประเภทต่างๆ',
+        requiredSkills: ['Supervised/Unsupervised Learning', 'Feature Engineering', 'Model Evaluation'],
+        recommendedCamps: ['machine-learning', 'data-science', 'ai'],
+        duration: '6-12 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Deep Learning & MLOps',
+        description: 'Deep Learning, Neural Networks และ Deploy โมเดลใน Production',
+        requiredSkills: ['Deep Learning', 'Neural Networks', 'MLOps', 'GPU Computing'],
+        recommendedCamps: ['ai', 'cloud', 'machine-learning'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // Data Analyst (I+C)
+  {
+    id: 'data-analyst',
+    name: 'Data Analyst',
+    nameTh: 'นักวิเคราะห์ข้อมูล',
+    description: 'วิเคราะห์ข้อมูลเชิงธุรกิจ สร้าง Dashboard และ Report เพื่อช่วยให้องค์กรตัดสินใจได้อย่างมีข้อมูลรองรับ',
+    personality: 'คุณชอบตีความข้อมูลและเล่าเรื่องจากตัวเลข มีความละเอียดรอบคอบและชอบค้นหาแบบแผนในข้อมูล',
+    riasecCodes: ['I', 'C'],
+    requiredTags: ['data-science', 'data-visualization', 'python'],
+    recommendedTags: ['database', 'machine-learning'],
+    demandLevel: 'high',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Data Analysis Basics',
+        description: 'เรียนรู้ Excel, SQL และ Python สำหรับวิเคราะห์ข้อมูล',
+        requiredSkills: ['Excel/Sheets', 'SQL Basics', 'Python/Pandas', 'Statistics'],
+        recommendedCamps: ['python', 'data-science'],
+        duration: '2-3 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'Data Visualization & BI Tools',
+        description: 'สร้าง Dashboard และ Report ด้วย BI Tools',
+        requiredSkills: ['Data Visualization', 'Tableau/Power BI', 'Advanced SQL', 'A/B Testing'],
+        recommendedCamps: ['data-visualization', 'data-science'],
+        duration: '4-6 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Advanced Analytics',
+        description: 'Predictive Analytics, Statistical Modeling และ ML basics',
+        requiredSkills: ['Statistical Modeling', 'Predictive Analytics', 'Big Data Tools'],
+        recommendedCamps: ['data-science', 'machine-learning', 'database'],
+        duration: '6-12 เดือน'
+      }
+    ]
+  },
+
+  // Game Developer (R+A)
+  {
+    id: 'game-developer',
+    name: 'Game Developer',
+    nameTh: 'นักพัฒนาเกม',
+    description: 'สร้างเกมทั้งบน Mobile, PC และ Console โดยใช้ Game Engine และทักษะการเขียนโปรแกรม ร่วมกับความคิดสร้างสรรค์ด้านการออกแบบเกม',
+    personality: 'คุณชอบทั้งการเขียนโค้ดและการออกแบบ สนุกกับการสร้างประสบการณ์ที่ผู้เล่นจะสนุกไปด้วย',
+    riasecCodes: ['R', 'A'],
+    requiredTags: ['game-dev', 'graphic-design'],
+    recommendedTags: ['python', 'javascript', 'ui-ux'],
+    demandLevel: 'medium',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Game Development Basics',
+        description: 'เรียนรู้ Game Engine (Unity/Unreal) และการสร้างเกมพื้นฐาน',
+        requiredSkills: ['Unity/Unreal Basics', 'Game Design Concepts', 'C#/Blueprint', '2D/3D Basics'],
+        recommendedCamps: ['game-dev'],
+        duration: '3-4 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'Game Mechanics & Assets',
+        description: 'สร้าง Game Mechanics ที่ซับซ้อน Physics และ AI เบื้องต้น',
+        requiredSkills: ['Game Mechanics', 'Physics Engine', 'Sound Design', 'Level Design'],
+        recommendedCamps: ['game-dev', 'graphic-design'],
+        duration: '6-9 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Publishing & Live Ops',
+        description: 'Publish เกม จัดการ Monetization และ Live Operations',
+        requiredSkills: ['Game Publishing', 'Monetization', 'Analytics', 'Multiplayer'],
+        recommendedCamps: ['game-dev'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // ─── อาชีพเพิ่มเติมจาก RIASEC combinations ──────────────────────────────
+
   // R + I: วิศวกรเครือข่าย (Network Engineer)
   {
     id: 'network-engineer',
@@ -60,160 +532,6 @@ export const IT_CAREERS: Career[] = [
         description: 'เชี่ยวชาญด้านความปลอดภัยและการจัดการ cloud',
         requiredSkills: ['Network Security', 'Cloud Architecture', 'Automation'],
         recommendedCamps: ['cybersecurity', 'cloud', 'devops'],
-        duration: '6-12 เดือน'
-      }
-    ]
-  },
-
-  // R + A: นักออกแบบกราฟิกคอมพิวเตอร์ (Computer Graphics Designer)
-  {
-    id: 'computer-graphics-designer',
-    name: 'Computer Graphics Designer',
-    nameTh: 'นักออกแบบกราฟิกคอมพิวเตอร์',
-    description: 'มีหน้าที่สร้างสรรค์ผลงานกราฟิก, ภาพเคลื่อนไหว หรือโมเดล 3 มิติสำหรับภาพยนตร์, เกม หรือแอปพลิเคชัน',
-    personality: 'คุณถนัดงานเชิงปฏิบัติและมีความคิดสร้างสรรค์ในการสร้างภาพหรือโมเดล 3 มิติ',
-    riasecCodes: ['R', 'A'],
-    requiredTags: ['graphic-design', 'figma', 'game-dev'],
-    recommendedTags: ['ui-ux'],
-    demandLevel: 'medium',
-    roadmapSteps: [
-      {
-        level: 'beginner',
-        title: 'พื้นฐานการออกแบบ',
-        description: 'เรียนรู้หลักการออกแบบและเครื่องมือพื้นฐาน',
-        requiredSkills: ['Design Principles', 'Figma Basics'],
-        recommendedCamps: ['graphic-design', 'figma'],
-        duration: '2-3 เดือน'
-      },
-      {
-        level: 'intermediate',
-        title: 'การสร้างภาพและแอนิเมชัน',
-        description: 'ฝึกทักษะการสร้างกราฟิกและภาพเคลื่อนไหว',
-        requiredSkills: ['2D/3D Graphics', 'Animation'],
-        recommendedCamps: ['graphic-design', 'game-dev'],
-        duration: '4-6 เดือน'
-      },
-      {
-        level: 'advanced',
-        title: 'การออกแบบเกมและโมเดล 3D',
-        description: 'เชี่ยวชาญการสร้างโมเดล 3D และออกแบบสำหรับเกม',
-        requiredSkills: ['3D Modeling', 'Game Design', 'VFX'],
-        recommendedCamps: ['game-dev'],
-        duration: '6-12 เดือน'
-      }
-    ]
-  },
-
-  // R + S: ผู้ฝึกอบรมด้านไอที (IT Trainer)
-  {
-    id: 'it-trainer',
-    name: 'IT Trainer',
-    nameTh: 'ผู้ฝึกอบรมด้านไอที',
-    description: 'มีหน้าที่ออกแบบหลักสูตรและให้ความรู้เกี่ยวกับเทคโนโลยีแก่พนักงานหรือลูกค้า',
-    personality: 'คุณมีความรู้เชิงเทคนิคและชอบช่วยเหลือหรือสอนผู้อื่นให้เข้าใจ',
-    riasecCodes: ['R', 'S'],
-    requiredTags: [],
-    recommendedTags: ['python', 'javascript', 'html-css'],
-    demandLevel: 'medium',
-    roadmapSteps: [
-      {
-        level: 'beginner',
-        title: 'พื้นฐานเทคโนโลยี',
-        description: 'เรียนรู้เทคโนโลยีพื้นฐานต่างๆ',
-        requiredSkills: ['Basic Programming', 'Teaching Skills'],
-        recommendedCamps: ['python', 'javascript'],
-        duration: '3-4 เดือน'
-      },
-      {
-        level: 'intermediate',
-        title: 'การออกแบบหลักสูตร',
-        description: 'ฝึกทักษะการสอนและออกแบบหลักสูตร',
-        requiredSkills: ['Course Design', 'Presentation Skills'],
-        duration: '4-6 เดือน'
-      },
-      {
-        level: 'advanced',
-        title: 'การฝึกอบรมระดับมืออาชีพ',
-        description: 'พัฒนาทักษะการฝึกอบรมระดับสูง',
-        requiredSkills: ['Advanced Teaching', 'Training Management'],
-        duration: '6-12 เดือน'
-      }
-    ]
-  },
-
-  // R + E: ผู้จัดการฝ่ายปฏิบัติการด้านไอท (IT Operations Manager)
-  {
-    id: 'it-operations-manager-re',
-    name: 'IT Operations Manager',
-    nameTh: 'ผู้จัดการฝ่ายปฏิบัติการด้านไอที',
-    description: 'วางแผนและควบคุมการดำเนินงานด้านไอทีทั้งหมดขององค์กร เพื่อให้มั่นใจว่าระบบจะทำงานได้อย่างมีประสิทธิภาพสูงสุด',
-    personality: 'คุณมีความสามารถในการจัดการทีมเพื่อดูแลระบบและอุปกรณ์ต่างๆ ให้ทำงานได้อย่างราบรื่น',
-    riasecCodes: ['R', 'E'],
-    requiredTags: ['devops'],
-    recommendedTags: ['cloud', 'docker', 'kubernetes'],
-    demandLevel: 'high',
-    roadmapSteps: [
-      {
-        level: 'beginner',
-        title: 'พื้นฐานระบบและการจัดการ',
-        description: 'เรียนรู้พื้นฐานระบบ IT และการจัดการ',
-        requiredSkills: ['IT Fundamentals', 'Basic Management'],
-        recommendedCamps: ['devops'],
-        duration: '3-4 เดือน'
-      },
-      {
-        level: 'intermediate',
-        title: 'การจัดการโครงการและทีม',
-        description: 'พัฒนาทักษะการจัดการโครงการ',
-        requiredSkills: ['Project Management', 'Team Leadership'],
-        recommendedCamps: ['devops', 'cloud'],
-        duration: '6-9 เดือน'
-      },
-      {
-        level: 'advanced',
-        title: 'Strategic IT Management',
-        description: 'เรียนรู้การวางแผนกลยุทธ์ IT',
-        requiredSkills: ['Strategic Planning', 'Budget Management'],
-        recommendedCamps: ['devops', 'cloud'],
-        duration: '12+ เดือน'
-      }
-    ]
-  },
-
-  // R + C: เจ้าหน้าที่ซ่อมบำรุงระบบ (System Maintenance Officer)
-  {
-    id: 'system-maintenance-officer',
-    name: 'System Maintenance Officer',
-    nameTh: 'เจ้าหน้าที่ซ่อมบำรุงระบบ',
-    description: 'มีหน้าที่ซ่อมบำรุงและดูแลรักษาระบบคอมพิวเตอร์และอุปกรณ์ต่างๆ ให้พร้อมใช้งานอยู่เสมอ',
-    personality: 'คุณชอบงานเชิงปฏิบัติและทำงานตามขั้นตอนหรือกฎระเบียบได้อย่างแม่นยำ',
-    riasecCodes: ['R', 'C'],
-    requiredTags: ['devops'],
-    recommendedTags: ['docker', 'cloud'],
-    demandLevel: 'medium',
-    roadmapSteps: [
-      {
-        level: 'beginner',
-        title: 'พื้นฐานระบบคอมพิวเตอร์',
-        description: 'เรียนรู้การทำงานของระบบคอมพิวเตอร์',
-        requiredSkills: ['Computer Hardware', 'OS Basics'],
-        recommendedCamps: ['devops'],
-        duration: '2-3 เดือน'
-      },
-      {
-        level: 'intermediate',
-        title: 'การซ่อมบำรุงและแก้ไขปัญหา',
-        description: 'ฝึกทักษะการซ่อมแซมและแก้ไขปัญหา',
-        requiredSkills: ['Troubleshooting', 'System Monitoring'],
-        recommendedCamps: ['devops', 'cloud'],
-        duration: '4-6 เดือน'
-      },
-      {
-        level: 'advanced',
-        title: 'การบำรุงรักษาขั้นสูง',
-        description: 'เชี่ยวชาญการบำรุงรักษาระบบขั้นสูง',
-        requiredSkills: ['Advanced Diagnostics', 'Preventive Maintenance'],
-        recommendedCamps: ['devops'],
         duration: '6-12 เดือน'
       }
     ]
@@ -375,119 +693,41 @@ export const IT_CAREERS: Career[] = [
     ]
   },
 
-  // A + S: ผู้จัดการโซเชียลมีเดีย (Social Media Manager)
+  // R + A: นักออกแบบกราฟิกคอมพิวเตอร์ (Computer Graphics Designer)
   {
-    id: 'social-media-manager',
-    name: 'Social Media Manager',
-    nameTh: 'ผู้จัดการโซเชียลมีเดีย',
-    description: 'มีหน้าที่วางแผนและสร้างเนื้อหาสำหรับแพลตฟอร์มโซเชียลมีเดียต่างๆ เพื่อสร้างแบรนด์, เพิ่มการมีส่วนร่วม และขยายฐานลูกค้า',
-    personality: 'คุณมีความคิดสร้างสรรค์สูงและชอบการทำงานกับผู้คน ชอบสร้างเนื้อหาใหม่ๆ และสื่อสารกับชุมชนออนไลน์',
-    riasecCodes: ['A', 'S'],
-    requiredTags: ['graphic-design', 'ui-ux'],
-    recommendedTags: ['figma'],
+    id: 'computer-graphics-designer',
+    name: 'Computer Graphics Designer',
+    nameTh: 'นักออกแบบกราฟิกคอมพิวเตอร์',
+    description: 'มีหน้าที่สร้างสรรค์ผลงานกราฟิก, ภาพเคลื่อนไหว หรือโมเดล 3 มิติสำหรับภาพยนตร์, เกม หรือแอปพลิเคชัน',
+    personality: 'คุณถนัดงานเชิงปฏิบัติและมีความคิดสร้างสรรค์ในการสร้างภาพหรือโมเดล 3 มิติ',
+    riasecCodes: ['R', 'A'],
+    requiredTags: ['graphic-design', 'figma', 'game-dev'],
+    recommendedTags: ['ui-ux'],
     demandLevel: 'medium',
     roadmapSteps: [
       {
         level: 'beginner',
-        title: 'พื้นฐาน Social Media',
-        description: 'เรียนรู้การใช้งาน social media platforms',
-        requiredSkills: ['Social Media Basics', 'Content Creation'],
-        recommendedCamps: ['graphic-design'],
+        title: 'พื้นฐานการออกแบบ',
+        description: 'เรียนรู้หลักการออกแบบและเครื่องมือพื้นฐาน',
+        requiredSkills: ['Design Principles', 'Figma Basics'],
+        recommendedCamps: ['graphic-design', 'figma'],
         duration: '2-3 เดือน'
       },
       {
         level: 'intermediate',
-        title: 'Content Strategy',
-        description: 'ฝึกวางแผนและสร้างเนื้อหา',
-        requiredSkills: ['Content Strategy', 'Community Management'],
-        recommendedCamps: ['graphic-design', 'ui-ux'],
+        title: 'การสร้างภาพและแอนิเมชัน',
+        description: 'ฝึกทักษะการสร้างกราฟิกและภาพเคลื่อนไหว',
+        requiredSkills: ['2D/3D Graphics', 'Animation'],
+        recommendedCamps: ['graphic-design', 'game-dev'],
         duration: '4-6 เดือน'
       },
       {
         level: 'advanced',
-        title: 'Social Media Strategy',
-        description: 'เชี่ยวชาญการวางกลยุทธ์ social media',
-        requiredSkills: ['Social Analytics', 'Campaign Management'],
-        recommendedCamps: ['ui-ux', 'graphic-design'],
-        duration: '8-12 เดือน'
-      }
-    ]
-  },
-
-  // A + E: ผู้จัดการฝ่ายการตลาดดิจิทัล (Digital Marketing Manager)
-  {
-    id: 'digital-marketing-manager',
-    name: 'Digital Marketing Manager',
-    nameTh: 'ผู้จัดการฝ่ายการตลาดดิจิทัล',
-    description: 'รับผิดชอบการวางแผนและบริหารจัดการแคมเปญการตลาดออนไลน์ทั้งหมด เพื่อเพิ่มการรับรู้แบรนด์และยอดขาย',
-    personality: 'คุณใช้ความคิดสร้างสรรค์เพื่อวางแผนแคมเปญการตลาด และใช้ทักษะการเป็นผู้นำเพื่อผลักดันให้ประสบความสำเร็จ',
-    riasecCodes: ['A', 'E'],
-    requiredTags: ['ui-ux', 'graphic-design'],
-    recommendedTags: ['data-visualization'],
-    demandLevel: 'high',
-    roadmapSteps: [
-      {
-        level: 'beginner',
-        title: 'พื้นฐาน Digital Marketing',
-        description: 'เรียนรู้หลักการตลาดดิจิทัล',
-        requiredSkills: ['Marketing Basics', 'SEO/SEM'],
-        recommendedCamps: ['ui-ux', 'graphic-design'],
-        duration: '3-4 เดือน'
-      },
-      {
-        level: 'intermediate',
-        title: 'Campaign Management',
-        description: 'ฝึกวางแผนและบริหารแคมเปญ',
-        requiredSkills: ['Campaign Planning', 'Analytics'],
-        recommendedCamps: ['ui-ux', 'data-visualization'],
-        duration: '6-8 เดือน'
-      },
-      {
-        level: 'advanced',
-        title: 'Strategic Marketing Leadership',
-        description: 'เชี่ยวชาญการบริหารการตลาดดิจิทัล',
-        requiredSkills: ['Marketing Strategy', 'Team Leadership', 'ROI Analysis'],
-        recommendedCamps: ['data-visualization'],
-        duration: '12+ เดือน'
-      }
-    ]
-  },
-
-  // A + C: ผู้จัดการเนื้อหาเว็บไซต์ (Web Content Manager)
-  {
-    id: 'web-content-manager',
-    name: 'Web Content Manager',
-    nameTh: 'ผู้จัดการเนื้อหาเว็บไซต์',
-    description: 'มีหน้าที่ดูแลและจัดการเนื้อหาทั้งหมดบนเว็บไซต์ขององค์กร รวมถึงการอัปเดตและจัดระเบียบข้อมูล',
-    personality: 'คุณสร้างสรรค์และออกแบบเนื้อหา และจัดการให้เนื้อหาเหล่านั้นเป็นระบบและถูกต้องตามกฎระเบียบ',
-    riasecCodes: ['A', 'C'],
-    requiredTags: ['html-css', 'ui-ux'],
-    recommendedTags: ['javascript', 'graphic-design'],
-    demandLevel: 'medium',
-    roadmapSteps: [
-      {
-        level: 'beginner',
-        title: 'พื้นฐาน Web และ Content',
-        description: 'เรียนรู้ HTML/CSS และการสร้างเนื้อหา',
-        requiredSkills: ['HTML/CSS', 'Content Writing'],
-        recommendedCamps: ['html-css'],
-        duration: '2-3 เดือน'
-      },
-      {
-        level: 'intermediate',
-        title: 'Web Content Management',
-        description: 'ฝึกจัดการเนื้อหาเว็บไซต์',
-        requiredSkills: ['CMS', 'SEO', 'Content Strategy'],
-        recommendedCamps: ['html-css', 'ui-ux'],
-        duration: '4-6 เดือน'
-      },
-      {
-        level: 'advanced',
-        title: 'Advanced Content Strategy',
-        description: 'เชี่ยวชาญการวางกลยุทธ์เนื้อหา',
-        requiredSkills: ['Content Analytics', 'Information Architecture'],
-        recommendedCamps: ['ui-ux', 'javascript'],
-        duration: '8-12 เดือน'
+        title: 'การออกแบบเกมและโมเดล 3D',
+        description: 'เชี่ยวชาญการสร้างโมเดล 3D และออกแบบสำหรับเกม',
+        requiredSkills: ['3D Modeling', 'Game Design', 'VFX'],
+        recommendedCamps: ['game-dev'],
+        duration: '6-12 เดือน'
       }
     ]
   },
@@ -531,78 +771,40 @@ export const IT_CAREERS: Career[] = [
     ]
   },
 
-  // S + C: ผู้ประสานงานโครงการไอที (IT Project Coordinator)
+  // A + E: ผู้จัดการฝ่ายการตลาดดิจิทัล (Digital Marketing Manager)
   {
-    id: 'it-project-coordinator',
-    name: 'IT Project Coordinator',
-    nameTh: 'ผู้ประสานงานโครงการไอที',
-    description: 'สนับสนุนการทำงานของผู้จัดการโครงการ โดยมีหน้าที่ในการจัดตารางงาน, ติดตามความคืบหน้า และประสานงานกับทีมงาน',
-    personality: 'คุณทำงานร่วมกับทีมเพื่อตรวจสอบและจัดการเอกสารและตารางเวลาของโครงการให้เป็นระเบียบ',
-    riasecCodes: ['S', 'C'],
-    requiredTags: [],
-    recommendedTags: ['devops'],
-    demandLevel: 'medium',
-    roadmapSteps: [
-      {
-        level: 'beginner',
-        title: 'พื้นฐานการจัดการโครงการ',
-        description: 'เรียนรู้หลักการจัดการโครงการ',
-        requiredSkills: ['Project Management Basics', 'Documentation'],
-        duration: '2-3 เดือน'
-      },
-      {
-        level: 'intermediate',
-        title: 'Project Coordination',
-        description: 'ฝึกประสานงานและติดตามโครงการ',
-        requiredSkills: ['Scheduling', 'Stakeholder Management'],
-        recommendedCamps: ['devops'],
-        duration: '4-6 เดือน'
-      },
-      {
-        level: 'advanced',
-        title: 'Advanced Project Management',
-        description: 'เชี่ยวชาญการจัดการโครงการขั้นสูง',
-        requiredSkills: ['Agile/Scrum', 'Risk Management'],
-        recommendedCamps: ['devops'],
-        duration: '8-12 เดือน'
-      }
-    ]
-  },
-
-  // E + C: IT Operations Manager (ซ้ำกับ R+E แต่มี description ต่างกัน)
-  {
-    id: 'it-operations-manager-ec',
-    name: 'IT Operations Manager',
-    nameTh: 'ผู้จัดการฝ่ายปฏิบัติการด้านไอที',
-    description: 'วางแผนและบริหารจัดการระบบปฏิบัติการ, บุคลากร และกระบวนการต่างๆ ด้านไอที เพื่อให้การดำเนินงานมีประสิทธิภาพและเป็นไปตามข้อกำหนด',
-    personality: 'คุณวางแผนและบริหารจัดการระบบการทำงานให้เป็นไปตามขั้นตอนและกฎเกณฑ์',
-    riasecCodes: ['E', 'C'],
-    requiredTags: ['devops'],
-    recommendedTags: ['cloud', 'docker', 'kubernetes'],
+    id: 'digital-marketing-manager',
+    name: 'Digital Marketing Manager',
+    nameTh: 'ผู้จัดการฝ่ายการตลาดดิจิทัล',
+    description: 'รับผิดชอบการวางแผนและบริหารจัดการแคมเปญการตลาดออนไลน์ทั้งหมด เพื่อเพิ่มการรับรู้แบรนด์และยอดขาย',
+    personality: 'คุณใช้ความคิดสร้างสรรค์เพื่อวางแผนแคมเปญการตลาด และใช้ทักษะการเป็นผู้นำเพื่อผลักดันให้ประสบความสำเร็จ',
+    riasecCodes: ['A', 'E'],
+    requiredTags: ['ui-ux', 'graphic-design'],
+    recommendedTags: ['data-visualization'],
     demandLevel: 'high',
     roadmapSteps: [
       {
         level: 'beginner',
-        title: 'พื้นฐาน IT Operations',
-        description: 'เรียนรู้การจัดการระบบ IT',
-        requiredSkills: ['IT Operations Basics', 'Process Management'],
-        recommendedCamps: ['devops'],
+        title: 'พื้นฐาน Digital Marketing',
+        description: 'เรียนรู้หลักการตลาดดิจิทัล',
+        requiredSkills: ['Marketing Basics', 'SEO/SEM'],
+        recommendedCamps: ['ui-ux', 'graphic-design'],
         duration: '3-4 เดือน'
       },
       {
         level: 'intermediate',
-        title: 'Operations Management',
-        description: 'ฝึกบริหารจัดการปฏิบัติการ',
-        requiredSkills: ['Team Management', 'SLA Management'],
-        recommendedCamps: ['devops', 'cloud'],
-        duration: '6-9 เดือน'
+        title: 'Campaign Management',
+        description: 'ฝึกวางแผนและบริหารแคมเปญ',
+        requiredSkills: ['Campaign Planning', 'Analytics'],
+        recommendedCamps: ['ui-ux', 'data-visualization'],
+        duration: '6-8 เดือน'
       },
       {
         level: 'advanced',
-        title: 'Strategic Operations Leadership',
-        description: 'เชี่ยวชาญการบริหารปฏิบัติการระดับสูง',
-        requiredSkills: ['Strategic Planning', 'Compliance', 'Budget Management'],
-        recommendedCamps: ['devops', 'cloud', 'kubernetes'],
+        title: 'Strategic Marketing Leadership',
+        description: 'เชี่ยวชาญการบริหารการตลาดดิจิทัล',
+        requiredSkills: ['Marketing Strategy', 'Team Leadership', 'ROI Analysis'],
+        recommendedCamps: ['data-visualization'],
         duration: '12+ เดือน'
       }
     ]

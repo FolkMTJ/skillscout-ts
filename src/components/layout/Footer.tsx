@@ -1,10 +1,23 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
-import { Chip, Link } from "@heroui/react";
+import { Link } from "@heroui/react";
 import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn, FaGithub, FaEnvelope, FaPhone } from "react-icons/fa";
 import { BsFillPeopleFill } from "react-icons/bs";
+import { FiActivity } from "react-icons/fi";
+
+// สร้าง/อ่าน deviceId จาก localStorage
+function getOrCreateDeviceId(): string {
+  if (typeof window === 'undefined') return '';
+  const key = 'skillscout_device_id';
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
 
 export default function Footer() {
   return (
@@ -18,12 +31,55 @@ export default function Footer() {
 }
 
 const FooterBody = () => {
+  const [visitorCount, setVisitorCount] = useState<number | null>(null);
+
+  const trackAndFetchVisitors = useCallback(async () => {
+    const deviceId = getOrCreateDeviceId();
+    if (!deviceId) return;
+
+    try {
+      // รายงาน visit + ดึงจำนวน
+      const res = await fetch('/api/visitors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId }),
+      });
+      if (res.ok) {
+        const data = await res.json() as { count: number };
+        setVisitorCount(data.count);
+      }
+    } catch {
+      // fallback: ดึงเฉยๆ
+      try {
+        const res = await fetch('/api/visitors');
+        if (res.ok) {
+          const data = await res.json() as { count: number };
+          setVisitorCount(data.count);
+        }
+      } catch {
+        // silent fail
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    trackAndFetchVisitors();
+    // refresh ทุก 5 นาที
+    const interval = setInterval(() => {
+      fetch('/api/visitors')
+        .then(r => r.json())
+        .then((d: { count: number }) => setVisitorCount(d.count))
+        .catch(() => {});
+    }, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [trackAndFetchVisitors]);
+
   const quickLinks = [
     { label: 'หน้าแรก', href: "/" },
     { label: 'ค่ายทั้งหมด', href: "/allcamps" },
-    { label: 'แบบทดสอบ', href: "#" },
-    { label: 'Discovery Path', href: "#" },
-    { label: 'Path Finder', href: "#" },
+    { label: 'แบบทดสอบ', href: "/path-finder" },
+    { label: 'Discovery Path', href: "/discovery" },
+    { label: 'Path Finder', href: "/path-finder" },
   ];
 
   const supportLinks = [
@@ -146,33 +202,40 @@ const FooterBody = () => {
             </li>
           </ul>
 
-          {/* System Status */}
+          {/* Live Visitor Count */}
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <BsFillPeopleFill size={16} className="text-orange-400" />
-                <span className="text-sm font-semibold text-white">1,234</span>
+                <span className="text-xs text-gray-400 font-medium">ผู้ใช้ออนไลน์ (รายชั่วโมง)</span>
               </div>
-              <span className="text-xs text-gray-400">ออนไลน์</span>
+              <FiActivity size={14} className="text-orange-400 animate-pulse" />
             </div>
-            <Chip
-              size="sm"
-              color="success"
-              variant="flat"
-              className="w-full justify-center"
-              classNames={{
-                base: "bg-green-500/20 border-green-500/30",
-                content: "text-green-400 font-semibold"
-              }}
-              startContent={
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+
+            <div className="flex items-center gap-3 mb-3">
+              {visitorCount === null ? (
+                <div className="h-8 w-16 bg-white/10 rounded animate-pulse" />
+              ) : (
+                <span className="text-2xl font-black text-white">
+                  {visitorCount.toLocaleString()}
                 </span>
-              }
-            >
-              ระบบทำงานปกติ
-            </Chip>
+              )}
+              <div className="flex items-center gap-1.5">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                </span>
+                <span className="text-xs text-green-400 font-semibold">ออนไลน์</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+              </span>
+              <span className="text-xs text-green-400 font-semibold">ระบบทำงานปกติ</span>
+            </div>
           </div>
         </div>
       </div>

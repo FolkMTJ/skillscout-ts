@@ -90,7 +90,6 @@ export default function CareerDetailPage() {
       
       {/* --- Hero Section with Gradient --- */}
       <div className="relative bg-gradient-to-r from-gray-900 to-gray-800 text-white pb-24 pt-10 px-4">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#F2B33D] opacity-10 blur-3xl rounded-full translate-x-1/3 -translate-y-1/3"></div>
         
         <div className="container mx-auto max-w-7xl relative z-10">
           <Button
@@ -206,7 +205,6 @@ export default function CareerDetailPage() {
                                </ul>
                             </div>
                             
-                            {/* Placeholder for Tools or Resources if you have them in data */}
                             <div className="bg-orange-50/50 rounded-xl p-5 border border-orange-100 flex flex-col justify-center items-center text-center">
                                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm text-orange-500 text-2xl mb-3">
                                  <FiAward />
@@ -339,7 +337,7 @@ export default function CareerDetailPage() {
                              <FiBriefcase /> เงินเดือนเริ่มต้น (ประมาณ)
                            </div>
                            <div className="text-lg font-bold text-gray-800">
-                             25,000 - 45,000 บาท
+                             {career.averageSalary || '25,000 - 45,000 บาท'}
                            </div>
                            <p className="text-[10px] text-gray-400 mt-1">*ขึ้นอยู่กับทักษะและบริษัท</p>
                         </div>

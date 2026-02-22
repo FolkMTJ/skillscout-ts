@@ -24,9 +24,25 @@ import {
   Input,
   Textarea,
 } from '@heroui/react';
-import { FiUsers, FiCalendar, FiShield, FiTrash2, FiEye, FiSearch, FiAlertCircle, FiXCircle, FiAlertTriangle, FiCheck, FiX } from 'react-icons/fi';
+import { FiUsers, FiCalendar, FiShield, FiTrash2, FiEye, FiSearch, FiAlertCircle, FiXCircle, FiAlertTriangle, FiCheck, FiX, FiPlus, FiEdit2, FiBookOpen, FiToggleLeft, FiToggleRight, FiSave } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { StatCard } from '@/components/common';
+
+interface HollandCareer {
+  _id: string;
+  id: string;
+  name: string;
+  nameTh: string;
+  description: string;
+  personality: string;
+  riasecCodes: string[];
+  requiredTags: string[];
+  recommendedTags: string[];
+  averageSalary?: string;
+  demandLevel?: 'high' | 'medium' | 'low';
+  isActive: boolean;
+  createdAt: string;
+}
 
 interface User {
   _id: string;
@@ -60,6 +76,18 @@ export default function AdminDashboard() {
   const [selectedCamp, setSelectedCamp] = useState<Camp | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   
+  // Holland Careers state
+  const [hollandCareers, setHollandCareers] = useState<HollandCareer[]>([]);
+  const [careerLoading, setCareerLoading] = useState(false);
+  const [selectedCareer, setSelectedCareer] = useState<HollandCareer | null>(null);
+  const [careerForm, setCareerForm] = useState({
+    name: '', nameTh: '', description: '', personality: '',
+    riasecCodes: '', requiredTags: '', recommendedTags: '',
+    averageSalary: '', demandLevel: 'high' as 'high' | 'medium' | 'low',
+  });
+  const { isOpen: isCareerModalOpen, onOpen: onCareerModalOpen, onClose: onCareerModalClose } = useDisclosure();
+  const { isOpen: isDeleteCareerModalOpen, onOpen: onDeleteCareerModalOpen, onClose: onDeleteCareerModalClose } = useDisclosure();
+  
   const { isOpen: isBanModalOpen, onOpen: onBanModalOpen, onClose: onBanModalClose } = useDisclosure();
   const { isOpen: isDeleteModalOpen, onOpen: onDeleteModalOpen, onClose: onDeleteModalClose } = useDisclosure();
   const { isOpen: isApproveModalOpen, onOpen: onApproveModalOpen, onClose: onApproveModalClose } = useDisclosure();
@@ -75,6 +103,91 @@ export default function AdminDashboard() {
     }
   }, [status, session, router]);
 
+  const fetchHollandCareers = async () => {
+    try {
+      setCareerLoading(true);
+      const res = await fetch('/api/admin/holland-careers');
+      const data = await res.json() as { careers?: HollandCareer[] };
+      if (data.careers) setHollandCareers(data.careers);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCareerLoading(false);
+    }
+  };
+
+  const openAddCareer = () => {
+    setSelectedCareer(null);
+    setCareerForm({ name: '', nameTh: '', description: '', personality: '', riasecCodes: '', requiredTags: '', recommendedTags: '', averageSalary: '', demandLevel: 'high' });
+    onCareerModalOpen();
+  };
+
+  const openEditCareer = (career: HollandCareer) => {
+    setSelectedCareer(career);
+    setCareerForm({
+      name: career.name,
+      nameTh: career.nameTh,
+      description: career.description,
+      personality: career.personality || '',
+      riasecCodes: career.riasecCodes.join(', '),
+      requiredTags: (career.requiredTags || []).join(', '),
+      recommendedTags: (career.recommendedTags || []).join(', '),
+      averageSalary: career.averageSalary || '',
+      demandLevel: career.demandLevel || 'high',
+    });
+    onCareerModalOpen();
+  };
+
+  const saveCareer = async () => {
+    try {
+      const payload = {
+        name: careerForm.name,
+        nameTh: careerForm.nameTh,
+        description: careerForm.description,
+        personality: careerForm.personality,
+        riasecCodes: careerForm.riasecCodes.split(',').map(s => s.trim()).filter(Boolean),
+        requiredTags: careerForm.requiredTags.split(',').map(s => s.trim()).filter(Boolean),
+        recommendedTags: careerForm.recommendedTags.split(',').map(s => s.trim()).filter(Boolean),
+        averageSalary: careerForm.averageSalary,
+        demandLevel: careerForm.demandLevel,
+      };
+      if (selectedCareer) {
+        await fetch(`/api/admin/holland-careers/${selectedCareer._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        toast.success('แก้ไขอาชีพสำเร็จ');
+      } else {
+        await fetch('/api/admin/holland-careers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        toast.success('เพิ่มอาชีพสำเร็จ');
+      }
+      onCareerModalClose();
+      fetchHollandCareers();
+    } catch (err) {
+      console.error(err);
+      toast.error('เกิดข้อผิดพลาด');
+    }
+  };
+
+  const toggleCareerActive = async (career: HollandCareer) => {
+    try {
+      await fetch(`/api/admin/holland-careers/${career._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isActive: !career.isActive }) });
+      fetchHollandCareers();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const confirmDeleteCareer = async () => {
+    if (!selectedCareer) return;
+    try {
+      await fetch(`/api/admin/holland-careers/${selectedCareer._id}`, { method: 'DELETE' });
+      toast.success('ลบอาชีพสำเร็จ');
+      onDeleteCareerModalClose();
+      fetchHollandCareers();
+    } catch (err) {
+      console.error(err);
+      toast.error('เกิดข้อผิดพลาด');
+    }
+  };
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -86,7 +199,7 @@ export default function AdminDashboard() {
       const campsRes = await fetch('/api/camps?includeAll=true');
       const campsData = await campsRes.json();
       setCamps(Array.isArray(campsData) ? campsData : campsData.camps || []);
-
+      await fetchHollandCareers();
     } catch (err) {
       console.error('Error fetching data:', err);
       toast.error('ไม่สามารถโหลดข้อมูลได้');
@@ -480,6 +593,71 @@ export default function AdminDashboard() {
               </div>
             </Tab>
 
+            <Tab key="holland" title={`Holland Careers (${hollandCareers.length})`}>
+              <div className="py-6">
+                <div className="flex justify-between items-center mb-4">
+                  <p className="text-sm text-gray-500">จัดการอาชีพ IT สำหรับ Path Finder (Holland RIASEC)</p>
+                  <Button color="warning" startContent={<FiPlus />} onPress={openAddCareer}>
+                    เพิ่มอาชีพ
+                  </Button>
+                </div>
+                {careerLoading ? (
+                  <div className="text-center py-8 text-gray-400">กำลังโหลด...</div>
+                ) : (
+                  <Table aria-label="Holland Careers">
+                    <TableHeader>
+                      <TableColumn>ชื่ออาชีพ</TableColumn>
+                      <TableColumn>RIASEC</TableColumn>
+                      <TableColumn>ระดับความต้องการ</TableColumn>
+                      <TableColumn>สถานะ</TableColumn>
+                      <TableColumn>จัดการ</TableColumn>
+                    </TableHeader>
+                    <TableBody>
+                      {hollandCareers.map((career) => (
+                        <TableRow key={career._id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{career.nameTh}</p>
+                              <p className="text-xs text-gray-500">{career.name}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1 flex-wrap">
+                              {career.riasecCodes.map(c => (
+                                <Chip key={c} size="sm" className="bg-[#F2B33D] text-white text-[10px] min-w-6 h-6">{c}</Chip>
+                              ))}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Chip size="sm" color={career.demandLevel === 'high' ? 'success' : career.demandLevel === 'medium' ? 'warning' : 'default'}>
+                              {career.demandLevel === 'high' ? 'สูง' : career.demandLevel === 'medium' ? 'ปานกลาง' : 'ต่ำ'}
+                            </Chip>
+                          </TableCell>
+                          <TableCell>
+                            <Chip size="sm" color={career.isActive ? 'success' : 'default'} variant="flat">
+                              {career.isActive ? 'เปิด' : 'ปิด'}
+                            </Chip>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="flat" startContent={<FiEdit2 />} onPress={() => openEditCareer(career)}>แก้ไข</Button>
+                              <Button size="sm" variant="flat" color={career.isActive ? 'warning' : 'success'}
+                                startContent={career.isActive ? <FiToggleLeft /> : <FiToggleRight />}
+                                onPress={() => toggleCareerActive(career)}>
+                                {career.isActive ? 'ปิด' : 'เปิด'}
+                              </Button>
+                              <Button size="sm" color="danger" variant="flat" startContent={<FiTrash2 />}
+                                onPress={() => { setSelectedCareer(career); onDeleteCareerModalOpen(); }}>ลบ</Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            </Tab>
+
             <Tab key="camps" title={`ค่าย (${camps.length})`}>
               <div className="py-6">
                 <Table aria-label="Camps table">
@@ -567,6 +745,72 @@ export default function AdminDashboard() {
           </Tabs>
         </Card>
       </div>
+
+      {/* Career Add/Edit Modal */}
+      <Modal isOpen={isCareerModalOpen} onClose={onCareerModalClose} size="2xl" scrollBehavior="inside">
+        <ModalContent>
+          <ModalHeader>{selectedCareer ? 'แก้ไขอาชีพ' : 'เพิ่มอาชีพใหม่'}</ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="ชื่ออาชีพ (EN)" placeholder="Software Engineer" value={careerForm.name} onValueChange={v => setCareerForm(f => ({...f, name: v}))} isRequired />
+                <Input label="ชื่ออาชีพ (TH)" placeholder="วิศวกรซอฟต์แวร์" value={careerForm.nameTh} onValueChange={v => setCareerForm(f => ({...f, nameTh: v}))} isRequired />
+              </div>
+              <Textarea label="คำอธิบายอาชีพ" placeholder="อธิบายหน้าที่และบทบาทของอาชีพนี้..." value={careerForm.description} onValueChange={v => setCareerForm(f => ({...f, description: v}))} minRows={3} isRequired />
+              <Textarea label="บุคลิกภาพที่เหมาะสม" placeholder="คุณชอบแก้ปัญหาเชิงตรรกะ..." value={careerForm.personality} onValueChange={v => setCareerForm(f => ({...f, personality: v}))} minRows={2} />
+              <Input
+                label="RIASEC Codes (คั่นด้วยจุลภาค)"
+                placeholder="I, R, A"
+                description="ใส่รหัส R I A S E C คั่นด้วยเครื่องหมายจุลภาค"
+                value={careerForm.riasecCodes}
+                onValueChange={v => setCareerForm(f => ({...f, riasecCodes: v}))}
+                isRequired
+              />
+              <Input label="Required Tags (คั่นด้วยจุลภาค)" placeholder="python, javascript, html-css" value={careerForm.requiredTags} onValueChange={v => setCareerForm(f => ({...f, requiredTags: v}))} />
+              <Input label="Recommended Tags (คั่นด้วยจุลภาค)" placeholder="database, devops" value={careerForm.recommendedTags} onValueChange={v => setCareerForm(f => ({...f, recommendedTags: v}))} />
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="เงินเดือนเฉลี่ย" placeholder="30,000 - 80,000 บาท" value={careerForm.averageSalary} onValueChange={v => setCareerForm(f => ({...f, averageSalary: v}))} />
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-2">ระดับความต้องการในตลาด</label>
+                  <div className="flex gap-2">
+                    {(['high', 'medium', 'low'] as const).map(level => (
+                      <button key={level} onClick={() => setCareerForm(f => ({...f, demandLevel: level}))}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
+                          careerForm.demandLevel === level
+                            ? 'border-[#F2B33D] bg-[#F2B33D] text-white'
+                            : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                        }`}>
+                        {level === 'high' ? 'สูง' : level === 'medium' ? 'ปานกลาง' : 'ต่ำ'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onCareerModalClose}>ยกเลิก</Button>
+            <Button color="warning" startContent={<FiSave />} onPress={saveCareer}>
+              {selectedCareer ? 'บันทึกการแก้ไข' : 'เพิ่มอาชีพ'}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Delete Career Modal */}
+      <Modal isOpen={isDeleteCareerModalOpen} onClose={onDeleteCareerModalClose}>
+        <ModalContent>
+          <ModalHeader className="text-red-600">ลบอาชีพ</ModalHeader>
+          <ModalBody>
+            <p>คุณต้องการลบอาชีพ <strong>{selectedCareer?.nameTh}</strong> หรือไม่?</p>
+            <p className="text-sm text-red-500">การลบจะไม่สามารถกู้คืนได้</p>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onDeleteCareerModalClose}>ยกเลิก</Button>
+            <Button color="danger" startContent={<FiTrash2 />} onPress={confirmDeleteCareer}>ลบอาชีพ</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Ban Modal */}
       <Modal isOpen={isBanModalOpen} onClose={onBanModalClose}>

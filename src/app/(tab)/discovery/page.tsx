@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Card, CardBody, CardHeader, Button, Chip, Divider } from '@heroui/react';
 import { FiTrendingUp, FiTarget, FiBook, FiAward, FiArrowRight } from 'react-icons/fi';
+import ShareResultButton from '@/components/common/ShareResultButton';
 import HeroBanner from '@/components/HeroBanner';
 import SkillPieChart from '@/components/discovery/SkillPieChart';
 import RIASECProfile from '@/components/discovery/RIASECProfile';
@@ -95,6 +96,7 @@ export default function DiscoveryPathPage() {
   const [data, setData] = useState<DiscoveryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [recommendedCampsData, setRecommendedCampsData] = useState<CampData[]>([]);
+  const resultRef = useRef<HTMLDivElement>(null);
 
   const fetchRecommendedCamps = useCallback(async (campIds: { id: string }[]) => {
     try {
@@ -253,53 +255,99 @@ export default function DiscoveryPathPage() {
 
   if (!data || data.campsAttended === 0) {
     return (
-      <div className="min-h-screen bg-[#F8F9FA]">
-        <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-orange-50 to-transparent -z-10" />
-        
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="max-w-2xl mx-auto">
-            <Card className="border-none shadow-lg">
-              <CardBody className="text-center p-12">
-                <div className="mb-6">
-                  <div className="w-24 h-24 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-4">
-                    <FiTarget className="w-12 h-12 text-[#F2B33D]" />
-                  </div>
-                  <h1 className="text-3xl font-bold mb-3">ยังไม่มีข้อมูลเพียงพอ</h1>
-                  <p className="text-lg text-gray-600 mb-6">
+      <div className="min-h-screen bg-white">
+        {/* Hero Banner */}
+        <HeroBanner
+          badge="Find your Path"
+          title="DISCOVERY"
+          titleHighlight="PATH"
+          subtitle="เส้นทางอาชีพของคุณ"
+          description="วิเคราะห์จากค่ายที่เข้าร่วมจริง • เริ่มได้เลยสมัครค่ายแรกของคุณ"
+          showButtons={false}
+        />
+
+        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          {/* Main Card - neobrutalism style */}
+          <div className="bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-0 overflow-hidden">
+            
+            {/* Top accent bar */}
+            <div className="bg-[#F2B33D] h-2 w-full" />
+
+            <div className="p-10 md:p-14">
+              {/* Header */}
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-6 mb-10">
+                <div className="bg-[#F2B33D] border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex-shrink-0">
+                  <FiTarget className="w-10 h-10 text-black" />
+                </div>
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-black text-[#2C2C2C] mb-2">
+                    ยังไม่มีข้อมูลเพียงพอ
+                  </h1>
+                  <p className="text-gray-600 text-lg">
                     คุณต้องเข้าร่วมค่ายที่{' '}
-                    <Chip className="bg-green-100 text-green-600" size="sm" variant="flat">
+                    <span className="inline-flex items-center bg-green-100 text-green-700 font-bold px-3 py-0.5 border-2 border-green-700 text-sm">
                       Check-in แล้ว
-                    </Chip>{' '}
-                    อย่างน้อย 1 ค่าย
+                    </span>{' '}
+                    อย่างน้อย <strong>1 ค่าย</strong> เพื่อเริ่มวิเคราะห์
                   </p>
                 </div>
+              </div>
 
-                <Card className="bg-orange-50 mb-6 border-none">
-                  <CardBody>
-                    <p className="font-semibold text-[#2C2C2C] mb-3">💡 ขั้นตอนการเข้าร่วมค่าย:</p>
-                    <ol className="list-decimal list-inside space-y-2 text-left text-gray-700">
-                      <li>สมัครค่ายและชำระเงิน</li>
-                      <li>อัปโหลดสลิปโอนเงิน</li>
-                      <li>รอผู้จัดค่ายตรวจสอบและอนุมัติ</li>
-                      <li>เข้าร่วมค่ายและ Check-in ด้วย QR Code</li>
-                    </ol>
-                    <Divider className="my-3" />
-                    <p className="text-sm text-gray-600">
-                      ตรวจสอบสถานะได้ที่เมนู <strong>ค่ายของฉัน</strong>
-                    </p>
-                  </CardBody>
-                </Card>
+              {/* Steps Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+                {[
+                  { step: '01', title: 'สมัครค่ายและชำระเงิน', desc: 'เลือกค่ายที่สนใจและดำเนินการชำระเงิน', icon: FiBook },
+                  { step: '02', title: 'อัปโหลดสลิปโอนเงิน', desc: 'แนบหลักฐานการชำระเงินเพื่อยืนยัน', icon: FiTarget },
+                  { step: '03', title: 'รอผู้จัดค่ายอนุมัติ', desc: 'ผู้จัดค่ายจะตรวจสอบและยืนยันการสมัคร', icon: FiAward },
+                  { step: '04', title: 'Check-in ด้วย QR Code', desc: 'เข้าร่วมค่ายและ Check-in เพื่อรับข้อมูล', icon: FiArrowRight },
+                ].map(({ step, title, desc, icon: Icon }) => (
+                  <div key={step} className="flex items-start gap-4 p-4 border-2 border-black bg-gray-50 hover:bg-[#FFF9ED] transition-colors">
+                    <div className="bg-black text-white font-black text-sm px-2 py-1 flex-shrink-0 min-w-[36px] text-center">
+                      {step}
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Icon className="text-[#F2B33D] mt-0.5 flex-shrink-0" size={16} />
+                      <div>
+                        <p className="font-bold text-[#2C2C2C] text-sm">{title}</p>
+                        <p className="text-gray-500 text-xs mt-0.5">{desc}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-                <Button
-                  size="lg"
-                  className="bg-[#F2B33D] text-white font-bold shadow-lg"
-                  endContent={<FiArrowRight />}
-                  onPress={() => router.push('/allcamps')}
+              {/* Info Row */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 bg-amber-50 border-2 border-[#F2B33D] mb-8">
+                <FiTrendingUp className="text-[#F2B33D] flex-shrink-0" size={20} />
+                <p className="text-sm text-gray-700">
+                  ตรวจสอบสถานะได้ที่เมนู{' '}
+                  <button
+                    onClick={() => router.push('/my-camps')}
+                    className="font-black text-[#2C2C2C] underline underline-offset-2 hover:text-[#F2B33D] transition-colors"
+                  >
+                    ค่ายของฉัน
+                  </button>{' '}
+                  เมื่อค่ายอนุมัติแล้ว Discovery Path จะพร้อมใช้งาน
+                </p>
+              </div>
+
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button
+                  onClick={() => router.push('/allcamps')}
+                  className="flex-1 bg-[#F2B33D] text-black font-black py-4 px-8 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 text-lg"
                 >
                   ค้นหาค่ายที่น่าสนใจ
-                </Button>
-              </CardBody>
-            </Card>
+                  <FiArrowRight />
+                </button>
+                <button
+                  onClick={() => router.push('/path-finder')}
+                  className="flex-1 bg-white text-black font-black py-4 px-8 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 text-lg"
+                >
+                  ลองทำ Path Finder
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -319,9 +367,15 @@ export default function DiscoveryPathPage() {
         subtitle="เส้นทางอาชีพของคุณ"
         description={`วิเคราะห์จากค่ายที่คุณเข้าร่วมจริง • ข้อมูลจาก ${data.campsAttended} ค่าย`}
         showButtons={false}
-      />
+      >
+        <ShareResultButton
+          targetRef={resultRef}
+          filename="skillscout-discovery-path"
+          title="Discovery Path - SkillScout"
+        />
+      </HeroBanner>
 
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+      <div ref={resultRef} className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-8">
 
         {/* Stats Grid - Modern Style */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
