@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import { Link } from "@heroui/react";
@@ -7,7 +6,9 @@ import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn, FaGithub, FaEnvelope
 import { BsFillPeopleFill } from "react-icons/bs";
 import { FiActivity } from "react-icons/fi";
 
-// สร้าง/อ่าน deviceId จาก localStorage
+// offset เพื่อให้ตัวเลขเริ่มจาก 100 เสมอ
+const VISITOR_OFFSET = 100;
+
 function getOrCreateDeviceId(): string {
   if (typeof window === 'undefined') return '';
   const key = 'skillscout_device_id';
@@ -36,9 +37,7 @@ const FooterBody = () => {
   const trackAndFetchVisitors = useCallback(async () => {
     const deviceId = getOrCreateDeviceId();
     if (!deviceId) return;
-
     try {
-      // รายงาน visit + ดึงจำนวน
       const res = await fetch('/api/visitors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -46,30 +45,26 @@ const FooterBody = () => {
       });
       if (res.ok) {
         const data = await res.json() as { count: number };
-        setVisitorCount(data.count);
+        setVisitorCount(data.count + VISITOR_OFFSET);
       }
     } catch {
-      // fallback: ดึงเฉยๆ
       try {
         const res = await fetch('/api/visitors');
         if (res.ok) {
           const data = await res.json() as { count: number };
-          setVisitorCount(data.count);
+          setVisitorCount(data.count + VISITOR_OFFSET);
         }
-      } catch {
-        // silent fail
-      }
+      } catch { /* silent fail */ }
     }
   }, []);
 
   useEffect(() => {
     trackAndFetchVisitors();
-    // refresh ทุก 5 นาที
     const interval = setInterval(() => {
       fetch('/api/visitors')
         .then(r => r.json())
-        .then((d: { count: number }) => setVisitorCount(d.count))
-        .catch(() => {});
+        .then((d: { count: number }) => setVisitorCount(d.count + VISITOR_OFFSET))
+        .catch(() => { });
     }, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [trackAndFetchVisitors]);
@@ -100,7 +95,7 @@ const FooterBody = () => {
   return (
     <div className="mx-auto max-w-7xl px-6 py-12">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        
+
         {/* Column 1 - Brand */}
         <div className="lg:col-span-1">
           <Link href="/" className="inline-block mb-4">
@@ -116,7 +111,7 @@ const FooterBody = () => {
           <p className="text-sm text-gray-300 dark:text-gray-400 leading-relaxed mb-6">
             แพลตฟอร์มค้นหาค่ายไอทีที่ใหญ่ที่สุด พัฒนาทักษะและสร้างอนาคตที่สดใสไปกับเรา
           </p>
-          
+
           {/* Social Media */}
           <div className="flex gap-2">
             {socialLinks.map((social, idx) => (
@@ -207,7 +202,7 @@ const FooterBody = () => {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <BsFillPeopleFill size={16} className="text-orange-400" />
-                <span className="text-xs text-gray-400 font-medium">ผู้ใช้ออนไลน์ (รายชั่วโมง)</span>
+                <span className="text-xs text-gray-400 font-medium">ผู้เข้าชมเว็บไซต์</span>
               </div>
               <FiActivity size={14} className="text-orange-400 animate-pulse" />
             </div>

@@ -17,12 +17,12 @@ interface StatCardProps {
   className?: string;
 }
 
-export function StatCard({ 
-  title, 
-  value, 
-  icon, 
+export function StatCard({
+  title,
+  value,
+  icon,
   color = 'primary',
-  className = '' 
+  className = ''
 }: StatCardProps) {
   // Map สี icon ตาม color
   const colorMap: Record<StatCardColor, string> = {
@@ -33,14 +33,14 @@ export function StatCard({
     'warning': 'text-orange-600',
     'neutral': 'text-gray-600',
   };
-  
+
   const iconColor = colorMap[color] || 'text-gray-600';
-  const progressColor = color === 'primary' ? 'bg-[#F2B33D]' : 
-                        color === 'secondary' ? 'bg-[#F97316]' :
-                        color === 'success' ? 'bg-green-500' :
-                        color === 'danger' ? 'bg-red-500' :
-                        color === 'warning' ? 'bg-orange-500' :
-                        'bg-gray-500';
+  const progressColor = color === 'primary' ? 'bg-[#F2B33D]' :
+    color === 'secondary' ? 'bg-[#F97316]' :
+      color === 'success' ? 'bg-green-500' :
+        color === 'danger' ? 'bg-red-500' :
+          color === 'warning' ? 'bg-orange-500' :
+            'bg-gray-500';
 
   return (
     <Card className={`border-none shadow-sm hover:shadow-md transition-all duration-300 bg-white dark:bg-gray-800 ${className}`}>
@@ -51,7 +51,7 @@ export function StatCard({
         </div>
         {icon && (
           <div className="p-3 rounded-xl">
-            <div className={`w-6 h-6 ${iconColor}`}>
+            <div className={`text-3xl ${iconColor}`}>
               {icon}
             </div>
           </div>
