@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Card, CardBody, CardHeader, Button, Chip, Divider } from '@heroui/react';
-import { FiTrendingUp, FiTarget, FiBook, FiAward, FiArrowRight } from 'react-icons/fi';
-import ShareResultButton from '@/components/common/ShareResultButton';
+import { FiTrendingUp, FiTarget, FiBook, FiAward, FiArrowRight, FiShare2 } from 'react-icons/fi';
+import ShareDiscoveryModal from '@/components/common/ShareDiscoveryModal';
 import HeroBanner from '@/components/HeroBanner';
 import SkillPieChart from '@/components/discovery/SkillPieChart';
 import RIASECProfile from '@/components/discovery/RIASECProfile';
@@ -97,6 +97,7 @@ export default function DiscoveryPathPage() {
   const [loading, setLoading] = useState(true);
   const [recommendedCampsData, setRecommendedCampsData] = useState<CampData[]>([]);
   const resultRef = useRef<HTMLDivElement>(null);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
 
   const fetchRecommendedCamps = useCallback(async (campIds: { id: string }[]) => {
     try {
@@ -184,7 +185,6 @@ export default function DiscoveryPathPage() {
   }, [status, router, fetchDiscoveryData]);
 
   const ModernStatCard = ({ title, value, icon: Icon, colorClass }: StatCardProps) => {
-    // Map สีเพื่อให้ icon ชัดเจน
     const iconColorMap: Record<string, string> = {
       'bg-[#F2B33D]': 'text-[#F2B33D]',
       'bg-green-500': 'text-green-600',
@@ -217,7 +217,6 @@ export default function DiscoveryPathPage() {
       <div className="min-h-screen bg-[#F8F9FA]">
         <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-orange-50 to-transparent -z-10" />
         
-        {/* Hero Banner - แสดงจริง */}
         <HeroBanner
           badge="Find your Path"
           title="DISCOVERY"
@@ -229,7 +228,6 @@ export default function DiscoveryPathPage() {
 
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="animate-pulse space-y-8">
-            {/* Stats Grid Skeleton */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="bg-white rounded-2xl p-6 shadow-sm">
@@ -242,7 +240,6 @@ export default function DiscoveryPathPage() {
               ))}
             </div>
 
-            {/* Content Skeleton */}
             <div className="bg-white rounded-2xl p-8 shadow-sm">
               <div className="h-6 bg-gray-200 rounded w-64 mb-6"></div>
               <div className="h-64 bg-gray-200 rounded-xl"></div>
@@ -256,7 +253,6 @@ export default function DiscoveryPathPage() {
   if (!data || data.campsAttended === 0) {
     return (
       <div className="min-h-screen bg-white">
-        {/* Hero Banner */}
         <HeroBanner
           badge="Find your Path"
           title="DISCOVERY"
@@ -267,14 +263,11 @@ export default function DiscoveryPathPage() {
         />
 
         <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          {/* Main Card - neobrutalism style */}
           <div className="bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-0 overflow-hidden">
             
-            {/* Top accent bar */}
             <div className="bg-[#F2B33D] h-2 w-full" />
 
             <div className="p-10 md:p-14">
-              {/* Header */}
               <div className="flex flex-col md:flex-row items-start md:items-center gap-6 mb-10">
                 <div className="bg-[#F2B33D] border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex-shrink-0">
                   <FiTarget className="w-10 h-10 text-black" />
@@ -293,7 +286,6 @@ export default function DiscoveryPathPage() {
                 </div>
               </div>
 
-              {/* Steps Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
                 {[
                   { step: '01', title: 'สมัครค่ายและชำระเงิน', desc: 'เลือกค่ายที่สนใจและดำเนินการชำระเงิน', icon: FiBook },
@@ -316,7 +308,6 @@ export default function DiscoveryPathPage() {
                 ))}
               </div>
 
-              {/* Info Row */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 bg-amber-50 border-2 border-[#F2B33D] mb-8">
                 <FiTrendingUp className="text-[#F2B33D] flex-shrink-0" size={20} />
                 <p className="text-sm text-gray-700">
@@ -331,7 +322,6 @@ export default function DiscoveryPathPage() {
                 </p>
               </div>
 
-              {/* CTA Buttons */}
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
                   onClick={() => router.push('/allcamps')}
@@ -356,10 +346,8 @@ export default function DiscoveryPathPage() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] pb-12">
-      {/* Decorative Background Blob */}
       <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-orange-50 to-transparent -z-10" />
 
-      {/* Hero Banner */}
       <HeroBanner
         badge="Find your Path"
         title="DISCOVERY"
@@ -375,16 +363,27 @@ export default function DiscoveryPathPage() {
           >
             ค่ายอื่นๆที่น่าสนใจ
         </Button>
-        <ShareResultButton
-          targetRef={resultRef}
-          filename="skillscout-discovery-path"
-          title="Discovery Path - SkillScout"
+        <Button
+          size="lg"
+          className="bg-[#F2B33D] text-[#1a1a1a] font-black px-8 rounded-2xl h-14 text-base hover:bg-[#d69a2e] transition-all"
+          onPress={() => setShareModalOpen(true)}
+          startContent={<FiShare2 className="w-5 h-5" />}
+        >
+          แชร์ผลลัพธ์
+        </Button>
+        <ShareDiscoveryModal
+          data={{
+            riasecProfile: data.riasecProfile,
+            recommendedCareers: data.recommendedCareers,
+          }}
+          isOpen={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
         />
       </HeroBanner>
 
       <div ref={resultRef} className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-8">
 
-        {/* Stats Grid - Modern Style */}
+        {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <ModernStatCard
             title="ค่ายที่เข้าร่วม"

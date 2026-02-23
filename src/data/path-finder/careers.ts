@@ -808,7 +808,769 @@ export const IT_CAREERS: Career[] = [
         duration: '12+ เดือน'
       }
     ]
-  }
+  },
+
+  // ─── 19 อาชีพเพิ่มเติม ครบ 30 permutations ──────────────────────────────
+
+  // AR - Artistic + Realistic
+  {
+    id: 'ux-researcher',
+    name: 'UX Researcher',
+    nameTh: 'นักวิจัย UX',
+    description: 'ทำการวิจัยพฤติกรรมผู้ใช้ด้วยการทดสอบ Prototype และวิเคราะห์ข้อมูลเชิงคุณภาพ เพื่อนำมาออกแบบประสบการณ์ที่ดีที่สุด',
+    personality: 'คุณมีความคิดสร้างสรรค์ในการออกแบบ และชอบทำการทดลองเชิงปฏิบัติกับผู้ใช้จริง',
+    riasecCodes: ['A', 'R'],
+    requiredTags: ['ux-design', 'html-css'],
+    recommendedTags: ['data-analytics', 'mobile-dev'],
+    demandLevel: 'high',
+    averageSalary: '45,000 - 80,000 บาท/เดือน',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'พื้นฐาน UX Research',
+        description: 'เรียนรู้วิธี User Interview, Usability Testing และ Survey Design',
+        requiredSkills: ['User Interview', 'Usability Testing', 'Wireframing'],
+        recommendedCamps: ['ux-design', 'html-css'],
+        duration: '3-4 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'Research Methods & Prototyping',
+        description: 'เชี่ยวชาญ Prototype ทดสอบ A/B Testing และ Heuristic Evaluation',
+        requiredSkills: ['Figma', 'A/B Testing', 'Affinity Mapping'],
+        recommendedCamps: ['ux-design', 'data-analytics'],
+        duration: '4-6 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Strategic UX Research',
+        description: 'กำหนดกลยุทธ์งานวิจัยระดับองค์กรและ Mixed Methods Research',
+        requiredSkills: ['Research Strategy', 'Quantitative Analysis', 'Stakeholder Management'],
+        recommendedCamps: ['data-analytics'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // RS - Realistic + Social
+  {
+    id: 'it-support-engineer',
+    name: 'IT Support Engineer',
+    nameTh: 'วิศวกรซัพพอร์ต IT',
+    description: 'ให้บริการและแก้ไขปัญหาระบบ IT ให้กับองค์กร ทั้งฮาร์ดแวร์ ซอฟต์แวร์ และเครือข่าย โดยทำงานใกล้ชิดกับผู้ใช้โดยตรง',
+    personality: 'คุณชอบทำงานกับระบบจริงๆ และสนุกกับการช่วยเหลือผู้อื่นแก้ปัญหาด้านเทคโนโลยี',
+    riasecCodes: ['R', 'S'],
+    requiredTags: ['networking', 'cybersecurity'],
+    recommendedTags: ['cloud', 'devops'],
+    demandLevel: 'high',
+    averageSalary: '25,000 - 50,000 บาท/เดือน',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'พื้นฐาน IT Support',
+        description: 'เรียนรู้ระบบปฏิบัติการ เครือข่ายพื้นฐาน และการแก้ปัญหาเบื้องต้น',
+        requiredSkills: ['Windows/Linux', 'Networking Basics', 'Troubleshooting'],
+        recommendedCamps: ['networking', 'cybersecurity'],
+        duration: '2-3 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'System & Network Administration',
+        description: 'บริหารจัดการ Server, Active Directory และระบบเครือข่ายองค์กร',
+        requiredSkills: ['Active Directory', 'Server Administration', 'ITIL'],
+        recommendedCamps: ['networking', 'cloud'],
+        duration: '4-6 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'IT Infrastructure Management',
+        description: 'วางแผนและบริหาร IT Infrastructure ระดับองค์กรขนาดใหญ่',
+        requiredSkills: ['Infrastructure Planning', 'Virtualization', 'Disaster Recovery'],
+        recommendedCamps: ['cloud', 'devops'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // SR - Social + Realistic
+  {
+    id: 'developer-advocate',
+    name: 'Developer Advocate',
+    nameTh: 'Developer Advocate',
+    description: 'สร้างสะพานเชื่อมระหว่างชุมชนนักพัฒนากับบริษัท ด้วยการสาธิต สอน และรับฟัง Feedback จากนักพัฒนาจริงๆ',
+    personality: 'คุณรักการสื่อสารและการสร้างชุมชน พร้อมทั้งสนุกกับการลงมือสร้างของจริงเพื่อใช้สาธิต',
+    riasecCodes: ['S', 'R'],
+    requiredTags: ['python', 'javascript', 'html-css'],
+    recommendedTags: ['cloud', 'ai'],
+    demandLevel: 'medium',
+    averageSalary: '50,000 - 100,000 บาท/เดือน',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Technical Communication',
+        description: 'เรียนรู้การเขียน Blog เทคนิค การทำ Demo และการพูดต่อหน้าชุมชน',
+        requiredSkills: ['Technical Writing', 'Public Speaking', 'Coding Basics'],
+        recommendedCamps: ['python', 'javascript'],
+        duration: '3-4 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'Community Building',
+        description: 'จัด Workshop สร้าง Tutorial สาธิต API และบริหาร Developer Community',
+        requiredSkills: ['Workshop Facilitation', 'API Design', 'Content Creation'],
+        recommendedCamps: ['cloud', 'javascript'],
+        duration: '6-12 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Developer Relations Strategy',
+        description: 'กำหนดกลยุทธ์ Developer Relations ระดับองค์กรและวัด Community KPIs',
+        requiredSkills: ['DevRel Strategy', 'Community Analytics', 'Partner Management'],
+        recommendedCamps: ['cloud', 'ai'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // RE - Realistic + Enterprising
+  {
+    id: 'solutions-engineer',
+    name: 'Solutions Engineer',
+    nameTh: 'วิศวกรโซลูชัน',
+    description: 'ออกแบบและนำเสนอโซลูชันทางเทคนิคให้กับลูกค้า เชื่อมโยงความต้องการทางธุรกิจกับการแก้ปัญหาด้านเทคโนโลยี',
+    personality: 'คุณชอบแก้ปัญหาเชิงปฏิบัติ และมีทักษะในการนำเสนอโซลูชันให้ผู้อื่นเข้าใจ',
+    riasecCodes: ['R', 'E'],
+    requiredTags: ['networking', 'cloud', 'database'],
+    recommendedTags: ['devops', 'cybersecurity'],
+    demandLevel: 'high',
+    averageSalary: '55,000 - 110,000 บาท/เดือน',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Technical Foundation',
+        description: 'เรียนรู้ระบบ IT หลายด้านและทักษะการนำเสนอทางเทคนิค',
+        requiredSkills: ['Networking', 'Cloud Basics', 'Presentation Skills'],
+        recommendedCamps: ['networking', 'cloud'],
+        duration: '3-4 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'Solution Design',
+        description: 'ออกแบบโซลูชันสำหรับลูกค้า ทำ POC และ Demo ระบบ',
+        requiredSkills: ['Solution Architecture', 'POC Development', 'Business Analysis'],
+        recommendedCamps: ['cloud', 'database'],
+        duration: '6-12 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Enterprise Solutions',
+        description: 'บริหารโปรเจกต์ใหญ่ระดับ Enterprise และสร้าง Partnership',
+        requiredSkills: ['Enterprise Architecture', 'Project Management', 'Sales Engineering'],
+        recommendedCamps: ['devops', 'cybersecurity'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // ER - Enterprising + Realistic
+  {
+    id: 'cto',
+    name: 'Chief Technology Officer',
+    nameTh: 'ประธานเจ้าหน้าที่ฝ่ายเทคโนโลยี',
+    description: 'บริหารทิศทางเทคโนโลยีขององค์กร ตัดสินใจด้าน Tech Stack วางแผน Roadmap และนำทีมวิศวกรรม',
+    personality: 'คุณมีวิสัยทัศน์ทางธุรกิจ ชอบตัดสินใจใหญ่ และยังคงรักษาความเชี่ยวชาญด้านเทคนิคไว้',
+    riasecCodes: ['E', 'R'],
+    requiredTags: ['devops', 'cloud', 'database'],
+    recommendedTags: ['ai', 'cybersecurity'],
+    demandLevel: 'high',
+    averageSalary: '150,000 - 350,000 บาท/เดือน',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Technical Leadership Foundation',
+        description: 'พัฒนาทักษะ Tech Lead เข้าใจ Business Model และ Team Management',
+        requiredSkills: ['Leadership', 'System Design', 'Agile/Scrum'],
+        recommendedCamps: ['devops', 'cloud'],
+        duration: '6-12 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'Engineering Management',
+        description: 'บริหารทีมวิศวกร กำหนด Tech Strategy และ OKRs',
+        requiredSkills: ['Engineering Management', 'OKR Setting', 'Budget Planning'],
+        recommendedCamps: ['cloud', 'ai'],
+        duration: '2-4 ปี'
+      },
+      {
+        level: 'advanced',
+        title: 'Executive Technology Leadership',
+        description: 'กำหนดทิศทาง Innovation ระดับองค์กร สร้าง Tech Culture',
+        requiredSkills: ['Executive Leadership', 'Innovation Strategy', 'Board Communication'],
+        recommendedCamps: ['ai', 'cybersecurity'],
+        duration: '5+ ปี'
+      }
+    ]
+  },
+
+  // CR - Conventional + Realistic
+  {
+    id: 'qa-engineer',
+    name: 'QA Engineer',
+    nameTh: 'วิศวกรประกันคุณภาพ',
+    description: 'ออกแบบและดำเนินการทดสอบซอฟต์แวร์ทั้ง Manual และ Automated เพื่อรับประกันคุณภาพก่อนส่งมอบ',
+    personality: 'คุณมีความละเอียดรอบคอบ ชอบทำงานอย่างเป็นระบบ และมีความพึงพอใจในการค้นหา Bug',
+    riasecCodes: ['C', 'R'],
+    requiredTags: ['python', 'javascript', 'devops'],
+    recommendedTags: ['cybersecurity', 'database'],
+    demandLevel: 'high',
+    averageSalary: '35,000 - 75,000 บาท/เดือน',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Manual Testing',
+        description: 'เรียนรู้ Test Case Design, Bug Reporting และ Testing Lifecycle',
+        requiredSkills: ['Test Case Design', 'Bug Reporting', 'Testing Concepts'],
+        recommendedCamps: ['python', 'javascript'],
+        duration: '2-3 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'Test Automation',
+        description: 'เขียน Automated Test ด้วย Selenium, Cypress หรือ Playwright',
+        requiredSkills: ['Selenium/Cypress', 'API Testing', 'CI/CD Integration'],
+        recommendedCamps: ['javascript', 'devops'],
+        duration: '4-6 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'QA Strategy & Performance Testing',
+        description: 'กำหนดกลยุทธ์ Quality Assurance และ Performance/Load Testing',
+        requiredSkills: ['Test Strategy', 'Performance Testing', 'Security Testing'],
+        recommendedCamps: ['devops', 'cybersecurity'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // SI - Social + Investigative
+  {
+    id: 'technical-educator',
+    name: 'Technical Educator',
+    nameTh: 'นักการศึกษาด้านเทคโนโลยี',
+    description: 'สอน ออกแบบหลักสูตร และพัฒนาสื่อการเรียนรู้ด้านเทคโนโลยีสำหรับผู้เรียนทุกระดับ',
+    personality: 'คุณรักการสอนและการถ่ายทอดความรู้ ควบคู่ไปกับความหลงใหลในการเรียนรู้สิ่งใหม่ๆ ตลอดเวลา',
+    riasecCodes: ['S', 'I'],
+    requiredTags: ['python', 'javascript', 'html-css'],
+    recommendedTags: ['ai', 'database'],
+    demandLevel: 'medium',
+    averageSalary: '35,000 - 70,000 บาท/เดือน',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Teaching Fundamentals',
+        description: 'เรียนรู้ Instructional Design, Pedagogy และทักษะการนำเสนอ',
+        requiredSkills: ['Instructional Design', 'Curriculum Planning', 'Teaching Methods'],
+        recommendedCamps: ['python', 'javascript'],
+        duration: '3-4 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'EdTech & Content Creation',
+        description: 'สร้างหลักสูตรออนไลน์ Learning Management System และ Interactive Content',
+        requiredSkills: ['LMS Administration', 'E-learning Design', 'Assessment Design'],
+        recommendedCamps: ['html-css', 'javascript'],
+        duration: '6-12 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Education Program Leadership',
+        description: 'บริหารโปรแกรมการศึกษา วัดผล Learning Outcomes และวิจัยนวัตกรรม EdTech',
+        requiredSkills: ['Program Management', 'Learning Analytics', 'EdTech Research'],
+        recommendedCamps: ['ai', 'data-analytics'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // EI - Enterprising + Investigative
+  {
+    id: 'innovation-manager',
+    name: 'Innovation Manager',
+    nameTh: 'ผู้จัดการนวัตกรรม',
+    description: 'ขับเคลื่อนนวัตกรรมในองค์กร ค้นหาเทคโนโลยีใหม่ ทำ R&D และนำไปต่อยอดเป็นโอกาสทางธุรกิจ',
+    personality: 'คุณมีวิสัยทัศน์ด้านธุรกิจ และชอบค้นคว้าทดลองเทคโนโลยีใหม่เพื่อสร้างความได้เปรียบในตลาด',
+    riasecCodes: ['E', 'I'],
+    requiredTags: ['ai', 'cloud'],
+    recommendedTags: ['data-analytics', 'cybersecurity'],
+    demandLevel: 'high',
+    averageSalary: '70,000 - 140,000 บาท/เดือน',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Innovation Fundamentals',
+        description: 'เรียนรู้ Design Thinking, Lean Startup และการประเมินเทคโนโลยีใหม่',
+        requiredSkills: ['Design Thinking', 'Lean Startup', 'Technology Scouting'],
+        recommendedCamps: ['ai', 'cloud'],
+        duration: '3-4 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'R&D & Prototyping',
+        description: 'ทำ Proof of Concept นำเทคโนโลยีใหม่มาทดลองใช้ในองค์กร',
+        requiredSkills: ['POC Development', 'Agile Innovation', 'Stakeholder Buy-in'],
+        recommendedCamps: ['ai', 'data-analytics'],
+        duration: '6-12 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Innovation Strategy',
+        description: 'กำหนด Innovation Roadmap ระดับองค์กรและสร้าง Innovation Culture',
+        requiredSkills: ['Innovation Strategy', 'Corporate Venture', 'Open Innovation'],
+        recommendedCamps: ['ai', 'cybersecurity'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // CI - Conventional + Investigative
+  {
+    id: 'it-auditor',
+    name: 'IT Auditor',
+    nameTh: 'ผู้ตรวจสอบ IT',
+    description: 'ตรวจสอบและประเมินระบบ IT ด้านความปลอดภัย การปฏิบัติตามกฎระเบียบ และความเสี่ยงของระบบสารสนเทศ',
+    personality: 'คุณมีความละเอียดถี่ถ้วนสูง ชอบวิเคราะห์ระบบเชิงลึก และพอใจกับการค้นพบช่องโหว่ที่ซ่อนอยู่',
+    riasecCodes: ['C', 'I'],
+    requiredTags: ['cybersecurity', 'database'],
+    recommendedTags: ['networking', 'cloud'],
+    demandLevel: 'medium',
+    averageSalary: '40,000 - 85,000 บาท/เดือน',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'IT Audit Fundamentals',
+        description: 'เรียนรู้ COBIT, ITIL มาตรฐาน ISO 27001 และกระบวนการ Audit',
+        requiredSkills: ['COBIT', 'ISO 27001', 'Risk Assessment Basics'],
+        recommendedCamps: ['cybersecurity', 'database'],
+        duration: '3-4 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'Compliance & Risk Analysis',
+        description: 'ดำเนินการ IT Audit จริง วิเคราะห์ความเสี่ยงและเขียนรายงาน',
+        requiredSkills: ['Audit Execution', 'Compliance Analysis', 'Report Writing'],
+        recommendedCamps: ['cybersecurity', 'networking'],
+        duration: '6-12 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Enterprise Governance',
+        description: 'กำหนด IT Governance Framework และบริหาร Enterprise Risk',
+        requiredSkills: ['IT Governance', 'Enterprise Risk Management', 'Regulatory Compliance'],
+        recommendedCamps: ['cloud', 'cybersecurity'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // SA - Social + Artistic
+  {
+    id: 'digital-content-creator',
+    name: 'Digital Content Creator',
+    nameTh: 'ผู้สร้างคอนเทนต์ดิจิทัล',
+    description: 'สร้างสรรค์เนื้อหาดิจิทัลที่น่าสนใจในรูปแบบต่างๆ ทั้งวิดีโอ บทความ และโซเชียลมีเดีย เพื่อเชื่อมต่อกับผู้ชม',
+    personality: 'คุณชอบสื่อสารกับผู้คน มีความคิดสร้างสรรค์ และสนุกกับการสร้างคอนเทนต์ที่สร้างผลกระทบ',
+    riasecCodes: ['S', 'A'],
+    requiredTags: ['ux-design', 'html-css'],
+    recommendedTags: ['data-analytics', 'ai'],
+    demandLevel: 'high',
+    averageSalary: '25,000 - 70,000 บาท/เดือน',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Content Creation Basics',
+        description: 'เรียนรู้การผลิตวิดีโอ การเขียน Copywriting และใช้ Social Media',
+        requiredSkills: ['Video Production', 'Copywriting', 'Social Media Basics'],
+        recommendedCamps: ['ux-design', 'html-css'],
+        duration: '2-3 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'Multi-platform Content Strategy',
+        description: 'สร้าง Content Strategy ข้ามแพลตฟอร์ม วิเคราะห์ Analytics และ SEO',
+        requiredSkills: ['Content Strategy', 'SEO', 'Analytics'],
+        recommendedCamps: ['data-analytics', 'html-css'],
+        duration: '4-6 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Brand Content Leadership',
+        description: 'กำหนดทิศทาง Brand Storytelling และบริหารทีม Content',
+        requiredSkills: ['Brand Strategy', 'Team Leadership', 'Content Monetization'],
+        recommendedCamps: ['ai', 'data-analytics'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // AE - Artistic + Enterprising
+  {
+    id: 'creative-tech-director',
+    name: 'Creative Tech Director',
+    nameTh: 'ผู้อำนวยการสร้างสรรค์ด้านเทคโนโลยี',
+    description: 'นำทีม Design และเทคโนโลยีเพื่อสร้างผลิตภัณฑ์ที่ดีทั้งด้านภาพลักษณ์และฟังก์ชัน พร้อมขับเคลื่อนทิศทาง Creative ขององค์กร',
+    personality: 'คุณมีวิสัยทัศน์ด้าน Design และชอบนำทีมสร้างงานที่สวยงามและมีผลกระทบทางธุรกิจ',
+    riasecCodes: ['A', 'E'],
+    requiredTags: ['ux-design', 'html-css'],
+    recommendedTags: ['mobile-dev', 'game-dev'],
+    demandLevel: 'medium',
+    averageSalary: '70,000 - 150,000 บาท/เดือน',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Creative & Leadership Foundation',
+        description: 'พัฒนาทักษะ Design หลายด้านและเริ่มบริหารทีม Creative เล็กๆ',
+        requiredSkills: ['UI/UX Design', 'Brand Identity', 'Team Collaboration'],
+        recommendedCamps: ['ux-design', 'html-css'],
+        duration: '3-4 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'Creative Direction',
+        description: 'กำหนด Visual Direction ของโปรเจกต์ บริหาร Creative Team และทำงานกับ Stakeholder',
+        requiredSkills: ['Art Direction', 'Creative Briefing', 'Stakeholder Management'],
+        recommendedCamps: ['ux-design', 'mobile-dev'],
+        duration: '6-12 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Executive Creative Leadership',
+        description: 'กำหนด Creative Strategy ระดับองค์กร สร้าง Design Culture และวัด Business Impact',
+        requiredSkills: ['Creative Strategy', 'Brand Architecture', 'Business Acumen'],
+        recommendedCamps: ['mobile-dev', 'game-dev'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // EA - Enterprising + Artistic
+  {
+    id: 'growth-hacker',
+    name: 'Growth Hacker',
+    nameTh: 'Growth Hacker',
+    description: 'ใช้ความคิดสร้างสรรค์และข้อมูลเพื่อออกแบบและทดลองกลยุทธ์การเติบโตของผลิตภัณฑ์อย่างรวดเร็ว',
+    personality: 'คุณมีไฟในการขับเคลื่อนการเติบโต ชอบทดลองไอเดียใหม่ และมีทักษะทั้งด้านธุรกิจและงาน Creative',
+    riasecCodes: ['E', 'A'],
+    requiredTags: ['data-analytics', 'html-css'],
+    recommendedTags: ['ai', 'javascript'],
+    demandLevel: 'high',
+    averageSalary: '45,000 - 100,000 บาท/เดือน',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Growth Fundamentals',
+        description: 'เรียนรู้ AARRR Metrics, A/B Testing และ Basic Digital Marketing',
+        requiredSkills: ['Growth Metrics', 'A/B Testing', 'Digital Marketing Basics'],
+        recommendedCamps: ['html-css', 'data-analytics'],
+        duration: '2-3 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'Growth Experiments',
+        description: 'ออกแบบและรันการทดลอง Growth Hack ด้วย Data-driven approach',
+        requiredSkills: ['Funnel Optimization', 'Viral Mechanics', 'Marketing Automation'],
+        recommendedCamps: ['data-analytics', 'javascript'],
+        duration: '4-6 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Growth Strategy',
+        description: 'กำหนดกลยุทธ์ Growth ระดับบริษัท บริหารทีม Growth และวัด CAC/LTV',
+        requiredSkills: ['Growth Strategy', 'Product-Led Growth', 'Revenue Optimization'],
+        recommendedCamps: ['ai', 'data-analytics'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // AC - Artistic + Conventional
+  {
+    id: 'technical-writer',
+    name: 'Technical Writer',
+    nameTh: 'นักเขียนด้านเทคนิค',
+    description: 'เขียนเอกสาร API คู่มือผู้ใช้ และเนื้อหาทางเทคนิคที่ซับซ้อนให้เข้าใจง่าย สวยงาม และมีโครงสร้างชัดเจน',
+    personality: 'คุณมีความคิดสร้างสรรค์ในการนำเสนอข้อมูล ชอบความเป็นระเบียบ และสื่อสารเทคนิคได้อย่างชัดเจน',
+    riasecCodes: ['A', 'C'],
+    requiredTags: ['html-css', 'javascript'],
+    recommendedTags: ['ux-design', 'database'],
+    demandLevel: 'medium',
+    averageSalary: '30,000 - 65,000 บาท/เดือน',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Technical Writing Basics',
+        description: 'เรียนรู้การเขียน Documentation สำหรับ Developer, API Docs และการใช้ Markdown',
+        requiredSkills: ['Technical Writing', 'Markdown', 'API Documentation'],
+        recommendedCamps: ['html-css', 'javascript'],
+        duration: '2-3 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'Documentation Systems',
+        description: 'สร้าง Doc Sites ด้วย Docusaurus/GitBook และวางโครงสร้าง Information Architecture',
+        requiredSkills: ['Docs-as-Code', 'Information Architecture', 'Style Guide'],
+        recommendedCamps: ['javascript', 'ux-design'],
+        duration: '4-6 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Docs Strategy & Management',
+        description: 'กำหนดกลยุทธ์ Documentation ระดับองค์กรและวัด Docs Quality',
+        requiredSkills: ['Content Strategy', 'Docs Metrics', 'Developer Experience'],
+        recommendedCamps: ['ux-design', 'database'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // CA - Conventional + Artistic
+  {
+    id: 'digital-asset-manager',
+    name: 'Digital Asset Manager',
+    nameTh: 'ผู้จัดการสินทรัพย์ดิจิทัล',
+    description: 'จัดระบบ จัดเก็บ และบริหาร Asset ดิจิทัลทั้งหมดขององค์กร ทั้งภาพ วิดีโอ และสื่อ ให้เป็นระเบียบและเข้าถึงได้ง่าย',
+    personality: 'คุณชอบความเป็นระเบียบ มีรสนิยมด้านภาพ และพอใจกับการสร้างระบบจัดการที่มีประสิทธิภาพ',
+    riasecCodes: ['C', 'A'],
+    requiredTags: ['ux-design', 'database'],
+    recommendedTags: ['cloud', 'html-css'],
+    demandLevel: 'low',
+    averageSalary: '25,000 - 55,000 บาท/เดือน',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'DAM Fundamentals',
+        description: 'เรียนรู้หลักการจัดการ Digital Asset, Metadata และ Taxonomy',
+        requiredSkills: ['Asset Organization', 'Metadata Management', 'File Naming'],
+        recommendedCamps: ['ux-design', 'database'],
+        duration: '2-3 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'DAM Systems & Workflows',
+        description: 'ใช้งาน DAM Software บริหาร Workflow และ Version Control ของ Assets',
+        requiredSkills: ['DAM Software', 'Workflow Design', 'Rights Management'],
+        recommendedCamps: ['database', 'cloud'],
+        duration: '4-6 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Enterprise DAM Strategy',
+        description: 'กำหนด DAM Strategy ระดับองค์กร ผสาน AI-powered tagging และวัด ROI',
+        requiredSkills: ['DAM Strategy', 'AI Tagging', 'Brand Governance'],
+        recommendedCamps: ['cloud', 'html-css'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // ES - Enterprising + Social
+  {
+    id: 'tech-sales-manager',
+    name: 'Tech Sales Manager',
+    nameTh: 'ผู้จัดการฝ่ายขายเทคโนโลยี',
+    description: 'ขับเคลื่อนยอดขายผลิตภัณฑ์และบริการด้านเทคโนโลยี สร้างความสัมพันธ์กับลูกค้าและนำทีม Sales',
+    personality: 'คุณมีพลังงานสูง ชอบพูดคุยกับผู้คน และสามารถอธิบายเทคโนโลยีที่ซับซ้อนให้เข้าใจง่ายได้',
+    riasecCodes: ['E', 'S'],
+    requiredTags: ['cloud', 'database'],
+    recommendedTags: ['cybersecurity', 'ai'],
+    demandLevel: 'high',
+    averageSalary: '45,000 - 120,000 บาท/เดือน + Commission',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Tech Sales Foundation',
+        description: 'เรียนรู้ Sales Process, Product Knowledge และทักษะการนำเสนอ',
+        requiredSkills: ['Sales Process', 'Product Knowledge', 'Presentation Skills'],
+        recommendedCamps: ['cloud', 'database'],
+        duration: '2-3 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'Account Management',
+        description: 'บริหาร Pipeline ทำ Demo และ Negotiation กับลูกค้าองค์กร',
+        requiredSkills: ['CRM', 'Account Management', 'Negotiation'],
+        recommendedCamps: ['cloud', 'cybersecurity'],
+        duration: '6-12 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Sales Leadership',
+        description: 'บริหารทีม Sales กำหนด Territory Strategy และวัด Revenue KPIs',
+        requiredSkills: ['Sales Leadership', 'Revenue Forecasting', 'Partner Channel'],
+        recommendedCamps: ['ai', 'cybersecurity'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // SC - Social + Conventional
+  {
+    id: 'it-support-coordinator',
+    name: 'IT Support Coordinator',
+    nameTh: 'ผู้ประสานงาน IT Support',
+    description: 'ประสานงานระหว่างผู้ใช้และทีมเทคนิค บริหาร Help Desk Ticket และรับประกันว่าปัญหาได้รับการแก้ไขตาม SLA',
+    personality: 'คุณชอบช่วยเหลือผู้คน มีความเป็นระเบียบสูง และพอใจกับการแก้ปัญหาตามขั้นตอน',
+    riasecCodes: ['S', 'C'],
+    requiredTags: ['networking', 'cybersecurity'],
+    recommendedTags: ['cloud', 'database'],
+    demandLevel: 'medium',
+    averageSalary: '22,000 - 45,000 บาท/เดือน',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Help Desk Fundamentals',
+        description: 'เรียนรู้การใช้ Ticketing System, ITIL Basics และทักษะการสื่อสาร',
+        requiredSkills: ['Ticketing Systems', 'ITIL Basics', 'Customer Service'],
+        recommendedCamps: ['networking', 'cybersecurity'],
+        duration: '2-3 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'Service Management',
+        description: 'บริหาร SLA วิเคราะห์ Trend ของ Tickets และปรับปรุง Process',
+        requiredSkills: ['SLA Management', 'Trend Analysis', 'Process Improvement'],
+        recommendedCamps: ['networking', 'cloud'],
+        duration: '4-6 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'IT Service Management',
+        description: 'ออกแบบ Service Catalog กำหนด KPIs และนำ ITSM Framework ไปใช้',
+        requiredSkills: ['ITSM', 'Service Catalog Design', 'Knowledge Management'],
+        recommendedCamps: ['cloud', 'database'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // CS - Conventional + Social
+  {
+    id: 'data-entry-specialist',
+    name: 'Data Administrator',
+    nameTh: 'ผู้ดูแลระบบข้อมูล',
+    description: 'จัดการ บำรุงรักษา และรับประกันความถูกต้องของข้อมูลในองค์กร พร้อมทั้งให้ความช่วยเหลือด้านข้อมูลแก่ทีมงาน',
+    personality: 'คุณมีความละเอียดถี่ถ้วน ชอบทำงานกับข้อมูลอย่างเป็นระบบ และยินดีช่วยเหลือทีมด้านข้อมูล',
+    riasecCodes: ['C', 'S'],
+    requiredTags: ['database', 'python'],
+    recommendedTags: ['cloud', 'data-analytics'],
+    demandLevel: 'medium',
+    averageSalary: '20,000 - 40,000 บาท/เดือน',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Data Management Basics',
+        description: 'เรียนรู้ Database Basics, Data Entry Standards และ Data Quality',
+        requiredSkills: ['Database Basics', 'Data Quality', 'Excel/Spreadsheets'],
+        recommendedCamps: ['database', 'python'],
+        duration: '2-3 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'Data Governance',
+        description: 'บริหาร Master Data, Data Governance และ Data Lifecycle',
+        requiredSkills: ['Master Data Management', 'Data Governance', 'SQL'],
+        recommendedCamps: ['database', 'data-analytics'],
+        duration: '4-6 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Enterprise Data Management',
+        description: 'กำหนดนโยบาย Data Management ระดับองค์กรและ Data Architecture',
+        requiredSkills: ['Data Architecture', 'Compliance', 'Data Strategy'],
+        recommendedCamps: ['cloud', 'database'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // EC - Enterprising + Conventional
+  {
+    id: 'erp-consultant',
+    name: 'ERP Consultant',
+    nameTh: 'ที่ปรึกษาระบบ ERP',
+    description: 'วางแผน ติดตั้ง และปรับแต่งระบบ ERP เช่น SAP หรือ Oracle เพื่อให้ตรงกับกระบวนการทางธุรกิจขององค์กร',
+    personality: 'คุณมีทักษะทางธุรกิจ ชอบวางแผนระบบ และสามารถผลักดันโปรเจกต์ใหญ่ให้สำเร็จได้',
+    riasecCodes: ['E', 'C'],
+    requiredTags: ['database', 'cloud'],
+    recommendedTags: ['python', 'devops'],
+    demandLevel: 'high',
+    averageSalary: '55,000 - 120,000 บาท/เดือน',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'ERP Fundamentals',
+        description: 'เรียนรู้โมดูลพื้นฐานของ ERP เข้าใจกระบวนการธุรกิจและ Business Analysis',
+        requiredSkills: ['ERP Basics', 'Business Process', 'Business Analysis'],
+        recommendedCamps: ['database', 'cloud'],
+        duration: '3-4 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'ERP Implementation',
+        description: 'ติดตั้งและ Configure ERP ทำ Data Migration และ User Training',
+        requiredSkills: ['ERP Configuration', 'Data Migration', 'Change Management'],
+        recommendedCamps: ['database', 'python'],
+        duration: '6-12 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Enterprise ERP Leadership',
+        description: 'บริหารโปรเจกต์ ERP ขนาดใหญ่ กำหนด Integration Strategy และ ROI',
+        requiredSkills: ['Program Management', 'ERP Strategy', 'ROI Analysis'],
+        recommendedCamps: ['cloud', 'devops'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
+
+  // CE - Conventional + Enterprising
+  {
+    id: 'financial-systems-analyst',
+    name: 'Financial Systems Analyst',
+    nameTh: 'นักวิเคราะห์ระบบการเงิน',
+    description: 'วิเคราะห์ ออกแบบ และบริหารระบบสารสนเทศด้านการเงินและบัญชี เพื่อให้สอดคล้องกับกฎระเบียบและเป้าหมายธุรกิจ',
+    personality: 'คุณมีความเชี่ยวชาญด้านตัวเลขและระเบียบ ชอบวิเคราะห์ระบบอย่างเป็นระบบ และมีทักษะธุรกิจ',
+    riasecCodes: ['C', 'E'],
+    requiredTags: ['database', 'python'],
+    recommendedTags: ['cloud', 'data-analytics'],
+    demandLevel: 'medium',
+    averageSalary: '45,000 - 95,000 บาท/เดือน',
+    roadmapSteps: [
+      {
+        level: 'beginner',
+        title: 'Financial Systems Basics',
+        description: 'เรียนรู้ Financial Accounting Basics, Regulatory Compliance และ ERP Finance Module',
+        requiredSkills: ['Financial Accounting', 'Regulatory Compliance', 'ERP Finance'],
+        recommendedCamps: ['database', 'python'],
+        duration: '3-4 เดือน'
+      },
+      {
+        level: 'intermediate',
+        title: 'Systems Analysis & Design',
+        description: 'วิเคราะห์ความต้องการ ออกแบบ Workflow และทำ System Integration',
+        requiredSkills: ['Requirements Analysis', 'System Design', 'Financial Modeling'],
+        recommendedCamps: ['database', 'data-analytics'],
+        duration: '6-12 เดือน'
+      },
+      {
+        level: 'advanced',
+        title: 'Enterprise Finance Technology',
+        description: 'กำหนด Finance Technology Strategy และบริหาร Digital Finance Transformation',
+        requiredSkills: ['Finance Transformation', 'Digital Strategy', 'Risk Management'],
+        recommendedCamps: ['cloud', 'data-analytics'],
+        duration: '12+ เดือน'
+      }
+    ]
+  },
 ];
 
 // Helper function สำหรับหาอาชีพที่เหมาะสมตาม RIASEC scores
@@ -819,14 +1581,25 @@ export function getRecommendedCareers(riasecScores: Record<RIASECCode, number>):
     .slice(0, 2)
     .map(([code]) => code as RIASECCode);
 
-  // หาอาชีพที่ match กับ RIASEC codes
-  return IT_CAREERS.filter(career => {
-    const careerCodes = career.riasecCodes;
-    return (
-      (careerCodes.includes(sortedCodes[0]) && careerCodes.includes(sortedCodes[1])) ||
-      careerCodes.includes(sortedCodes[0])
-    );
-  });
+  // หาอาชีพที่ match โดยสนลำดับ (dominant type ต้องตรงกับ riasecCodes[0])
+  const exactMatches = IT_CAREERS.filter(career =>
+    career.riasecCodes[0] === sortedCodes[0] &&
+    career.riasecCodes[1] === sortedCodes[1]
+  );
+
+  if (exactMatches.length > 0) return exactMatches;
+
+  // fallback: dominant type ตรง แต่ secondary ไม่ตรง
+  const dominantMatches = IT_CAREERS.filter(career =>
+    career.riasecCodes[0] === sortedCodes[0]
+  );
+
+  if (dominantMatches.length > 0) return dominantMatches;
+
+  // fallback สุดท้าย: มี code ใดก็ได้ตรง
+  return IT_CAREERS.filter(career =>
+    career.riasecCodes.includes(sortedCodes[0])
+  );
 }
 
 // Helper function สำหรับหาอาชีพที่เหมาะสมตาม tags

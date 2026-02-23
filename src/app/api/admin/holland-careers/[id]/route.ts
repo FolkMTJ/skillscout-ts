@@ -5,6 +5,15 @@ import { authOptions } from '@/lib/auth';
 import { getCollection } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
+interface RoadmapStepDoc {
+  level: 'beginner' | 'intermediate' | 'advanced';
+  title: string;
+  description: string;
+  requiredSkills: string[];
+  recommendedCamps?: string[];
+  duration?: string;
+}
+
 interface HollandCareerDoc {
   id: string;
   name: string;
@@ -14,6 +23,7 @@ interface HollandCareerDoc {
   riasecCodes: string[];
   requiredTags: string[];
   recommendedTags: string[];
+  roadmapSteps: RoadmapStepDoc[];
   averageSalary?: string;
   demandLevel?: 'high' | 'medium' | 'low';
   isActive: boolean;

@@ -28,6 +28,24 @@ import { FiUsers, FiCalendar, FiShield, FiTrash2, FiEye, FiSearch, FiAlertCircle
 import toast from 'react-hot-toast';
 import { StatCard } from '@/components/common';
 
+interface RoadmapStepForm {
+  level: 'beginner' | 'intermediate' | 'advanced';
+  title: string;
+  description: string;
+  requiredSkills: string;
+  recommendedCamps: string;
+  duration: string;
+}
+
+interface RoadmapStepDoc {
+  level: 'beginner' | 'intermediate' | 'advanced';
+  title: string;
+  description: string;
+  requiredSkills: string[];
+  recommendedCamps?: string[];
+  duration?: string;
+}
+
 interface HollandCareer {
   _id: string;
   id: string;
@@ -38,6 +56,7 @@ interface HollandCareer {
   riasecCodes: string[];
   requiredTags: string[];
   recommendedTags: string[];
+  roadmapSteps: RoadmapStepDoc[];
   averageSalary?: string;
   demandLevel?: 'high' | 'medium' | 'low';
   isActive: boolean;
@@ -75,19 +94,26 @@ export default function AdminDashboard() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedCamp, setSelectedCamp] = useState<Camp | null>(null);
   const [rejectReason, setRejectReason] = useState('');
-  
+
   // Holland Careers state
   const [hollandCareers, setHollandCareers] = useState<HollandCareer[]>([]);
   const [careerLoading, setCareerLoading] = useState(false);
+  const [riasecFilter, setRiasecFilter] = useState<string | null>(null);
   const [selectedCareer, setSelectedCareer] = useState<HollandCareer | null>(null);
   const [careerForm, setCareerForm] = useState({
     name: '', nameTh: '', description: '', personality: '',
     riasecCodes: '', requiredTags: '', recommendedTags: '',
     averageSalary: '', demandLevel: 'high' as 'high' | 'medium' | 'low',
   });
+  const defaultRoadmapSteps = (): RoadmapStepForm[] => [
+    { level: 'beginner', title: '', description: '', requiredSkills: '', recommendedCamps: '', duration: '' },
+    { level: 'intermediate', title: '', description: '', requiredSkills: '', recommendedCamps: '', duration: '' },
+    { level: 'advanced', title: '', description: '', requiredSkills: '', recommendedCamps: '', duration: '' },
+  ];
+  const [roadmapSteps, setRoadmapSteps] = useState<RoadmapStepForm[]>(defaultRoadmapSteps());
   const { isOpen: isCareerModalOpen, onOpen: onCareerModalOpen, onClose: onCareerModalClose } = useDisclosure();
   const { isOpen: isDeleteCareerModalOpen, onOpen: onDeleteCareerModalOpen, onClose: onDeleteCareerModalClose } = useDisclosure();
-  
+
   const { isOpen: isBanModalOpen, onOpen: onBanModalOpen, onClose: onBanModalClose } = useDisclosure();
   const { isOpen: isDeleteModalOpen, onOpen: onDeleteModalOpen, onClose: onDeleteModalClose } = useDisclosure();
   const { isOpen: isApproveModalOpen, onOpen: onApproveModalOpen, onClose: onApproveModalClose } = useDisclosure();
@@ -119,6 +145,7 @@ export default function AdminDashboard() {
   const openAddCareer = () => {
     setSelectedCareer(null);
     setCareerForm({ name: '', nameTh: '', description: '', personality: '', riasecCodes: '', requiredTags: '', recommendedTags: '', averageSalary: '', demandLevel: 'high' });
+    setRoadmapSteps(defaultRoadmapSteps());
     onCareerModalOpen();
   };
 
@@ -135,7 +162,25 @@ export default function AdminDashboard() {
       averageSalary: career.averageSalary || '',
       demandLevel: career.demandLevel || 'high',
     });
+    // populate roadmapSteps from career or defaults
+    const levels: Array<'beginner' | 'intermediate' | 'advanced'> = ['beginner', 'intermediate', 'advanced'];
+    const steps = levels.map(level => {
+      const existing = (career.roadmapSteps || []).find(s => s.level === level);
+      return existing ? {
+        level,
+        title: existing.title || '',
+        description: existing.description || '',
+        requiredSkills: (existing.requiredSkills || []).join(', '),
+        recommendedCamps: (existing.recommendedCamps || []).join(', '),
+        duration: existing.duration || '',
+      } : { level, title: '', description: '', requiredSkills: '', recommendedCamps: '', duration: '' };
+    });
+    setRoadmapSteps(steps);
     onCareerModalOpen();
+  };
+
+  const updateRoadmapStep = (index: number, field: keyof RoadmapStepForm, value: string) => {
+    setRoadmapSteps(prev => prev.map((s, i) => i === index ? { ...s, [field]: value } : s));
   };
 
   const saveCareer = async () => {
@@ -150,6 +195,16 @@ export default function AdminDashboard() {
         recommendedTags: careerForm.recommendedTags.split(',').map(s => s.trim()).filter(Boolean),
         averageSalary: careerForm.averageSalary,
         demandLevel: careerForm.demandLevel,
+        roadmapSteps: roadmapSteps
+          .filter(s => s.title.trim())
+          .map(s => ({
+            level: s.level,
+            title: s.title.trim(),
+            description: s.description.trim(),
+            requiredSkills: s.requiredSkills.split(',').map(x => x.trim()).filter(Boolean),
+            recommendedCamps: s.recommendedCamps.split(',').map(x => x.trim()).filter(Boolean),
+            duration: s.duration.trim(),
+          })),
       };
       if (selectedCareer) {
         await fetch(`/api/admin/holland-careers/${selectedCareer._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -191,7 +246,7 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
+
       const usersRes = await fetch('/api/admin/users');
       const usersData = await usersRes.json();
       if (usersData.users) setUsers(usersData.users);
@@ -286,15 +341,15 @@ export default function AdminDashboard() {
       }
 
       const result = await response.json();
-      
+
       toast.success('อนุมัติค่ายสำเร็จ!');
-      
+
       if (result.issues && result.issues.length > 0) {
         toast(`คะแนนการตรวจสอบ: ${result.verificationScore}/100`, {
           icon: '⚠️',
         });
       }
-      
+
       onApproveModalClose();
       fetchData();
     } catch (err) {
@@ -305,7 +360,7 @@ export default function AdminDashboard() {
 
   const confirmRejectCamp = async () => {
     if (!selectedCamp || !session?.user?.id) return;
-    
+
     if (!rejectReason.trim()) {
       toast.error('กรุณาระบุเหตุผลในการปฏิเสธ');
       return;
@@ -386,14 +441,14 @@ export default function AdminDashboard() {
             <div className="space-y-4 animate-pulse">
               {/* Search Bar */}
               <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
-              
+
               {/* Table Header */}
               <div className="grid grid-cols-6 gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
                   <div key={i} className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
                 ))}
               </div>
-              
+
               {/* Table Rows */}
               {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                 <div key={i} className="grid grid-cols-6 gap-4 py-4 border-b border-gray-100 dark:border-gray-700">
@@ -443,35 +498,35 @@ export default function AdminDashboard() {
 
         {/* Stats Cards - ✅ แก้ไขใช้ StatCard component */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-          <StatCard 
+          <StatCard
             title="ผู้ใช้ทั้งหมด"
             value={totalUsers}
             icon={<FiUsers />}
             color="primary"
           />
 
-          <StatCard 
+          <StatCard
             title="Organizers"
             value={organizers}
             icon={<FiShield />}
             color="secondary"
           />
 
-          <StatCard 
+          <StatCard
             title="Banned"
             value={bannedUsers}
             icon={<FiXCircle />}
             color="danger"
           />
 
-          <StatCard 
+          <StatCard
             title="ค่ายรออนุมัติ"
             value={pendingCamps}
             icon={<FiAlertCircle />}
             color="warning"
           />
 
-          <StatCard 
+          <StatCard
             title="ค่ายที่เปิด"
             value={activeCamps}
             icon={<FiCalendar />}
@@ -543,7 +598,7 @@ export default function AdminDashboard() {
                             size="sm"
                             color={
                               user.role === 'admin' ? 'danger' :
-                              user.role === 'organizer' ? 'primary' : 'default'
+                                user.role === 'organizer' ? 'primary' : 'default'
                             }
                           >
                             {user.role}
@@ -596,64 +651,123 @@ export default function AdminDashboard() {
             <Tab key="holland" title={`Holland Careers (${hollandCareers.length})`}>
               <div className="py-6">
                 <div className="flex justify-between items-center mb-4">
-                  <p className="text-sm text-gray-500">จัดการอาชีพ IT สำหรับ Path Finder (Holland RIASEC)</p>
-                  <Button color="warning" startContent={<FiPlus />} onPress={openAddCareer}>
-                    เพิ่มอาชีพ
-                  </Button>
+                  <div className="flex items-center gap-3">
+                    <p className="text-sm text-gray-500">จัดการอาชีพ IT สำหรับ Path Finder (Holland RIASEC)</p>
+                    {/* RIASEC Filter Buttons */}
+                    <div className="flex gap-1">
+                      {(['R', 'I', 'A', 'S', 'E', 'C'] as const).map(code => (
+                        <button
+                          key={code}
+                          onClick={() => setRiasecFilter(riasecFilter === code ? null : code)}
+                          className={`w-8 h-8 rounded-full text-xs font-black border-2 transition-all ${riasecFilter === code
+                            ? 'bg-[#F2B33D] border-[#F2B33D] text-white shadow-md scale-110'
+                            : 'bg-white border-gray-300 text-gray-600 hover:border-[#F2B33D]'
+                            }`}
+                        >
+                          {code}
+                        </button>
+                      ))}
+                      {riasecFilter && (
+                        <button
+                          onClick={() => setRiasecFilter(null)}
+                          className="px-2 h-8 rounded-full text-xs font-medium border-2 border-gray-200 text-gray-500 hover:border-red-400 hover:text-red-400 transition-all"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="md"
+                      variant="flat"
+                      color="default"
+                      onPress={async () => {
+                        if (!confirm('ต้องการ Reseed ข้อมูลอาชีพใหม่ 30 อาชีพหรือไม่?\n(ข้อมูลเดิมที่แก้ไขเองจะถูกลบ)')) return;
+                        try {
+                          const res = await fetch('/api/admin/holland-careers/seed', { method: 'POST' });
+                          const data = await res.json() as { message?: string };
+                          toast.success(data.message || 'Reseed สำเร็จ');
+                          fetchHollandCareers();
+                        } catch { toast.error('เกิดข้อผิดพลาด'); }
+                      }}
+                    >
+                      Reseed ข้อมูล
+                    </Button>
+                    <Button color="warning" startContent={<FiPlus />} onPress={openAddCareer}>
+                      เพิ่มอาชีพ
+                    </Button>
+                  </div>
                 </div>
                 {careerLoading ? (
                   <div className="text-center py-8 text-gray-400">กำลังโหลด...</div>
                 ) : (
-                  <Table aria-label="Holland Careers">
-                    <TableHeader>
-                      <TableColumn>ชื่ออาชีพ</TableColumn>
-                      <TableColumn>RIASEC</TableColumn>
-                      <TableColumn>ระดับความต้องการ</TableColumn>
-                      <TableColumn>สถานะ</TableColumn>
-                      <TableColumn>จัดการ</TableColumn>
-                    </TableHeader>
-                    <TableBody>
-                      {hollandCareers.map((career) => (
-                        <TableRow key={career._id}>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">{career.nameTh}</p>
-                              <p className="text-xs text-gray-500">{career.name}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-1 flex-wrap">
-                              {career.riasecCodes.map(c => (
-                                <Chip key={c} size="sm" className="bg-[#F2B33D] text-white text-[10px] min-w-6 h-6">{c}</Chip>
-                              ))}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Chip size="sm" color={career.demandLevel === 'high' ? 'success' : career.demandLevel === 'medium' ? 'warning' : 'default'}>
-                              {career.demandLevel === 'high' ? 'สูง' : career.demandLevel === 'medium' ? 'ปานกลาง' : 'ต่ำ'}
-                            </Chip>
-                          </TableCell>
-                          <TableCell>
-                            <Chip size="sm" color={career.isActive ? 'success' : 'default'} variant="flat">
-                              {career.isActive ? 'เปิด' : 'ปิด'}
-                            </Chip>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button size="sm" variant="flat" startContent={<FiEdit2 />} onPress={() => openEditCareer(career)}>แก้ไข</Button>
-                              <Button size="sm" variant="flat" color={career.isActive ? 'warning' : 'success'}
-                                startContent={career.isActive ? <FiToggleLeft /> : <FiToggleRight />}
-                                onPress={() => toggleCareerActive(career)}>
-                                {career.isActive ? 'ปิด' : 'เปิด'}
-                              </Button>
-                              <Button size="sm" color="danger" variant="flat" startContent={<FiTrash2 />}
-                                onPress={() => { setSelectedCareer(career); onDeleteCareerModalOpen(); }}>ลบ</Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <>
+                    {riasecFilter && (
+                      <p className="mb-2 text-xs text-gray-500">
+                        แสดงอาชีพที่มี RIASEC: <span className="font-black text-[#F2B33D]">{riasecFilter}</span>
+                        {' '}({hollandCareers.filter(c => c.riasecCodes.includes(riasecFilter)).length} อาชีพ)
+                      </p>
+                    )}
+                    <Table aria-label="Holland Careers">
+                      <TableHeader>
+                        <TableColumn>ชื่ออาชีพ</TableColumn>
+                        <TableColumn>RIASEC</TableColumn>
+                        <TableColumn>ระดับความต้องการ</TableColumn>
+                        <TableColumn>สถานะ</TableColumn>
+                        <TableColumn>จัดการ</TableColumn>
+                      </TableHeader>
+                      <TableBody>
+                        {(riasecFilter
+                          ? [...hollandCareers]
+                            .filter(c => c.riasecCodes.includes(riasecFilter))
+                            .sort((a, b) => {
+                              const order = ['R', 'I', 'A', 'S', 'E', 'C'];
+                              return order.indexOf(a.riasecCodes[0]) - order.indexOf(b.riasecCodes[0]);
+                            })
+                          : hollandCareers
+                        ).map((career) => (
+                          <TableRow key={career._id}>
+                            <TableCell>
+                              <div>
+                                <p className="font-medium">{career.nameTh}</p>
+                                <p className="text-xs text-gray-500">{career.name}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-1 flex-wrap">
+                                {career.riasecCodes.map(c => (
+                                  <Chip key={c} size="sm" className="bg-[#F2B33D] text-white text-[10px] min-w-6 h-6">{c}</Chip>
+                                ))}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Chip size="sm" color={career.demandLevel === 'high' ? 'success' : career.demandLevel === 'medium' ? 'warning' : 'default'}>
+                                {career.demandLevel === 'high' ? 'สูง' : career.demandLevel === 'medium' ? 'ปานกลาง' : 'ต่ำ'}
+                              </Chip>
+                            </TableCell>
+                            <TableCell>
+                              <Chip size="sm" color={career.isActive ? 'success' : 'default'} variant="flat">
+                                {career.isActive ? 'เปิด' : 'ปิด'}
+                              </Chip>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button size="sm" variant="flat" startContent={<FiEdit2 />} onPress={() => openEditCareer(career)}>แก้ไข</Button>
+                                <Button size="sm" variant="flat" color={career.isActive ? 'warning' : 'success'}
+                                  startContent={career.isActive ? <FiToggleLeft /> : <FiToggleRight />}
+                                  onPress={() => toggleCareerActive(career)}>
+                                  {career.isActive ? 'ปิด' : 'เปิด'}
+                                </Button>
+                                <Button size="sm" color="danger" variant="flat" startContent={<FiTrash2 />}
+                                  onPress={() => { setSelectedCareer(career); onDeleteCareerModalOpen(); }}>ลบ</Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </>
                 )}
               </div>
             </Tab>
@@ -688,9 +802,9 @@ export default function AdminDashboard() {
                             size="sm"
                             color={
                               camp.status === 'active' ? 'success' :
-                              camp.status === 'pending' ? 'warning' :
-                              camp.status === 'rejected' ? 'danger' :
-                              'default'
+                                camp.status === 'pending' ? 'warning' :
+                                  camp.status === 'rejected' ? 'danger' :
+                                    'default'
                             }
                           >
                             {camp.status}
@@ -747,48 +861,145 @@ export default function AdminDashboard() {
       </div>
 
       {/* Career Add/Edit Modal */}
-      <Modal isOpen={isCareerModalOpen} onClose={onCareerModalClose} size="2xl" scrollBehavior="inside">
+      <Modal isOpen={isCareerModalOpen} onClose={onCareerModalClose} size="4xl" scrollBehavior="inside">
         <ModalContent>
-          <ModalHeader>{selectedCareer ? 'แก้ไขอาชีพ' : 'เพิ่มอาชีพใหม่'}</ModalHeader>
-          <ModalBody>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <Input label="ชื่ออาชีพ (EN)" placeholder="Software Engineer" value={careerForm.name} onValueChange={v => setCareerForm(f => ({...f, name: v}))} isRequired />
-                <Input label="ชื่ออาชีพ (TH)" placeholder="วิศวกรซอฟต์แวร์" value={careerForm.nameTh} onValueChange={v => setCareerForm(f => ({...f, nameTh: v}))} isRequired />
+          <ModalHeader className="border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <FiBookOpen className="text-[#F2B33D]" />
+              <span>{selectedCareer ? 'แก้ไขอาชีพ' : 'เพิ่มอาชีพใหม่'}</span>
+            </div>
+          </ModalHeader>
+          <ModalBody className="py-6">
+            <div className="space-y-6">
+
+              {/* ─── ข้อมูลพื้นฐาน ─── */}
+              <div>
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">ข้อมูลพื้นฐาน</h3>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input label="ชื่ออาชีพ (EN)" placeholder="Software Engineer" value={careerForm.name} onValueChange={v => setCareerForm(f => ({ ...f, name: v }))} isRequired />
+                    <Input label="ชื่ออาชีพ (TH)" placeholder="วิศวกรซอฟต์แวร์" value={careerForm.nameTh} onValueChange={v => setCareerForm(f => ({ ...f, nameTh: v }))} isRequired />
+                  </div>
+                  <Textarea label="คำอธิบายอาชีพ" placeholder="อธิบายหน้าที่และบทบาทของอาชีพนี้..." value={careerForm.description} onValueChange={v => setCareerForm(f => ({ ...f, description: v }))} minRows={3} isRequired />
+                  <Textarea label="บุคลิกภาพที่เหมาะสม" placeholder="คุณชอบแก้ปัญหาเชิงตรรกะ..." value={careerForm.personality} onValueChange={v => setCareerForm(f => ({ ...f, personality: v }))} minRows={2} />
+                </div>
               </div>
-              <Textarea label="คำอธิบายอาชีพ" placeholder="อธิบายหน้าที่และบทบาทของอาชีพนี้..." value={careerForm.description} onValueChange={v => setCareerForm(f => ({...f, description: v}))} minRows={3} isRequired />
-              <Textarea label="บุคลิกภาพที่เหมาะสม" placeholder="คุณชอบแก้ปัญหาเชิงตรรกะ..." value={careerForm.personality} onValueChange={v => setCareerForm(f => ({...f, personality: v}))} minRows={2} />
-              <Input
-                label="RIASEC Codes (คั่นด้วยจุลภาค)"
-                placeholder="I, R, A"
-                description="ใส่รหัส R I A S E C คั่นด้วยเครื่องหมายจุลภาค"
-                value={careerForm.riasecCodes}
-                onValueChange={v => setCareerForm(f => ({...f, riasecCodes: v}))}
-                isRequired
-              />
-              <Input label="Required Tags (คั่นด้วยจุลภาค)" placeholder="python, javascript, html-css" value={careerForm.requiredTags} onValueChange={v => setCareerForm(f => ({...f, requiredTags: v}))} />
-              <Input label="Recommended Tags (คั่นด้วยจุลภาค)" placeholder="database, devops" value={careerForm.recommendedTags} onValueChange={v => setCareerForm(f => ({...f, recommendedTags: v}))} />
-              <div className="grid grid-cols-2 gap-4">
-                <Input label="เงินเดือนเฉลี่ย" placeholder="30,000 - 80,000 บาท" value={careerForm.averageSalary} onValueChange={v => setCareerForm(f => ({...f, averageSalary: v}))} />
-                <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-2">ระดับความต้องการในตลาด</label>
-                  <div className="flex gap-2">
-                    {(['high', 'medium', 'low'] as const).map(level => (
-                      <button key={level} onClick={() => setCareerForm(f => ({...f, demandLevel: level}))}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
-                          careerForm.demandLevel === level
-                            ? 'border-[#F2B33D] bg-[#F2B33D] text-white'
-                            : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                        }`}>
-                        {level === 'high' ? 'สูง' : level === 'medium' ? 'ปานกลาง' : 'ต่ำ'}
-                      </button>
-                    ))}
+
+              {/* ─── RIASEC & Tags ─── */}
+              <div>
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">RIASEC & Tags</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 block mb-2">
+                      RIASEC Codes <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex gap-2 flex-wrap">
+                      {(['R', 'I', 'A', 'S', 'E', 'C'] as const).map(code => (
+                        <button
+                          key={code}
+                          type="button"
+                          onClick={() => {
+                            const current = careerForm.riasecCodes.split(',').map(s => s.trim()).filter(Boolean);
+                            const idx = current.indexOf(code);
+                            const next = idx >= 0
+                              ? current.filter((_, i) => i !== idx)
+                              : [...current, code].slice(0, 2);
+                            setCareerForm(f => ({ ...f, riasecCodes: next.join(', ') }));
+                          }}
+                          className={`w-10 h-10 rounded-full text-sm font-black border-2 transition-all ${careerForm.riasecCodes.split(',').map(s => s.trim()).includes(code)
+                            ? 'bg-[#F2B33D] border-[#F2B33D] text-white shadow-md scale-110'
+                            : 'bg-white border-gray-300 text-gray-600 hover:border-[#F2B33D]'
+                            }`}
+                        >
+                          {code}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">เลือกได้สูงสุด 2 รหัส (รหัสแรก = dominant type)</p>
+                  </div>
+                  <Input label="Required Tags (คั่นด้วยจุลภาค)" placeholder="python, javascript, html-css" value={careerForm.requiredTags} onValueChange={v => setCareerForm(f => ({ ...f, requiredTags: v }))} />
+                  <Input label="Recommended Tags (คั่นด้วยจุลภาค)" placeholder="database, devops" value={careerForm.recommendedTags} onValueChange={v => setCareerForm(f => ({ ...f, recommendedTags: v }))} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input label="เงินเดือนเฉลี่ย" placeholder="30,000 - 80,000 บาท/เดือน" value={careerForm.averageSalary} onValueChange={v => setCareerForm(f => ({ ...f, averageSalary: v }))} />
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 block mb-2">ระดับความต้องการในตลาด</label>
+                      <div className="flex gap-2">
+                        {(['high', 'medium', 'low'] as const).map(level => (
+                          <button key={level} type="button" onClick={() => setCareerForm(f => ({ ...f, demandLevel: level }))}
+                            className={`px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all ${careerForm.demandLevel === level
+                              ? 'border-[#F2B33D] bg-[#F2B33D] text-white'
+                              : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                              }`}>
+                            {level === 'high' ? 'สูง' : level === 'medium' ? 'ปานกลาง' : 'ต่ำ'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
+
+              {/* ─── Roadmap Steps ─── */}
+              <div>
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Roadmap (3 ระดับ)</h3>
+                <div className="space-y-4">
+                  {roadmapSteps.map((step, idx) => {
+                    const levelLabel = step.level === 'beginner' ? 'Beginner' : step.level === 'intermediate' ? 'Intermediate' : 'Advanced';
+                    const levelColor = step.level === 'beginner' ? 'border-green-200 bg-green-50/50' : step.level === 'intermediate' ? 'border-yellow-200 bg-yellow-50/50' : 'border-red-200 bg-red-50/50';
+                    return (
+                      <div key={step.level} className={`rounded-xl border-2 ${levelColor} p-4 space-y-3`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-bold">{levelLabel}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <Input
+                            label="หัวข้อ (Title)"
+                            placeholder={step.level === 'beginner' ? 'พื้นฐานการเขียนโปรแกรม' : step.level === 'intermediate' ? 'การพัฒนาแอปพลิเคชัน' : 'Architecture & Leadership'}
+                            value={step.title}
+                            onValueChange={v => updateRoadmapStep(idx, 'title', v)}
+                            size="sm"
+                          />
+                          <Input
+                            label="ระยะเวลา (Duration)"
+                            placeholder="3-4 เดือน"
+                            value={step.duration}
+                            onValueChange={v => updateRoadmapStep(idx, 'duration', v)}
+                            size="sm"
+                          />
+                        </div>
+                        <Textarea
+                          label="คำอธิบาย"
+                          placeholder="อธิบายสิ่งที่จะเรียนรู้ในระดับนี้..."
+                          value={step.description}
+                          onValueChange={v => updateRoadmapStep(idx, 'description', v)}
+                          minRows={2}
+                          size="sm"
+                        />
+                        <div className="grid grid-cols-2 gap-3">
+                          <Input
+                            label="Required Skills (คั่นด้วยจุลภาค)"
+                            placeholder="Python, Git, SQL"
+                            value={step.requiredSkills}
+                            onValueChange={v => updateRoadmapStep(idx, 'requiredSkills', v)}
+                            size="sm"
+                          />
+                          <Input
+                            label="Camp Tags แนะนำ (คั่นด้วยจุลภาค)"
+                            placeholder="python, database"
+                            value={step.recommendedCamps}
+                            onValueChange={v => updateRoadmapStep(idx, 'recommendedCamps', v)}
+                            size="sm"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
             </div>
           </ModalBody>
-          <ModalFooter>
+          <ModalFooter className="border-t border-gray-100">
             <Button variant="light" onPress={onCareerModalClose}>ยกเลิก</Button>
             <Button color="warning" startContent={<FiSave />} onPress={saveCareer}>
               {selectedCareer ? 'บันทึกการแก้ไข' : 'เพิ่มอาชีพ'}

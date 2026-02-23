@@ -155,6 +155,9 @@ export class CampModel {
   }
 
   static async findById(id: string, incrementView: boolean = false): Promise<Camp | null> {
+    // ถ้า id ไม่ใช่ ObjectId format (24 hex) ให้ return null ทันที ไม่ throw
+    if (!ObjectId.isValid(id) || id.length !== 24) return null;
+
     const collection = await getCollection<CampDoc>(this.collectionName);
     const filter: Filter<CampDoc> = { _id: new ObjectId(id) } as Filter<CampDoc>;
     

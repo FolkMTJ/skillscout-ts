@@ -98,7 +98,7 @@ export default function NavBar(props: NavbarProps) {
                 {...props}
                 classNames={{
                     base: cn("bg-[#2C2C2C]", { "bg-[#2C2C2C]": isMenuOpen }),
-                    wrapper: "w-full justify-center bg-transparent",
+                    wrapper: "max-w-[1536px] mx-auto px-6 justify-center bg-transparent",
                     item: "hidden md:flex",
                 }}
                 height="60px"

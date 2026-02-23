@@ -77,13 +77,24 @@ export async function GET(request: NextRequest) {
     // ลบ tags ซ้ำ
     recommendedTags = [...new Set(recommendedTags)];
 
-    // ดึงค่ายทั้งหมดที่ active
+    // ดึงค่ายทั้งหมดที่ active และยังไม่หมดเขตสมัคร
     const allCamps = await CampModel.findAll();
-    const activeCamps = allCamps.filter(camp => 
-      camp.status === 'active' && 
-      camp.tags && 
-      camp.tags.length > 0
-    );
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const activeCamps = allCamps.filter(camp => {
+      if (camp.status !== 'active') return false;
+      if (!camp.tags || camp.tags.length === 0) return false;
+      // เช็ค registration deadline (ถ้ามี) หรือ deadline
+      const deadlineStr = (camp as Camp & { registrationDeadline?: string }).registrationDeadline || camp.deadline;
+      if (!deadlineStr) return true;
+      try {
+        const deadline = new Date(deadlineStr);
+        deadline.setHours(0, 0, 0, 0);
+        return deadline >= now;
+      } catch {
+        return true;
+      }
+    });
 
     // กรองและให้คะแนนค่ายตาม tags
     const scoredCamps = activeCamps.map(camp => {

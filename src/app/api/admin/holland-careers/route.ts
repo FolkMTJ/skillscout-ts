@@ -5,6 +5,15 @@ import { authOptions } from '@/lib/auth';
 import { getCollection } from '@/lib/mongodb';
 import { IT_CAREERS } from '@/data/path-finder/careers';
 
+interface RoadmapStepDoc {
+  level: 'beginner' | 'intermediate' | 'advanced';
+  title: string;
+  description: string;
+  requiredSkills: string[];
+  recommendedCamps?: string[];
+  duration?: string;
+}
+
 interface HollandCareerDoc {
   id: string;
   name: string;
@@ -14,6 +23,7 @@ interface HollandCareerDoc {
   riasecCodes: string[];
   requiredTags: string[];
   recommendedTags: string[];
+  roadmapSteps: RoadmapStepDoc[];
   averageSalary?: string;
   demandLevel?: 'high' | 'medium' | 'low';
   isActive: boolean;
@@ -35,6 +45,7 @@ async function seedIfEmpty() {
       riasecCodes: c.riasecCodes as string[],
       requiredTags: c.requiredTags || [],
       recommendedTags: c.recommendedTags || [],
+      roadmapSteps: (c.roadmapSteps || []) as RoadmapStepDoc[],
       averageSalary: c.averageSalary,
       demandLevel: c.demandLevel,
       isActive: true,
@@ -69,7 +80,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json() as Partial<HollandCareerDoc>;
-    const { name, nameTh, description, personality, riasecCodes, requiredTags, recommendedTags, averageSalary, demandLevel } = body;
+    const {
+      name, nameTh, description, personality,
+      riasecCodes, requiredTags, recommendedTags,
+      roadmapSteps, averageSalary, demandLevel,
+    } = body;
 
     if (!name || !nameTh || !description || !riasecCodes?.length) {
       return NextResponse.json({ error: 'กรุณากรอกข้อมูลให้ครบ' }, { status: 400 });
@@ -88,6 +103,7 @@ export async function POST(request: NextRequest) {
       riasecCodes,
       requiredTags: requiredTags || [],
       recommendedTags: recommendedTags || [],
+      roadmapSteps: roadmapSteps || [],
       averageSalary,
       demandLevel,
       isActive: true,

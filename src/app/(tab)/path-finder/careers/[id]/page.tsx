@@ -223,10 +223,10 @@ export default function CareerDetailPage() {
             <div id="camps">
                <div className="flex items-center justify-between mb-6">
                  <h2 className="text-2xl font-bold text-gray-800">
-                    ค่ายแนะนำสำหรับระดับ <span className="text-[#F2B33D] ">{
-                       selectedLevel === 'beginner' ? 'เริ่มต้น' :
-                       selectedLevel === 'intermediate' ? 'ปานกลาง' : 'ขั้นสูง'
-                    }</span>
+                    ค่ายแนะนำสำหรับระดับ{' '}
+                    <span className="text-[#F2B33D]">
+                      {selectedLevel === 'beginner' ? 'เริ่มต้น' : selectedLevel === 'intermediate' ? 'ปานกลาง' : 'ขั้นสูง'}
+                    </span>
                  </h2>
                </div>
 

@@ -320,8 +320,7 @@ export default function PathFinderResultsPage() {
 
               {/* อันดับ 3-6 - แสดงเมื่อเปิด */}
               <div
-                className={`overflow - hidden transition - all duration - 500 ease -in -out ${showAllRIASEC ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
-                  } `}
+                className={`overflow-hidden transition-all duration-500 ease-in-out ${showAllRIASEC ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}
               >
                 <div className="space-y-4 pt-4">
                   {normalizedRIASEC.slice(2).map(({ code, score, percentage, info }, index) => (
@@ -423,7 +422,7 @@ export default function PathFinderResultsPage() {
                 <Card
                   key={career.id}
                   isPressable
-                  onPress={() => router.push(`/ path - finder / careers / ${career.id} `)}
+                  onPress={() => router.push(`/path-finder/careers/${career.id}`)}
                   className="group relative w-full h-full bg-white dark:bg-[#2C2C2C] border border-gray-100 dark:border-gray-700 hover:border-[#F2B33D] shadow-sm hover:shadow-xl transition-all duration-300"
                 >
                   <CardBody className="p-5 flex flex-col h-full">

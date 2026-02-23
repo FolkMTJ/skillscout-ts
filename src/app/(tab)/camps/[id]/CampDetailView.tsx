@@ -167,8 +167,8 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden max-w-10xl mx-auto">
                         <div className="grid grid-cols-1 md:grid-cols-7">
 
-                            {/* 1. ส่วนรูปภาพ: ลบ min-h-400px ออกเพื่อให้ไม่สูงเกินไป ปรับเป็น h-56 สำหรับมือถือ */}
-                            <div className="relative md:col-span-4 h-56 md:h-auto">
+                            {/* 1. ส่วนรูปภาพ: 16:9 */}
+                            <div className="relative md:col-span-4 aspect-video md:aspect-auto md:h-full">
                                 <Image
                                     src={camp.image}
                                     alt={camp.name}
@@ -353,7 +353,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                         </div>
 
                         <div className="space-y-4">
-                            <div className="relative w-full h-[500px] rounded-2xl overflow-hidden shadow-lg">
+                            <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-lg">
                                 <Image
                                     src={selectedImage}
                                     alt="Selected camp image"
@@ -368,7 +368,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                     <button
                                         key={i}
                                         onClick={() => setSelectedImage(img)}
-                                        className={`relative w-full h-32 rounded-lg overflow-hidden transition-all duration-300 focus:outline-none ${selectedImage === img
+                                        className={`relative w-full aspect-video rounded-lg overflow-hidden transition-all duration-300 focus:outline-none ${selectedImage === img
                                                 ? 'ring-4 ring-amber-500 ring-offset-2 ring-offset-gray-50 dark:ring-offset-gray-900'
                                                 : 'opacity-70 hover:opacity-100'
                                             }`}
