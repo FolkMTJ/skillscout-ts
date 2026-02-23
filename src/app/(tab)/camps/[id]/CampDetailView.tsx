@@ -113,7 +113,12 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
     }, [session?.user?.email, camp._id]);
 
     const handleRegistrationSuccess = async () => {
-        // Refetch registration status
+        // ✅ Optimistic update: ตั้ง isRegistered ทันทีเพื่อไม่ให้ปุ่ม "สมัครเข้าร่วม" กลับมา
+        setIsRegistered(true);
+
+        // รอ 1.5 วิ ให้ DB write เสร็จ (async operations: registration + payment + status PATCH)
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+
         if (session?.user?.email) {
             try {
                 const response = await fetch(
@@ -143,6 +148,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
         }
     };
 
+
     const handleTicketClick = () => {
         if (ticketData) {
             setIsTicketModalOpen(true);
@@ -162,9 +168,9 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
 
     return (
         <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
-            <div className="container mx-auto px-4 py-8 md:py-12">
+            <div className="container mx-auto px-3 sm:px-4 py-4 md:py-12">
                 <section>
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden max-w-10xl mx-auto">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden max-w-10xl mx-auto">
                         <div className="grid grid-cols-1 md:grid-cols-7">
 
                             {/* 1. ส่วนรูปภาพ: 16:9 */}
@@ -178,27 +184,27 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                 />
                             </div>
 
-                            {/* 2. ส่วนเนื้อหา: ลด Padding ลง */}
-                            <div className="md:col-span-3 p-5 md:p-10 flex flex-col">
+                            {/* 2. ส่วนเนื้อหา */}
+                            <div className="md:col-span-3 p-4 md:p-8 flex flex-col">
 
                                 {/* Header: Back Button & Tags */}
-                                <div className="flex justify-between items-start mb-4">
+                                <div className="flex items-center justify-between mb-3">
                                     <button
                                         onClick={() => router.back()}
-                                        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                        className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
                                     >
                                         <FaArrowLeft />
                                         ย้อนกลับ
                                     </button>
                                     {camp.tags && camp.tags.length > 0 && (
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {camp.tags.map((tag, index) => (
+                                        <div className="flex flex-wrap gap-1 max-w-[60%] justify-end">
+                                            {camp.tags.slice(0, 3).map((tag, index) => (
                                                 <Chip
                                                     key={`${tag}-${index}`}
                                                     size="sm"
                                                     variant="flat"
-                                                    className="bg-gray-100 dark:bg-gray-700 h-6"
-                                                    classNames={{ content: "text-xs text-gray-600 dark:text-gray-300 px-1" }}
+                                                    className="bg-gray-100 dark:bg-gray-700 h-5"
+                                                    classNames={{ content: "text-[10px] text-gray-600 dark:text-gray-300 px-1" }}
                                                 >
                                                     {tag}
                                                 </Chip>
@@ -207,8 +213,8 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                     )}
                                 </div>
 
-                                {/* Title: ลดขนาด Font */}
-                                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white leading-tight mb-2">
+                                {/* Title */}
+                                <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white leading-tight mb-2">
                                     {camp.name}
                                 </h1>
 
@@ -264,17 +270,17 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                     </div>
                                 )}
 
-                                {/* Footer: Price & Button (ดันลงล่างสุดถ้ามีความสูงเหลือ) */}
-                                <div className="mt-6 flex flex-col sm:flex-row items-end sm:items-center justify-between gap-4">
-                                    {/* Price: ลดขนาด */}
-                                    <p className="text-3xl font-extrabold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+                                {/* Footer: Price & Button */}
+                                <div className="mt-4 flex flex-row items-center justify-between gap-3">
+                                    {/* Price */}
+                                    <p className="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent shrink-0">
                                         {camp.price === '฿0' ? 'ฟรี' : camp.price}
                                     </p>
 
-                                    {/* Buttons: ลด size เป็น md */}
-                                    <div className="w-full sm:w-auto">
+                                    {/* Button */}
+                                    <div className="flex-1">
                                         {checkingRegistration ? (
-                                            <Button isDisabled className="w-full sm:w-auto bg-gray-200 dark:bg-gray-700" size="md">
+                                            <Button isDisabled className="w-full bg-gray-200 dark:bg-gray-700" size="md">
                                                 <div className="flex items-center gap-2">
                                                     <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600"></div>
                                                     <span className="text-sm">กำลังตรวจสอบ...</span>
@@ -283,7 +289,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                         ) : isRegistered ? (
                                             canGetTicket ? (
                                                 <Button
-                                                    className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-emerald-500 font-bold text-white shadow-md"
+                                                    className="w-full bg-gradient-to-r from-green-500 to-emerald-500 font-bold text-white shadow-md"
                                                     size="md"
                                                     startContent={<FaTicketAlt />}
                                                     onPress={handleTicketClick}
@@ -293,7 +299,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                             ) : (
                                                 <Button
                                                     isDisabled
-                                                    className="w-full sm:w-auto bg-yellow-500/50 font-bold text-gray-700"
+                                                    className="w-full bg-yellow-500/50 font-bold text-gray-700"
                                                     size="md"
                                                     startContent={<FaHourglassHalf />}
                                                 >
@@ -303,14 +309,14 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                         ) : session?.user?.role === 'organizer' ? (
                                             <Button
                                                 isDisabled
-                                                className="w-full sm:w-auto bg-gray-200 dark:bg-gray-700 font-bold text-gray-500 dark:text-gray-400"
+                                                className="w-full bg-gray-200 dark:bg-gray-700 font-bold text-gray-500 dark:text-gray-400"
                                                 size="md"
                                             >
                                                 ผู้จัดค่ายไม่สามารถสมัครได้
                                             </Button>
                                         ) : (
                                             <Button
-                                                className="w-full sm:w-auto bg-[#F2B33D] font-bold text-gray-900"
+                                                className="w-full bg-[#F2B33D] font-bold text-gray-900"
                                                 color="warning"
                                                 variant="shadow"
                                                 size="md"
@@ -325,8 +331,8 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                 {/* Status Message: ทำให้ Compact ขึ้น */}
                                 {isRegistered && (
                                     <div className={`mt-3 px-3 py-2 rounded border flex items-center gap-2 text-xs ${canGetTicket
-                                            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 text-green-700 dark:text-green-400'
-                                            : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 text-yellow-700 dark:text-yellow-400'
+                                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 text-green-700 dark:text-green-400'
+                                        : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 text-yellow-700 dark:text-yellow-400'
                                         }`}>
                                         {canGetTicket ? <FaCheckCircle /> : <FaHourglassHalf className="animate-pulse" />}
                                         <span className="truncate flex-1">
@@ -342,9 +348,9 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                     </div>
                 </section>
 
-                <section className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 space-y-8">
-                        <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg">
+                <section className="mt-5 md:mt-8 grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
+                    <div className="lg:col-span-2 space-y-4 md:space-y-8">
+                        <div className="bg-white dark:bg-gray-800 p-5 md:p-8 rounded-2xl shadow-sm">
                             <div className="flex items-center gap-3 mb-3">
                                 <FaPaintBrush className="text-xl text-[#F2B33D]" />
                                 <h2 className="text-xl font-bold text-gray-800 dark:text-white">คำอธิบายกิจกรรม</h2>
@@ -369,8 +375,8 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                         key={i}
                                         onClick={() => setSelectedImage(img)}
                                         className={`relative w-full aspect-video rounded-lg overflow-hidden transition-all duration-300 focus:outline-none ${selectedImage === img
-                                                ? 'ring-4 ring-amber-500 ring-offset-2 ring-offset-gray-50 dark:ring-offset-gray-900'
-                                                : 'opacity-70 hover:opacity-100'
+                                            ? 'ring-4 ring-amber-500 ring-offset-2 ring-offset-gray-50 dark:ring-offset-gray-900'
+                                            : 'opacity-70 hover:opacity-100'
                                             }`}
                                     >
                                         <Image
@@ -386,89 +392,129 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                         </div>
                     </div>
 
-                    <div className="lg:col-span-1 space-y-6">
-                        <InfoCard title="รูปแบบกิจกรรม" icon={<FaPaintBrush className="text-lg text-[#F2B33D]" />}>
-                            <p>{camp.activityFormat}</p>
-                        </InfoCard>
-                        <InfoCard title="Key Information" icon={<FaCalendarAlt className="text-lg text-[#F2B33D]" />}>
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <FaCalendarAlt className="text-base text-gray-400" />
-                                    <div className="text-sm text-gray-700 dark:text-gray-300">
-                                        <div className="font-semibold">Date</div>
-                                        <span>{camp.date}</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <FaClock className="text-base text-red-500" />
-                                    <div className="text-sm text-gray-700 dark:text-gray-300">
-                                        <span className="font-semibold">Deadline:</span>
-                                        <div>{camp.deadline}</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <FaUsers className="text-base text-gray-400" />
-                                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                                        <span className="font-semibold">Capacity:</span> {camp.participantCount} people
-                                    </p>
-                                </div>
+                    <div className="lg:col-span-1 space-y-3 md:space-y-6">
+                        {/* Mobile: compact info grid (hidden on desktop) */}
+                        <div className="grid grid-cols-2 gap-2 lg:hidden">
+                            <div className="bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm border border-gray-100">
+                                <p className="text-[10px] text-gray-400 mb-1 font-semibold uppercase tracking-wide">รูปแบบ</p>
+                                <p className="text-sm font-bold text-gray-800 dark:text-white">{camp.activityFormat}</p>
                             </div>
-                        </InfoCard>
-                        <InfoCard title="คุณสมบัติ" icon={<FaGraduationCap className="text-lg text-[#F2B33D]" />}>
-                            <p>{camp.qualifications.level}</p>
-                            {camp.qualifications.fields && (
-                                <p className="text-xs text-gray-500">({camp.qualifications.fields.join(", ")})</p>
+                            <div className="bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm border border-gray-100">
+                                <p className="text-[10px] text-gray-400 mb-1 font-semibold uppercase tracking-wide">ที่นั่ง</p>
+                                <p className="text-sm font-bold text-gray-800 dark:text-white">{camp.participantCount} คน</p>
+                            </div>
+                            {camp.qualifications.level && (
+                                <div className="col-span-2 bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm border border-gray-100">
+                                    <p className="text-[10px] text-gray-400 mb-1 font-semibold uppercase tracking-wide">คุณสมบัติ</p>
+                                    <p className="text-sm text-gray-700 dark:text-gray-300">{camp.qualifications.level}</p>
+                                    {camp.qualifications.fields && camp.qualifications.fields.length > 0 && (
+                                        <p className="text-xs text-gray-400 mt-0.5">{camp.qualifications.fields.join(', ')}</p>
+                                    )}
+                                </div>
                             )}
-                        </InfoCard>
-                        <InfoCard title="เพิ่มเติม" icon={<FaCheckCircle className="text-lg text-green-500" />}>
-                            {camp.additionalInfo.map((info: string, i: number) => <p key={i}>• {info}</p>)}
-                        </InfoCard>
-                        <InfoCard title="สถานที่จัด" icon={<FaMapMarkerAlt className="text-lg text-[#F2B33D]" />}>
-                            <p>{camp.location}</p>
-                        </InfoCard>
+                            {camp.additionalInfo && camp.additionalInfo.length > 0 && (
+                                <div className="col-span-2 bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm border border-gray-100">
+                                    <p className="text-[10px] text-gray-400 mb-1 font-semibold uppercase tracking-wide">เพิ่มเติม</p>
+                                    {camp.additionalInfo.map((info: string, i: number) => (
+                                        <p key={i} className="text-sm text-gray-700 dark:text-gray-300">• {info}</p>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Desktop: full InfoCards (hidden on mobile) */}
+                        <div className="hidden lg:block space-y-6">
+                            <InfoCard title="รูปแบบกิจกรรม" icon={<FaPaintBrush className="text-lg text-[#F2B33D]" />}>
+                                <p>{camp.activityFormat}</p>
+                            </InfoCard>
+                            <InfoCard title="Key Information" icon={<FaCalendarAlt className="text-lg text-[#F2B33D]" />}>
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <FaCalendarAlt className="text-base text-gray-400" />
+                                        <div className="text-sm text-gray-700 dark:text-gray-300">
+                                            <div className="font-semibold">Date</div>
+                                            <span>{camp.date}</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <FaClock className="text-base text-red-500" />
+                                        <div className="text-sm text-gray-700 dark:text-gray-300">
+                                            <span className="font-semibold">Deadline:</span>
+                                            <div>{camp.deadline}</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <FaUsers className="text-base text-gray-400" />
+                                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                                            <span className="font-semibold">Capacity:</span> {camp.participantCount} people
+                                        </p>
+                                    </div>
+                                </div>
+                            </InfoCard>
+                            <InfoCard title="คุณสมบัติ" icon={<FaGraduationCap className="text-lg text-[#F2B33D]" />}>
+                                <p>{camp.qualifications.level}</p>
+                                {camp.qualifications.fields && (
+                                    <p className="text-xs text-gray-500">({camp.qualifications.fields.join(", ")})</p>
+                                )}
+                            </InfoCard>
+                            <InfoCard title="เพิ่มเติม" icon={<FaCheckCircle className="text-lg text-green-500" />}>
+                                {camp.additionalInfo.map((info: string, i: number) => <p key={i}>• {info}</p>)}
+                            </InfoCard>
+                            <InfoCard title="สถานที่จัด" icon={<FaMapMarkerAlt className="text-lg text-[#F2B33D]" />}>
+                                <p>{camp.location}</p>
+                            </InfoCard>
+                        </div>
+
                         {camp.activityFormat !== 'Online' && (
                             <LocationMap
                                 location={camp.location}
-                                height="h-64"
-                                className="mt-6"
+                                height="h-52 md:h-64"
+                                className=""
                             />
                         )}
                     </div>
+
                 </section>
 
-                <section className="mt-12">
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">รีวิวจากผู้เข้าร่วม</h2>
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div className="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
-                            <div className="flex items-center gap-4 mb-4">
-                                <p className="text-5xl font-bold text-gray-800 dark:text-white">
-                                    {currentCamp.avgRating.toFixed(1)}
-                                </p>
-                                <div>
-                                    <div className="flex items-center">
+                <section className="mt-6 md:mt-12">
+                    <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white mb-4 md:mb-6">รีวิวจากผู้เข้าร่วม</h2>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
+                        <div className="lg:col-span-1 bg-white dark:bg-gray-800 p-4 md:p-6 rounded-2xl shadow-sm">
+                            {/* Rating summary row */}
+                            <div className="flex items-stretch gap-4 mb-4">
+                                {/* Big score */}
+                                <div className="flex flex-col items-center justify-center shrink-0">
+                                    <p className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white leading-none">
+                                        {currentCamp.avgRating.toFixed(1)}
+                                    </p>
+                                    <div className="flex items-center mt-1">
                                         {Array.from({ length: 5 }, (_, i) => (
-                                            <span key={i} className={i < Math.round(currentCamp.avgRating) ? "text-amber-400" : "text-gray-300"}>
+                                            <span key={i} className={`text-sm ${i < Math.round(currentCamp.avgRating) ? "text-amber-400" : "text-gray-300"}`}>
                                                 ★
                                             </span>
                                         ))}
                                     </div>
-                                    <p className="text-sm text-gray-500">{currentCamp.reviews.length} รีวิว</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">{currentCamp.reviews.length} รีวิว</p>
+                                </div>
+
+                                {/* Progress bars */}
+                                <div className="flex-1 space-y-1.5">
+                                    {Object.entries(currentCamp.ratingBreakdown).reverse().map(([stars, count]) => (
+                                        <div key={stars} className="flex items-center gap-2">
+                                            <span className="text-xs text-gray-500 w-6 shrink-0">{stars}★</span>
+                                            <Progress
+                                                value={((count as number) / (currentCamp.reviews.length || 1)) * 100}
+                                                size="sm"
+                                                classNames={{ indicator: "bg-amber-400", track: "bg-gray-100" }}
+                                            />
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                {Object.entries(currentCamp.ratingBreakdown).reverse().map(([stars, count]) => (
-                                    <div key={stars} className="flex items-center gap-2">
-                                        <span className="text-sm text-gray-500">{stars} ★</span>
-                                        <Progress
-                                            value={((count as number) / (currentCamp.reviews.length || 1)) * 100}
-                                            classNames={{ indicator: "bg-amber-400" }}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
+
                             {session?.user?.name && isRegistered ? (
                                 <Button
-                                    className="bg-yellow-500 text-white shadow-lg mt-5 h-12"
+                                    className="bg-[#F2B33D] text-gray-900 font-bold shadow-md mt-2 h-10"
                                     fullWidth
                                     radius="full"
                                     onPress={() => setShowReviewForm(!showReviewForm)}
@@ -477,7 +523,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                 </Button>
                             ) : (
                                 <Button
-                                    className="bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 mt-5 h-12"
+                                    className="bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 mt-2 h-10 text-xs"
                                     fullWidth
                                     radius="md"
                                     isDisabled

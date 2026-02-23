@@ -34,6 +34,11 @@ export default function OrganizerDashboard() {
   const { isOpen: isDetailModalOpen, onOpen: onDetailModalOpen, onClose: onDetailModalClose } = useDisclosure();
   const { isOpen: isPromoModalOpen, onOpen: onPromoModalOpen, onClose: onPromoModalClose } = useDisclosure();
 
+  // Tab + Pagination สำหรับ ค่ายของฉัน
+  const [campTab, setCampTab] = useState<'active' | 'completed' | 'all'>('active');
+  const [campPage, setCampPage] = useState(1);
+  const CAMPS_PER_PAGE = 6;
+
   const [formData, setFormData] = useState({
     name: '', description: '', startDate: '', endDate: '', registrationDeadline: '',
     location: '', capacity: '', fee: '0', tags: [] as string[], image: '', galleryImages: [] as string[],
@@ -448,7 +453,7 @@ export default function OrganizerDashboard() {
 
   const attendedRegs = registrations.filter(r => r.status === RegistrationStatus.CONFIRMED).length;
 
-  const ModernStatCard = ({ title, value, icon: Icon, colorClass}: StatCardProps) => {
+  const ModernStatCard = ({ title, value, icon: Icon, colorClass }: StatCardProps) => {
     // Map สีเพื่อให้ icon ชัดเจน
     const iconColorMap: Record<string, string> = {
       'bg-[#F2B33D]': 'text-[#F2B33D]',
@@ -457,9 +462,9 @@ export default function OrganizerDashboard() {
       'bg-gray-500': 'text-gray-600',
       'bg-purple-500': 'text-purple-600',
     };
-    
+
     const iconColor = iconColorMap[colorClass] || colorClass.replace('bg-', 'text-');
-    
+
     return (
       <Card className="border-none shadow-sm hover:shadow-md transition-all duration-300 bg-white">
         <div className="p-5 flex items-start justify-between">
@@ -659,8 +664,7 @@ export default function OrganizerDashboard() {
                   </h2>
                   <p className="text-sm text-gray-500">จัดการรายละเอียดและผู้สมัครในค่ายของคุณ</p>
                 </div>
-
-                {/* Filter / Search Placeholder */}
+                {/* Search */}
                 <div className="flex gap-2">
                   <Input
                     placeholder="ค้นหาค่าย..."
@@ -673,36 +677,111 @@ export default function OrganizerDashboard() {
                 </div>
               </div>
 
+              {/* Tab Bar */}
+              <div className="flex gap-1 px-6 pt-4">
+                {([
+                  { key: 'active', label: 'เปิดรับสมัคร', count: camps.filter(c => c.status === 'active').length },
+                  { key: 'completed', label: 'จบแล้ว', count: completedCamps.length },
+                  { key: 'all', label: 'ทั้งหมด', count: camps.length },
+                ] as const).map(tab => (
+                  <button
+                    key={tab.key}
+                    onClick={() => { setCampTab(tab.key); setCampPage(1); }}
+                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${campTab === tab.key
+                        ? 'bg-[#F2B33D] text-white shadow-sm'
+                        : 'text-gray-500 hover:bg-gray-100'
+                      }`}
+                  >
+                    {tab.label}
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${campTab === tab.key ? 'bg-white/30 text-white' : 'bg-gray-100 text-gray-500'
+                      }`}>{tab.count}</span>
+                  </button>
+                ))}
+              </div>
+
               <div className="p-6">
-                {camps.length === 0 ? (
-                  <EmptyState
-                    icon={FiCalendar}
-                    title="ยังไม่มีค่ายที่สร้างไว้"
-                    description="เริ่มต้นสร้างค่ายแรกของคุณเพื่อเปิดโอกาสให้ผู้เรียน"
-                    actionLabel="สร้างค่ายแรก"
-                    onAction={handleOpenCreateModal}
-                  />
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {camps.map(camp => {
-                      const campRegs = registrations.filter(r => r.campId === camp._id);
-                      const pending = campRegs.filter(r => r.status === RegistrationStatus.PENDING).length;
-                      return (
-                        // Wrapper to ensure specific spacing/hover effects if needed
-                        <div key={camp._id} className="h-full">
-                          <CampCardWithImage
-                            camp={camp}
-                            pendingCount={pending}
-                            onEdit={() => handleEditCamp(camp)}
-                            onDelete={() => handleDeleteCamp(camp._id)}
-                            onView={() => handleViewCamp(camp)}
-                            onComplete={() => handleCompleteCamp(camp._id, camp.name)}
-                          />
+                {(() => {
+                  // กรองค่ายตาม tab
+                  const filteredCamps = campTab === 'active'
+                    ? camps.filter(c => c.status === 'active')
+                    : campTab === 'completed'
+                      ? completedCamps
+                      : camps;
+
+                  const totalPages = Math.ceil(filteredCamps.length / CAMPS_PER_PAGE);
+                  const paginated = filteredCamps.slice((campPage - 1) * CAMPS_PER_PAGE, campPage * CAMPS_PER_PAGE);
+
+                  if (filteredCamps.length === 0) {
+                    return (
+                      <EmptyState
+                        icon={FiCalendar}
+                        title={
+                          campTab === 'active' ? 'ยังไม่มีค่ายที่เปิดรับสมัคร'
+                            : campTab === 'completed' ? 'ยังไม่มีค่ายที่จบแล้ว'
+                              : 'ยังไม่มีค่ายที่สร้างไว้'
+                        }
+                        description="เริ่มต้นสร้างค่ายแรกของคุณเพื่อเปิดโอกาสให้ผู้เรียน"
+                        actionLabel="สร้างค่ายแรก"
+                        onAction={handleOpenCreateModal}
+                      />
+                    );
+                  }
+
+                  return (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-6">
+                        {paginated.map(camp => {
+                          const campRegs = registrations.filter(r => r.campId === camp._id);
+                          const pending = campRegs.filter(r => r.status === RegistrationStatus.PENDING).length;
+                          return (
+                            <div key={camp._id} className="h-full">
+                              <CampCardWithImage
+                                camp={camp}
+                                pendingCount={pending}
+                                onEdit={() => handleEditCamp(camp)}
+                                onDelete={() => handleDeleteCamp(camp._id)}
+                                onView={() => handleViewCamp(camp)}
+                                onComplete={() => handleCompleteCamp(camp._id, camp.name)}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Pagination */}
+                      {totalPages > 1 && (
+                        <div className="flex justify-center items-center gap-2 pt-2">
+                          <button
+                            onClick={() => setCampPage(p => Math.max(1, p - 1))}
+                            disabled={campPage === 1}
+                            className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                          >
+                            ←
+                          </button>
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                            <button
+                              key={page}
+                              onClick={() => setCampPage(page)}
+                              className={`w-8 h-8 rounded-lg text-sm font-bold transition-all ${campPage === page
+                                  ? 'bg-[#F2B33D] text-white shadow-sm'
+                                  : 'text-gray-600 hover:bg-gray-100'
+                                }`}
+                            >
+                              {page}
+                            </button>
+                          ))}
+                          <button
+                            onClick={() => setCampPage(p => Math.min(totalPages, p + 1))}
+                            disabled={campPage === totalPages}
+                            className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                          >
+                            →
+                          </button>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </Card>
           </div>

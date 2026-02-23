@@ -171,6 +171,7 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
     setError('');
 
     try {
+      // สร้าง Registration
       const regResponse = await fetch('/api/registrations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -188,20 +189,49 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
       }
 
       const registration = await regResponse.json();
+      const newRegistrationId = registration.registration._id;
 
-      const registrationId = registration.registration._id;
-      await fetch(`/api/registrations/${registrationId}`, {
+      // PATCH สถานะเป็น approved ทันที (ไม่ต้องรอชำระเงิน)
+      const patchResponse = await fetch(`/api/registrations/${newRegistrationId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status: 'approved',
           reviewedBy: 'system',
           reviewedAt: new Date().toISOString(),
-          notes: 'อนุมัติอัตโนมัติสำหรับค่ายฟรี'
+          notes: promoApplied
+            ? `อนุมัติอัตโนมัติ: ใช้โค้ด ${promoCode} ลด ฿${discount} (ราคาสุทธิ ฿0)`
+            : 'อนุมัติอัตโนมัติสำหรับค่ายฟรี'
         })
       });
 
-      toast.success('สมัครสำเร็จ!');
+      if (!patchResponse.ok) {
+        console.error('PATCH status failed:', await patchResponse.text());
+        // ไม่ throw error - registration ถูกสร้างแล้ว แต่ status อาจไม่ถูก update
+      }
+
+      // สร้าง Payment record (สำหรับ tracking promo usage)
+      if (promoApplied && discount > 0) {
+        await fetch('/api/payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            registrationId: newRegistrationId,
+            campId: camp._id,
+            userId: session?.user?.email || formData.email,
+            userEmail: formData.email,
+            userName: formData.name,
+            organizerId: camp.organizerId || 'default-organizer',
+            amount: basePrice,
+            discount: discount,
+            finalAmount: 0,
+            promoCode: promoCode,
+            status: 'verified', // อนุมัติอัตโนมัติเพราะ 0 บาท
+          }),
+        });
+      }
+
+      toast.success('สมัครสำเร็จ! ได้รับ Ticket แล้ว 🎉');
       setStep(4);
       onRegistrationSuccess?.();
       setTimeout(() => handleClose(), 3000);
@@ -213,6 +243,7 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
       setIsSubmitting(false);
     }
   };
+
 
   const generateQRCode = async () => {
     setIsGeneratingQR(true);
@@ -528,8 +559,8 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
                     </div>
                   </div>
 
-                  {/* Pricing Section */}
-                  {!isFree && (
+                  {/* Pricing Section - แสดงเมื่อค่ายมีค่าใช้จ่าย (แม้จะลดเหลือ 0 แล้ว) */}
+                  {basePrice > 0 && (
                     <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-5 rounded-2xl shadow-sm space-y-4">
                       {/* Promo Input */}
                       <div className="flex gap-2">

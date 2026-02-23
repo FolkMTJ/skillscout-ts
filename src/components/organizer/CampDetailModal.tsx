@@ -79,7 +79,7 @@ export default function CampDetailModal({
       try {
         const response = await fetch(`/api/payments/camp/${camp._id}`);
         const data = await response.json();
-        
+
         if (data.payments) {
           setPayments(data.payments);
         }
@@ -97,7 +97,7 @@ export default function CampDetailModal({
     try {
       const response = await fetch(`/api/payments/camp/${camp._id}`);
       const data = await response.json();
-      
+
       if (data.payments) {
         setPayments(data.payments);
       }
@@ -191,403 +191,291 @@ export default function CampDetailModal({
         onClose={onClose}
         size="5xl"
         scrollBehavior="inside"
-        classNames={{ base: "max-h-[90vh]" }}
+        classNames={{
+          base: "max-h-[90vh]",
+          body: "p-0 min-h-[520px]",
+          header: "p-0 border-b-0",
+          footer: "p-4 border-t border-gray-100",
+        }}
       >
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1 border-b pb-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h2 className="text-2xl font-bold mb-2">{camp.name}</h2>
-                    <div className="flex flex-wrap gap-2">
-                      <Chip size="sm" startContent={<FiMapPin />} variant="flat" color="primary">
-                        {camp.location}
-                      </Chip>
-                      <Chip size="sm" startContent={<FiCalendar />} variant="flat" color="secondary">
-                        {camp.date}
-                      </Chip>
-                      <Chip size="sm" startContent={<FiUsers />} variant="flat" color="success">
-                        {camp.enrolled || 0}/{camp.capacity || camp.participantCount}
-                      </Chip>
-                      <Chip size="sm" startContent={<FiUserCheck />} variant="flat" color="secondary">
-                        เช็คอิน: {attendedRegs.length}
-                      </Chip>
-                      {camp.price && (
-                        <Chip size="sm" startContent={<FiDollarSign />} variant="flat">
-                          {camp.price}
-                        </Chip>
-                      )}
+              {/* ======= HEADER ======= */}
+              <ModalHeader className="flex flex-col gap-0 p-0">
+                {/* Top accent bar */}
+                <div className="h-1 w-full bg-gradient-to-r from-[#F2B33D] to-orange-400 rounded-t-xl" />
+                <div className="px-6 pt-5 pb-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-xl font-black text-gray-900 truncate">{camp.name}</h2>
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        <span className="inline-flex items-center gap-1 text-xs font-medium bg-orange-50 text-orange-600 px-2.5 py-1 rounded-full border border-orange-100">
+                          <FiMapPin className="w-3 h-3" />{camp.location}
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-xs font-medium bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full border border-blue-100">
+                          <FiCalendar className="w-3 h-3" />{camp.date}
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-xs font-medium bg-green-50 text-green-600 px-2.5 py-1 rounded-full border border-green-100">
+                          <FiUsers className="w-3 h-3" />{camp.enrolled || 0}/{camp.capacity || camp.participantCount} คน
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-xs font-medium bg-purple-50 text-purple-600 px-2.5 py-1 rounded-full border border-purple-100">
+                          <FiUserCheck className="w-3 h-3" />เช็คอิน: {attendedRegs.length}
+                        </span>
+                        {camp.price && (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
+                            <FiDollarSign className="w-3 h-3" />{camp.price}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
               </ModalHeader>
 
+              {/* ======= BODY ======= */}
               <ModalBody>
-                <Tabs
-                  selectedKey={activeTab}
-                  onSelectionChange={(key) => setActiveTab(key as string)}
-                  variant="underlined"
-                >
-                  {/* Tab: ภาพรวม */}
-                  <Tab key="overview" title="ภาพรวม">
-                    <div className="space-y-6 py-4">
+                {/* Custom Tab Bar */}
+                <div className="flex gap-1 px-6 pt-4 pb-0 border-b border-gray-100">
+                  {[
+                    { key: 'overview', label: 'ภาพรวม' },
+                    { key: 'registrations', label: `ผู้สมัคร (${registrations.length})` },
+                    { key: 'stats', label: 'สถิติ' },
+                  ].map(tab => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setActiveTab(tab.key)}
+                      className={`px-5 py-2.5 text-sm font-bold rounded-t-xl transition-all border-b-2 ${activeTab === tab.key
+                        ? 'text-[#F2B33D] border-[#F2B33D] bg-orange-50/50'
+                        : 'text-gray-500 border-transparent hover:text-gray-700 hover:bg-gray-50'
+                        }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Tab Content */}
+                <div className="px-6 py-5 min-h-[480px]">
+                  {activeTab === 'overview' && (
+                    <div className="space-y-4">
                       {camp.image && (
-                        <div className="relative rounded-lg overflow-hidden h-64">
-                          <Image 
-                            src={camp.image} 
-                            alt={camp.name} 
+                        <div className="relative rounded-2xl overflow-hidden h-52">
+                          <Image
+                            src={camp.image}
+                            alt={camp.name}
                             fill
                             className="object-cover"
                             sizes="(max-width: 1200px) 100vw, 1200px"
                           />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                         </div>
                       )}
 
-                      <Card className="p-4">
-                        <div className="flex justify-between mb-2">
-                          <span className="text-sm font-semibold">ความคืบหน้าการรับสมัคร</span>
-                          <span className="text-sm text-gray-600">{enrollmentPercentage.toFixed(0)}%</span>
+                      {/* Stats row */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="bg-gradient-to-br from-[#F2B33D]/10 to-orange-50 border border-[#F2B33D]/20 rounded-2xl p-4 text-center">
+                          <p className="text-3xl font-black text-[#F2B33D]">{camp.enrolled || 0}</p>
+                          <p className="text-xs text-gray-500 mt-1">ผู้สมัครทั้งหมด</p>
                         </div>
-                        <div className="bg-gray-200 rounded-full h-3">
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-2xl p-4 text-center">
+                          <p className="text-3xl font-black text-green-600">{attendedRegs.length}</p>
+                          <p className="text-xs text-gray-500 mt-1">เช็คอินแล้ว</p>
+                        </div>
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-4 text-center">
+                          <p className="text-3xl font-black text-blue-600">{attendanceRate}%</p>
+                          <p className="text-xs text-gray-500 mt-1">อัตราเข้าร่วม</p>
+                        </div>
+                      </div>
+
+                      {/* Progress bar */}
+                      <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4">
+                        <div className="flex justify-between mb-2">
+                          <span className="text-sm font-bold text-gray-700">ความคืบหน้าการรับสมัคร</span>
+                          <span className="text-sm font-black" style={{ color: enrollmentPercentage >= 90 ? '#ef4444' : '#F2B33D' }}>
+                            {enrollmentPercentage.toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="bg-gray-200 rounded-full h-2.5">
                           <div
-                            className={`h-3 rounded-full transition-all ${
-                              enrollmentPercentage >= 90 ? 'bg-red-500' :
-                              enrollmentPercentage >= 70 ? 'bg-orange-500' : 'bg-blue-500'
-                            }`}
-                            style={{ width: `${enrollmentPercentage}%` }}
+                            className="h-2.5 rounded-full transition-all"
+                            style={{
+                              width: `${enrollmentPercentage}%`,
+                              background: enrollmentPercentage >= 90 ? '#ef4444' : 'linear-gradient(to right, #F2B33D, #f97316)'
+                            }}
                           />
                         </div>
-                        <div className="grid grid-cols-2 gap-4 mt-4">
-                          <div className="text-center">
-                            <p className="text-3xl font-bold text-blue-500">{camp.enrolled || 0}</p>
-                            <p className="text-xs text-gray-600">ผู้สมัครทั้งหมด</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-3xl font-bold text-purple-500">{attendedRegs.length}</p>
-                            <p className="text-xs text-gray-600">เช็คอินแล้ว</p>
-                          </div>
-                        </div>
-                      </Card>
-
-                      <Card className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">อัตราการเข้าร่วมจริง</p>
-                            <p className="text-3xl font-black text-purple-600 dark:text-purple-400">{attendanceRate}%</p>
-                            <p className="text-sm text-gray-500 mt-1">
-                              {attendedRegs.length} / {approvedRegs.length} คน
-                            </p>
-                          </div>
-                          <div className="w-20 h-20 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                            <FiUserCheck className="text-3xl text-purple-600" />
-                          </div>
-                        </div>
-                      </Card>
-
-                      <div className="space-y-4">
-                        <h3 className="font-semibold text-lg">รายละเอียดค่าย</h3>
-                        <p className="text-gray-700 whitespace-pre-wrap">{camp.description}</p>
-                      </div>
-                    </div>
-                  </Tab>
-
-                  {/* Tab: ผู้สมัคร - แยกเป็น Sub-tabs */}
-                  <Tab key="registrations" title={`ผู้สมัคร (${registrations.length})`}>
-                    <Tabs variant="bordered" className="mt-4">
-                      <Tab
-                        key="verified"
-                        title={
-                          <div className="flex items-center gap-2">
-                            <FiCheckCircle />
-                            <span>ตรวจสอบแล้ว ({verifiedPayments.length})</span>
-                          </div>
-                        }
-                      >
-                        <div className="py-4">
-                          {verifiedPayments.length === 0 ? (
-                            <div className="text-center py-12 text-gray-500">
-                              <FiCheckCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                              <p>ยังไม่มีผู้ที่ตรวจสอบสลิปแล้ว</p>
-                            </div>
-                          ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {verifiedPayments.map((payment) => (
-                                <Card key={payment._id} className="p-4">
-                                  <div className="flex items-start justify-between mb-3">
-                                    <div>
-                                      <h4 className="font-bold text-gray-800">{payment.userName}</h4>
-                                      <p className="text-sm text-gray-600">{payment.userEmail}</p>
-                                    </div>
-                                    <Chip size="sm" color="success" variant="flat">
-                                      <FiCheck className="mr-1" /> อนุมัติแล้ว
-                                    </Chip>
-                                  </div>
-                                  <div className="space-y-2 text-sm">
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-600">ยอดเงิน:</span>
-                                      <span className="font-semibold">฿{payment.finalAmount.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-600">ยืนยันเมื่อ:</span>
-                                      <span className="text-xs">
-                                        {payment.slipUploadedAt && new Date(payment.slipUploadedAt).toLocaleDateString('th-TH')}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  {payment.slipUrl && (
-                                    <Button
-                                      size="sm"
-                                      variant="flat"
-                                      color="primary"
-                                      className="mt-3 w-full"
-                                      startContent={<FiEye />}
-                                      onPress={() => handleViewSlip(payment)}
-                                    >
-                                      ดูสลิป
-                                    </Button>
-                                  )}
-                                </Card>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </Tab>
-
-                      <Tab
-                        key="pending"
-                        title={
-                          <div className="flex items-center gap-2">
-                            <FiAlertCircle />
-                            <span>รอตรวจสอบ ({pendingPayments.length})</span>
-                          </div>
-                        }
-                      >
-                        <div className="py-4">
-                          {pendingPayments.length === 0 ? (
-                            <div className="text-center py-12 text-gray-500">
-                              <FiCheckCircle className="w-16 h-16 mx-auto mb-4 text-green-300" />
-                              <p>ไม่มีสลิปรอตรวจสอบ</p>
-                            </div>
-                          ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {pendingPayments.map((payment) => (
-                                <Card key={payment._id} className="p-4 border-2 border-orange-200">
-                                  <div className="flex items-start justify-between mb-3">
-                                    <div>
-                                      <h4 className="font-bold text-gray-800">{payment.userName}</h4>
-                                      <p className="text-sm text-gray-600">{payment.userEmail}</p>
-                                    </div>
-                                    <Chip size="sm" color="warning" variant="flat">
-                                      <FiClock className="mr-1" /> รอตรวจสอบ
-                                    </Chip>
-                                  </div>
-                                  <div className="space-y-2 text-sm mb-3">
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-600">ยอดเงิน:</span>
-                                      <span className="font-bold text-blue-600">฿{payment.finalAmount.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-600">อัปโหลดเมื่อ:</span>
-                                      <span className="text-xs">
-                                        {payment.slipUploadedAt && new Date(payment.slipUploadedAt).toLocaleDateString('th-TH')}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Button
-                                      size="sm"
-                                      variant="flat"
-                                      color="primary"
-                                      className="w-full"
-                                      startContent={<FiEye />}
-                                      onPress={() => handleViewSlip(payment)}
-                                    >
-                                      ดูและตรวจสอบสลิป
-                                    </Button>
-                                  </div>
-                                </Card>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </Tab>
-
-                      <Tab key="all" title={`ทั้งหมด (${registrations.length})`}>
-                        <div className="py-4">
-                          <Table aria-label="รายชื่อผู้สมัคร" classNames={{
-                            wrapper: "shadow-md",
-                            th: "bg-gray-100 text-gray-700 font-semibold",
-                            td: "py-4",
-                          }}>
-                            <TableHeader>
-                              <TableColumn>ชื่อ-นามสกุล</TableColumn>
-                              <TableColumn>ข้อมูลติดต่อ</TableColumn>
-                              <TableColumn>ข้อมูลเพิ่มเติม</TableColumn>
-                              <TableColumn>วันที่สมัคร</TableColumn>
-                              <TableColumn>สถานะ</TableColumn>
-                              <TableColumn>การจัดการ</TableColumn>
-                            </TableHeader>
-                            <TableBody emptyContent={
-                              <div className="text-center py-12">
-                                <FiUsers className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                                <p className="text-gray-500">ยังไม่มีผู้สมัคร</p>
-                              </div>
-                            }>
-                              {registrations.map((reg) => (
-                                <TableRow key={reg._id}>
-                                  <TableCell>
-                                    <div className="flex items-center gap-2">
-                                      {reg.status === 'attended' && (
-                                        <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
-                                      )}
-                                      <div>
-                                        <p className="font-semibold text-gray-800">{reg.userName}</p>
-                                        {reg.status === 'attended' && (
-                                          <p className="text-xs text-purple-600 flex items-center gap-1">
-                                            <FiUserCheck className="w-3 h-3" /> เช็คอินแล้ว
-                                          </p>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="space-y-1">
-                                      <p className="text-sm text-gray-700">{reg.userEmail}</p>
-                                      {reg.userPhone && (
-                                        <p className="text-sm text-gray-500">{reg.userPhone}</p>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    {reg.answers && reg.answers.length > 0 ? (
-                                      <div className="space-y-1">
-                                        {reg.answers.map((ans, idx) => (
-                                          <div key={idx} className="text-xs">
-                                            <span className="text-gray-500">{ans.question}:</span>
-                                            <span className="ml-1 text-gray-700 font-medium">
-                                              {ans.answer.length > 30 ? `${ans.answer.substring(0, 30)}...` : ans.answer}
-                                            </span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    ) : (
-                                      <span className="text-xs text-gray-400">-</span>
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="text-sm">
-                                      <p className="text-gray-700">
-                                        {new Date(reg.appliedAt).toLocaleDateString('th-TH', {
-                                          day: 'numeric',
-                                          month: 'short',
-                                          year: 'numeric'
-                                        })}
-                                      </p>
-                                      <p className="text-xs text-gray-500">
-                                        {new Date(reg.appliedAt).toLocaleTimeString('th-TH', {
-                                          hour: '2-digit',
-                                          minute: '2-digit'
-                                        })} น.
-                                      </p>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Chip 
-                                      size="sm" 
-                                      color={getStatusColor(reg.status as RegistrationStatus | 'attended')} 
-                                      variant="flat"
-                                      classNames={{
-                                        base: "font-medium",
-                                      }}
-                                    >
-                                      {getStatusText(reg.status as RegistrationStatus | 'attended')}
-                                    </Chip>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Button
-                                      size="sm"
-                                      variant="flat"
-                                      color="primary"
-                                      startContent={<FiEye />}
-                                      onPress={() => {
-                                        setViewingRegistration(reg);
-                                        onRegModalOpen();
-                                      }}
-                                    >
-                                      ดู
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </Tab>
-                    </Tabs>
-                  </Tab>
-
-                  {/* Tab: สถิติ */}
-                  <Tab key="stats" title="สถิติ">
-                    <div className="py-4 space-y-4">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <Card className="p-4 text-center">
-                          <p className="text-3xl font-bold text-blue-500">{registrations.length}</p>
-                          <p className="text-sm text-gray-600">ผู้สมัครทั้งหมด</p>
-                        </Card>
-                        <Card className="p-4 text-center">
-                          <p className="text-3xl font-bold text-green-500">{approvedRegs.length}</p>
-                          <p className="text-sm text-gray-600">อนุมัติแล้ว</p>
-                        </Card>
-                        <Card className="p-4 text-center bg-gradient-to-br from-purple-50 to-pink-50">
-                          <p className="text-3xl font-bold text-purple-500">{attendedRegs.length}</p>
-                          <p className="text-sm text-gray-600">เช็คอินแล้ว</p>
-                        </Card>
-                        <Card className="p-4 text-center border-2 border-orange-200">
-                          <p className="text-3xl font-bold text-orange-500">{pendingPayments.length}</p>
-                          <p className="text-sm text-gray-600">สลิปรอตรวจ</p>
-                        </Card>
+                        <p className="text-xs text-gray-400 mt-2">
+                          {camp.enrolled || 0} / {camp.capacity || camp.participantCount} เท่านั้นที่รับ
+                        </p>
                       </div>
 
-                      <Card className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
-                        <h3 className="font-semibold mb-3 flex items-center gap-2">
-                          <FiUserCheck /> อัตราการเข้าร่วมจริง
-                        </h3>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span>เช็คอินแล้ว</span>
-                            <span className="font-bold">{attendanceRate}%</span>
-                          </div>
-                          <div className="bg-gray-200 rounded-full h-3">
-                            <div
-                              className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all"
-                              style={{ width: `${attendanceRate}%` }}
-                            />
-                          </div>
-                          <p className="text-xs text-gray-600 mt-2">
-                            {attendedRegs.length} คนเช็คอิน จาก {approvedRegs.length} คนที่อนุมัติ
-                          </p>
+                      {/* Description */}
+                      {camp.description && (
+                        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4">
+                          <h3 className="font-bold text-gray-800 mb-2 text-sm">รายละเอียดค่าย</h3>
+                          <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">{camp.description}</p>
                         </div>
-                      </Card>
-
-                      {camp.fee && parseInt(camp.fee.toString()) > 0 && (
-                        <Card className="p-4">
-                          <h3 className="font-semibold mb-3">รายได้โดยประมาณ</h3>
-                          <p className="text-3xl font-bold text-green-600">
-                            ฿{(verifiedPayments.length * parseInt(camp.fee.toString())).toLocaleString()}
-                          </p>
-                          <p className="text-sm text-gray-600 mt-1">
-                            จากผู้ชำระเงินแล้ว {verifiedPayments.length} คน
-                          </p>
-                        </Card>
                       )}
                     </div>
-                  </Tab>
-                </Tabs>
+                  )}
+
+                  {/* Tab: ผู้สมัคร */}
+                  {activeTab === 'registrations' && (
+                    <div className="space-y-4">
+                      {/* Sub-tab counts */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="bg-green-50 border border-green-100 rounded-2xl p-3 text-center">
+                          <p className="text-2xl font-black text-green-600">{verifiedPayments.length}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">ตรวจสอบแล้ว</p>
+                        </div>
+                        <div className="bg-orange-50 border border-orange-100 rounded-2xl p-3 text-center">
+                          <p className="text-2xl font-black text-orange-500">{pendingPayments.length}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">รอตรวจสอบ</p>
+                        </div>
+                        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-3 text-center">
+                          <p className="text-2xl font-black text-gray-700">{registrations.length}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">ทั้งหมด</p>
+                        </div>
+                      </div>
+
+                      {/* All registrations list */}
+                      {registrations.length === 0 ? (
+                        <div className="text-center py-16 text-gray-400">
+                          <FiUsers className="w-14 h-14 mx-auto mb-3 text-gray-200" />
+                          <p className="font-medium">ยังไม่มีผู้สมัคร</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {registrations.map((reg) => (
+                            <div key={reg._id} className="flex items-center justify-between bg-gray-50 hover:bg-orange-50/30 border border-gray-100 hover:border-[#F2B33D]/20 rounded-xl px-4 py-3 transition-all">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-full bg-[#F2B33D]/10 flex items-center justify-center text-[#F2B33D] font-black text-sm">
+                                  {reg.userName?.charAt(0) || '?'}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-gray-800 text-sm">{reg.userName}</p>
+                                  <p className="text-xs text-gray-500">{reg.userEmail}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Chip
+                                  size="sm"
+                                  color={getStatusColor(reg.status as RegistrationStatus | 'attended')}
+                                  variant="flat"
+                                  classNames={{ base: "font-medium text-xs" }}
+                                >
+                                  {getStatusText(reg.status as RegistrationStatus | 'attended')}
+                                </Chip>
+                                <Button
+                                  size="sm"
+                                  variant="flat"
+                                  className="bg-white border border-gray-200 text-gray-600 hover:bg-[#F2B33D]/10 hover:border-[#F2B33D]/30"
+                                  startContent={<FiEye className="w-3 h-3" />}
+                                  onPress={() => { setViewingRegistration(reg); onRegModalOpen(); }}
+                                >
+                                  ดู
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Pending slips */}
+                      {pendingPayments.length > 0 && (
+                        <div>
+                          <h3 className="font-bold text-sm text-orange-600 mb-2 flex items-center gap-1">
+                            <FiAlertCircle className="w-4 h-4" /> สลิปรอตรวจสอบ
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {pendingPayments.map((payment) => (
+                              <div key={payment._id} className="border border-orange-200 bg-orange-50/30 rounded-xl p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div>
+                                    <p className="font-bold text-gray-800 text-sm">{payment.userName}</p>
+                                    <p className="text-xs text-gray-500">฿{payment.finalAmount.toLocaleString()}</p>
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    className="bg-[#F2B33D] text-white font-bold"
+                                    startContent={<FiEye className="w-3 h-3" />}
+                                    onPress={() => handleViewSlip(payment)}
+                                  >
+                                    ตรวจสลิป
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Tab: สถิติ */}
+                  {activeTab === 'stats' && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="bg-gradient-to-br from-[#F2B33D]/10 to-orange-50 border border-[#F2B33D]/20 rounded-2xl p-4 text-center">
+                          <p className="text-3xl font-black text-[#F2B33D]">{registrations.length}</p>
+                          <p className="text-xs text-gray-500 mt-1">ผู้สมัครทั้งหมด</p>
+                        </div>
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-2xl p-4 text-center">
+                          <p className="text-3xl font-black text-green-600">{approvedRegs.length}</p>
+                          <p className="text-xs text-gray-500 mt-1">อนุมัติแล้ว</p>
+                        </div>
+                        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-100 rounded-2xl p-4 text-center">
+                          <p className="text-3xl font-black text-purple-600">{attendedRegs.length}</p>
+                          <p className="text-xs text-gray-500 mt-1">เช็คอินแล้ว</p>
+                        </div>
+                        <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-4 text-center">
+                          <p className="text-3xl font-black text-orange-500">{pendingPayments.length}</p>
+                          <p className="text-xs text-gray-500 mt-1">สลิปรอตรวจ</p>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5">
+                        <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2 text-sm">
+                          <FiUserCheck className="text-[#F2B33D]" /> อัตราการเข้าร่วมจริง
+                        </h3>
+                        <div className="flex justify-between text-sm mb-2">
+                          <span className="text-gray-500">เช็คอินแล้ว</span>
+                          <span className="font-black text-[#F2B33D]">{attendanceRate}%</span>
+                        </div>
+                        <div className="bg-gray-200 rounded-full h-2.5">
+                          <div
+                            className="h-2.5 rounded-full transition-all"
+                            style={{ width: `${attendanceRate}%`, background: 'linear-gradient(to right, #F2B33D, #f97316)' }}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-400 mt-2">
+                          {attendedRegs.length} คนเช็คอิน จาก {approvedRegs.length} คนที่อนุมัติ
+                        </p>
+                      </div>
+
+                      {camp.fee && parseInt(camp.fee.toString()) > 0 && (
+                        <div className="bg-green-50 border border-green-100 rounded-2xl p-5">
+                          <h3 className="font-bold text-gray-800 mb-2 text-sm">รายได้โดยประมาณ</h3>
+                          <p className="text-4xl font-black text-green-600">
+                            ฿{(verifiedPayments.length * parseInt(camp.fee.toString())).toLocaleString()}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            จากผู้ชำระเงินแล้ว {verifiedPayments.length} คน
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </ModalBody>
 
-              <ModalFooter className="border-t">
-                <Button color="default" variant="flat" onPress={onClose}>
+              {/* ======= FOOTER ======= */}
+              <ModalFooter>
+                <Button
+                  className="bg-[#F2B33D] text-white font-bold"
+                  onPress={onClose}
+                >
                   ปิด
                 </Button>
               </ModalFooter>
