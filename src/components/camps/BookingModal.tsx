@@ -231,7 +231,7 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
         });
       }
 
-      toast.success('สมัครสำเร็จ! ได้รับ Ticket แล้ว 🎉');
+      toast.success('สมัครสำเร็จ! ได้รับ Ticket แล้ว');
       setStep(4);
       onRegistrationSuccess?.();
       setTimeout(() => handleClose(), 3000);

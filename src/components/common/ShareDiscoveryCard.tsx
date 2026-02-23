@@ -27,6 +27,7 @@ export interface DiscoveryShareData {
 
 interface ShareDiscoveryCardProps {
     data: DiscoveryShareData;
+    userName?: string;
 }
 
 const RIASEC_ICON: Record<string, React.ReactElement> = {
@@ -44,9 +45,8 @@ const RIASEC_ACCENT: Record<string, { light: string; color: string }> = {
 };
 
 const RANK_COLORS = [
-    { bg: '#F2B33D', text: '#111111' },
-    { bg: '#111111', text: '#F2B33D' },
-    { bg: '#E8E8E8', text: '#555555' },
+    { bg: '#F2B33D', text: '#2C2C2C' },
+    { bg: '#2C2C2C', text: '#F2B33D' },
 ];
 
 function getTop2RIASEC(profile: DiscoveryShareData['riasecProfile']) {
@@ -57,9 +57,9 @@ function getTop2RIASEC(profile: DiscoveryShareData['riasecProfile']) {
 }
 
 const ShareDiscoveryCard = forwardRef<HTMLDivElement, ShareDiscoveryCardProps>(
-    ({ data }, ref) => {
+    ({ data, userName }, ref) => {
         const top2Codes = getTop2RIASEC(data.riasecProfile);
-        const topCareers = data.recommendedCareers.slice(0, 3);
+        const topCareers = data.recommendedCareers.slice(0, 2);
 
         return (
             <div
@@ -75,25 +75,25 @@ const ShareDiscoveryCard = forwardRef<HTMLDivElement, ShareDiscoveryCardProps>(
                     background: '#F7F7F5',
                 }}
             >
-                {/* ══ DARK HERO HEADER ══ */}
+                {/* ══ YELLOW HERO HEADER ══ */}
                 <div style={{
-                    background: 'linear-gradient(160deg, #111111 0%, #1e1e1e 60%, #2a2200 100%)',
+                    background: '#F2B33D',
                     padding: '64px 80px 72px',
                     flexShrink: 0,
                     position: 'relative',
                     overflow: 'hidden',
                 }}>
-                    {/* Glow */}
+                    {/* Light glow pattern top-right */}
                     <div style={{
                         position: 'absolute', top: '-60px', right: '-60px',
                         width: '500px', height: '500px', borderRadius: '50%',
-                        background: 'radial-gradient(circle, #F2B33D30 0%, transparent 65%)',
+                        background: 'rgba(255,255,255,0.1)',
                         pointerEvents: 'none',
                     }} />
-                    {/* Gold top bar */}
+                    {/* Dark bottom bar */}
                     <div style={{
-                        position: 'absolute', top: 0, left: 0, right: 0, height: '8px',
-                        background: 'linear-gradient(90deg, #F2B33D 0%, #f8d76b 50%, #F2B33D 100%)',
+                        position: 'absolute', bottom: 0, left: 0, right: 0, height: '6px',
+                        background: '#2C2C2C',
                     }} />
 
                     {/* Logo + RIASEC top 2 row */}
@@ -103,78 +103,70 @@ const ShareDiscoveryCard = forwardRef<HTMLDivElement, ShareDiscoveryCardProps>(
                         marginBottom: '44px',
                     }}>
                         <div style={{
-                            background: 'rgba(255,255,255,0.10)',
-                            border: '1.5px solid rgba(255,255,255,0.15)',
+                            background: 'rgba(255,255,255,0.35)',
+                            border: '2px solid rgba(0,0,0,0.12)',
                             borderRadius: '20px',
                             padding: '16px 24px',
                             display: 'flex', alignItems: 'center', gap: '16px',
                         }}>
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                                src="/skillscoutLogo.png"
+                                src="/skillscoutLogo-dark.png"
                                 alt="SkillScout"
                                 style={{ height: '72px', width: 'auto', objectFit: 'contain', display: 'block' }}
                             />
                         </div>
-                        {/* RIASEC top 2 — secondary */}
+                        {/* Discovery Path chip */}
                         <div style={{
-                            background: 'rgba(242,179,61,0.15)',
-                            border: '2px solid rgba(242,179,61,0.4)',
-                            borderRadius: '18px',
-                            padding: '14px 36px',
-                            display: 'flex', alignItems: 'center', gap: '20px',
+                            display: 'inline-flex', alignItems: 'center',
+                            background: '#2C2C2C',
+                            borderRadius: '99px',
+                            padding: '14px 40px',
                         }}>
-                            {top2Codes.map((code) => {
-                                const acc = RIASEC_ACCENT[code] ?? RIASEC_ACCENT.C;
-                                return (
-                                    <div key={code} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <div style={{
-                                            width: '48px', height: '48px',
-                                            borderRadius: '12px',
-                                            background: acc.light,
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            color: acc.color, fontSize: '22px',
-                                        }}>
-                                            {RIASEC_ICON[code]}
-                                        </div>
-                                        <span style={{ color: '#ffffff', fontSize: '28px', fontWeight: 700 }}>
-                                            {RIASEC_TYPES[code as keyof typeof RIASEC_TYPES]?.thaiName ?? code}
-                                        </span>
-                                    </div>
-                                );
-                            })}
+                            <span style={{ fontSize: '26px', color: '#F2B33D', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                                Discovery Path
+                            </span>
                         </div>
                     </div>
 
-                    {/* Label chip */}
-                    <div style={{
-                        display: 'inline-flex', alignItems: 'center',
-                        background: 'rgba(242,179,61,0.18)',
-                        border: '1.5px solid rgba(242,179,61,0.45)',
-                        borderRadius: '99px',
-                        padding: '10px 32px',
-                        marginBottom: '24px',
-                    }}>
-                        <span style={{
-                            fontSize: '26px', color: '#F2B33D',
-                            fontWeight: 700, letterSpacing: '0.12em',
-                            textTransform: 'uppercase',
+                    {/* Big title */}
+                    <div style={{ margin: 0 }}>
+                        <p style={{
+                            fontSize: '44px',
+                            fontWeight: 700,
+                            color: 'rgba(44,44,44,0.65)',
+                            margin: '0 0 4px',
+                            lineHeight: 1.2,
+                            letterSpacing: '-0.01em',
                         }}>
-                            Discovery Path
-                        </span>
+                            อาชีพที่เหมาะกับ
+                        </p>
+                        <p style={{
+                            fontSize: '100px',
+                            fontWeight: 900,
+                            color: '#2C2C2C',
+                            margin: '0 0 28px',
+                            lineHeight: 1.05,
+                            letterSpacing: '-0.02em',
+                        }}>
+                            {userName ?? 'คุณ'}
+                        </p>
                     </div>
 
-                    {/* Big title */}
-                    <h1 style={{
-                        fontSize: '88px',
-                        fontWeight: 900,
-                        color: '#ffffff',
-                        margin: 0,
-                        lineHeight: 1.12,
-                        letterSpacing: '-0.01em',
+                    {/* RIASEC chip */}
+                    <div style={{
+                        display: 'inline-flex', alignItems: 'center',
+                        background: 'rgba(0,0,0,0.12)',
+                        border: '1.5px solid rgba(0,0,0,0.20)',
+                        borderRadius: '99px',
+                        padding: '10px 32px',
                     }}>
-                        อาชีพที่เหมาะกับคุณ
-                    </h1>
+                        <span style={{ fontSize: '26px', color: '#2C2C2C', fontWeight: 700, letterSpacing: '0.04em' }}>
+                            {top2Codes
+                                .map((code) => RIASEC_TYPES[code as keyof typeof RIASEC_TYPES]?.thaiName ?? code)
+                                .join(' × ')}
+                        </span>
+                    </div>
                 </div>
 
                 {/* ══ BODY ══ */}
@@ -182,19 +174,19 @@ const ShareDiscoveryCard = forwardRef<HTMLDivElement, ShareDiscoveryCardProps>(
                     flex: 1,
                     display: 'flex',
                     flexDirection: 'column',
-                    padding: '48px 80px 52px',
+                    padding: '36px 80px 36px',
                     gap: 0,
                 }}>
 
                     {/* Section header */}
                     <div style={{
                         display: 'flex', alignItems: 'center',
-                        gap: '20px', marginBottom: '36px',
+                        gap: '20px', marginBottom: '24px',
                     }}>
                         <div style={{
                             width: '56px', height: '56px',
                             borderRadius: '16px',
-                            background: '#111111',
+                            background: '#2C2C2C',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             color: '#F2B33D', fontSize: '28px',
                         }}>
@@ -202,7 +194,7 @@ const ShareDiscoveryCard = forwardRef<HTMLDivElement, ShareDiscoveryCardProps>(
                         </div>
                         <span style={{
                             fontSize: '32px', fontWeight: 800,
-                            color: '#111111',
+                            color: '#2C2C2C',
                             textTransform: 'uppercase',
                             letterSpacing: '0.06em',
                         }}>
@@ -210,17 +202,17 @@ const ShareDiscoveryCard = forwardRef<HTMLDivElement, ShareDiscoveryCardProps>(
                         </span>
                     </div>
 
-                    {/* Career cards */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', flex: 1 }}>
+                    {/* Career cards — rank 1 & 2 only */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         {topCareers.length > 0
                             ? topCareers.map((career, idx) => {
-                                const rank = RANK_COLORS[idx] ?? RANK_COLORS[2];
+                                const rank = RANK_COLORS[idx] ?? RANK_COLORS[1];
                                 return (
                                     <div key={career.id} style={{
                                         background: '#ffffff',
                                         borderRadius: '28px',
                                         border: `3px solid ${idx === 0 ? '#F2B33D' : '#EBEBEB'}`,
-                                        padding: '40px 48px',
+                                        padding: '28px 40px',
                                         boxShadow: idx === 0
                                             ? '0 12px 48px rgba(242,179,61,0.20)'
                                             : '0 4px 20px rgba(0,0,0,0.06)',
@@ -243,7 +235,7 @@ const ShareDiscoveryCard = forwardRef<HTMLDivElement, ShareDiscoveryCardProps>(
                                             <div style={{ flex: 1 }}>
                                                 <p style={{
                                                     fontWeight: 900, fontSize: '48px',
-                                                    color: '#111111', margin: '0 0 6px', lineHeight: 1.15,
+                                                    color: '#2C2C2C', margin: '0 0 6px', lineHeight: 1.15,
                                                 }}>
                                                     {career.name}
                                                 </p>
@@ -305,10 +297,113 @@ const ShareDiscoveryCard = forwardRef<HTMLDivElement, ShareDiscoveryCardProps>(
                         }
                     </div>
 
+                    {/* ══ QR + INVITATION BLOCK ══ */}
+                    <div style={{
+                        marginTop: '24px',
+                        background: '#2C2C2C',
+                        borderRadius: '28px',
+                        padding: '28px 44px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '52px',
+                        border: '3px solid rgba(242,179,61,0.35)',
+                        boxShadow: '0 16px 56px rgba(0,0,0,0.18)',
+                        position: 'relative',
+                        overflow: 'hidden',
+                    }}>
+                        {/* bg glow */}
+                        <div style={{
+                            position: 'absolute', top: '-40px', right: '-40px',
+                            width: '320px', height: '320px', borderRadius: '50%',
+                            background: 'rgba(242,179,61,0.05)',
+                            pointerEvents: 'none',
+                        }} />
+
+                        {/* QR Code */}
+                        <div style={{
+                            background: '#ffffff',
+                            borderRadius: '20px',
+                            padding: '16px',
+                            flexShrink: 0,
+                            boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+                        }}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                                src="/skillscout-qr.png"
+                                alt="QR skillscout.site"
+                                style={{
+                                    width: '170px',
+                                    height: '170px',
+                                    display: 'block',
+                                    objectFit: 'contain',
+                                }}
+                            />
+                        </div>
+
+                        {/* Text */}
+                        <div style={{ flex: 1, position: 'relative', zIndex: 1 }}>
+                            <div style={{
+                                display: 'inline-flex', alignItems: 'center',
+                                background: 'rgba(242,179,61,0.18)',
+                                border: '1.5px solid rgba(242,179,61,0.45)',
+                                borderRadius: '99px',
+                                padding: '8px 24px',
+                                marginBottom: '10px',
+                            }}>
+                                <span style={{
+                                    fontSize: '22px', color: '#F2B33D',
+                                    fontWeight: 700, letterSpacing: '0.1em',
+                                    textTransform: 'uppercase',
+                                }}>
+                                    ค้นพบอาชีพของคุณ
+                                </span>
+                            </div>
+
+                            <p style={{
+                                fontSize: '46px',
+                                fontWeight: 900,
+                                color: '#ffffff',
+                                margin: '0 0 6px',
+                                lineHeight: 1.2,
+                            }}>
+                                ลองค้นหาอาชีพที่ใช่!
+                            </p>
+
+                            <p style={{
+                                fontSize: '28px',
+                                color: 'rgba(255,255,255,0.65)',
+                                margin: '0 0 14px',
+                                lineHeight: 1.5,
+                            }}>
+                                สแกน QR หรือเข้าผ่าน Discovery Path
+                                <br />
+                                เพื่อดูอาชีพที่เหมาะกับบุคลิกของคุณ
+                            </p>
+
+                            <div style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                background: '#F2B33D',
+                                borderRadius: '14px',
+                                padding: '14px 32px',
+                            }}>
+                                <span style={{
+                                    fontSize: '32px',
+                                    fontWeight: 900,
+                                    color: '#2C2C2C',
+                                    letterSpacing: '0.04em',
+                                }}>
+                                    skillscout.site
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Footer */}
                     <div style={{
-                        marginTop: '32px',
-                        paddingTop: '36px',
+                        marginTop: '20px',
+                        paddingTop: '20px',
                         borderTop: '2px solid #EBEBEB',
                         display: 'flex',
                         justifyContent: 'space-between',
@@ -316,14 +411,14 @@ const ShareDiscoveryCard = forwardRef<HTMLDivElement, ShareDiscoveryCardProps>(
                     }}>
                         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                             <div style={{
-                                background: '#111111', color: '#F2B33D',
+                                background: '#2C2C2C', color: '#F2B33D',
                                 borderRadius: '12px', padding: '10px 24px',
                                 fontSize: '22px', fontWeight: 700, letterSpacing: '0.06em',
                             }}>
                                 Discovery Path
                             </div>
                             <div style={{
-                                background: '#F2B33D', color: '#111111',
+                                background: '#F2B33D', color: '#2C2C2C',
                                 borderRadius: '12px', padding: '10px 24px',
                                 fontSize: '22px', fontWeight: 700, letterSpacing: '0.06em',
                             }}>

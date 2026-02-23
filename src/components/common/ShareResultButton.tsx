@@ -13,6 +13,7 @@ interface ShareResultButtonProps {
   targetRef?: React.RefObject<HTMLDivElement | null>;
   filename?: string;
   title?: string;
+  userName?: string;
 }
 
 export default function ShareResultButton({
@@ -20,6 +21,7 @@ export default function ShareResultButton({
   targetRef,
   filename = 'skillscout-pathfinder',
   title = 'ผลลัพธ์ Path Finder - SkillScout',
+  userName,
 }: ShareResultButtonProps) {
   const [open, setOpen] = useState(false);
   const [capturing, setCapturing] = useState(false);
@@ -67,7 +69,7 @@ export default function ShareResultButton({
           text: 'ดูผลลัพธ์ของฉันจาก SkillScout!',
           files: [file],
         });
-        toast.success('แชร์สำเร็จ! 🎉');
+        toast.success('แชร์สำเร็จ!');
       } else if (navigator.clipboard && navigator.clipboard.write) {
         await navigator.clipboard.write([
           new ClipboardItem({ 'image/png': blob })
@@ -81,7 +83,7 @@ export default function ShareResultButton({
         a.download = `${filename}.png`;
         a.click();
         URL.revokeObjectURL(url);
-        toast.success('บันทึกรูปภาพสำเร็จ! 🎉');
+        toast.success('บันทึกรูปภาพสำเร็จ!');
       }
     } catch (err) {
       console.error(err);
@@ -118,6 +120,7 @@ export default function ShareResultButton({
           onClose={() => setOpen(false)}
           filename={filename}
           title={title}
+          userName={userName}
         />
       )}
     </>

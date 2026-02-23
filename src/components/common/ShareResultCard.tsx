@@ -11,6 +11,7 @@ import { PathFinderResultWithDetails } from '@/types';
 
 interface ShareResultCardProps {
     result: PathFinderResultWithDetails;
+    userName?: string;
 }
 
 const RIASEC_ICON: Record<string, React.ReactElement> = {
@@ -19,7 +20,7 @@ const RIASEC_ICON: Record<string, React.ReactElement> = {
 };
 
 const RIASEC_ACCENT: Record<string, { light: string; color: string }> = {
-    R: { light: '#FEF6E0', color: '#F2B33D' },   // gold (แก้จากแดง)
+    R: { light: '#FEF6E0', color: '#F2B33D' },
     I: { light: '#dbeafe', color: '#2563eb' },
     A: { light: '#ede9fe', color: '#7c3aed' },
     S: { light: '#dcfce7', color: '#16a34a' },
@@ -38,10 +39,10 @@ function calcSorted(scores: PathFinderResultWithDetails['riasecScores']) {
 }
 
 const ShareResultCard = forwardRef<HTMLDivElement, ShareResultCardProps>(
-    ({ result }, ref) => {
+    ({ result, userName }, ref) => {
         const sorted = calcSorted(result.riasecScores);
         const top2 = sorted.slice(0, 2);
-        const topCareers = (result.recommendedCareerDetails ?? []).slice(0, 3);
+        const topCareers = (result.recommendedCareerDetails ?? []).slice(0, 2);
         const codeLabel = result.topRIASECCodes?.join('')
             ?? top2.map((t) => t.code).join('');
 
@@ -59,25 +60,25 @@ const ShareResultCard = forwardRef<HTMLDivElement, ShareResultCardProps>(
                     background: '#F7F7F5',
                 }}
             >
-                {/* ══════════════ DARK HERO HEADER ══════════════ */}
+                {/* ══════════════ YELLOW HERO HEADER ══════════════ */}
                 <div style={{
-                    background: 'linear-gradient(160deg, #111111 0%, #1e1e1e 60%, #2a2200 100%)',
+                    background: '#F2B33D',
                     padding: '64px 80px 72px',
                     flexShrink: 0,
                     position: 'relative',
                     overflow: 'hidden',
                 }}>
-                    {/* Subtle gold glow top-right */}
+                    {/* Solid decorative pattern top-right */}
                     <div style={{
                         position: 'absolute', top: '-60px', right: '-60px',
                         width: '500px', height: '500px', borderRadius: '50%',
-                        background: 'radial-gradient(circle, #F2B33D30 0%, transparent 65%)',
+                        background: 'rgba(255,255,255,0.1)',
                         pointerEvents: 'none',
                     }} />
-                    {/* Gold top bar */}
+                    {/* Dark bottom bar */}
                     <div style={{
-                        position: 'absolute', top: 0, left: 0, right: 0, height: '8px',
-                        background: 'linear-gradient(90deg, #F2B33D 0%, #f8d76b 50%, #F2B33D 100%)',
+                        position: 'absolute', bottom: 0, left: 0, right: 0, height: '6px',
+                        background: '#2C2C2C',
                     }} />
 
                     {/* Logo + Holland code row */}
@@ -89,69 +90,78 @@ const ShareResultCard = forwardRef<HTMLDivElement, ShareResultCardProps>(
                     }}>
                         {/* Logo */}
                         <div style={{
-                            background: 'rgba(255,255,255,0.10)',
-                            border: '1.5px solid rgba(255,255,255,0.15)',
+                            background: 'rgba(255,255,255,0.35)',
+                            border: '2px solid rgba(0,0,0,0.12)',
                             borderRadius: '20px',
                             padding: '16px 24px',
-                            backdropFilter: 'blur(4px)',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '16px',
                         }}>
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                                src="/skillscoutLogo.png"
+                                src="/skillscoutLogo-dark.png"
                                 alt="SkillScout"
                                 style={{ height: '72px', width: 'auto', objectFit: 'contain', display: 'block' }}
                             />
                         </div>
                         {/* Holland Code */}
                         <div style={{
-                            background: '#F2B33D',
-                            color: '#111111',
+                            background: '#2C2C2C',
+                            color: '#F2B33D',
                             borderRadius: '24px',
                             padding: '18px 44px',
                             fontSize: '56px',
                             fontWeight: 900,
                             letterSpacing: '0.2em',
-                            boxShadow: '0 12px 40px rgba(242,179,61,0.55)',
+                            boxShadow: '0 12px 40px rgba(0,0,0,0.25)',
                             lineHeight: 1,
                         }}>
                             {codeLabel}
                         </div>
                     </div>
 
-                    {/* Label chip */}
+                    {/* Label chip — personality */}
                     <div style={{
                         display: 'inline-flex', alignItems: 'center',
-                        background: 'rgba(242,179,61,0.18)',
-                        border: '1.5px solid rgba(242,179,61,0.45)',
+                        background: 'rgba(0,0,0,0.12)',
+                        border: '1.5px solid rgba(0,0,0,0.20)',
                         borderRadius: '99px',
                         padding: '10px 32px',
                         marginBottom: '24px',
                     }}>
                         <span style={{
-                            fontSize: '26px', color: '#F2B33D',
-                            fontWeight: 700, letterSpacing: '0.12em',
-                            textTransform: 'uppercase',
+                            fontSize: '26px', color: '#2C2C2C',
+                            fontWeight: 700, letterSpacing: '0.04em',
                         }}>
-                            บุคลิกภาพเด่นของฉัน
+                            {top2
+                                .map((t) => RIASEC_TYPES[t.code as keyof typeof RIASEC_TYPES]?.thaiName ?? t.code)
+                                .join(' × ')}
                         </span>
                     </div>
 
-                    {/* Big personality title */}
-                    <h1 style={{
-                        fontSize: '96px',
-                        fontWeight: 900,
-                        color: '#ffffff',
-                        margin: 0,
-                        lineHeight: 1.12,
-                        letterSpacing: '-0.01em',
-                    }}>
-                        {top2
-                            .map((t) => RIASEC_TYPES[t.code as keyof typeof RIASEC_TYPES]?.thaiName ?? t.code)
-                            .join(' × ')}
-                    </h1>
+                    {/* Big title — username */}
+                    <div style={{ margin: 0 }}>
+                        <p style={{
+                            fontSize: '44px',
+                            fontWeight: 700,
+                            color: 'rgba(44,44,44,0.65)',
+                            margin: '0 0 4px',
+                            lineHeight: 1.2,
+                        }}>
+                            บุคลิกภาพเด่นของ
+                        </p>
+                        <p style={{
+                            fontSize: '100px',
+                            fontWeight: 900,
+                            color: '#2C2C2C',
+                            margin: 0,
+                            lineHeight: 1.05,
+                            letterSpacing: '-0.02em',
+                        }}>
+                            {userName ?? 'คุณ'}
+                        </p>
+                    </div>
                 </div>
 
                 {/* ══════════════ BODY ══════════════ */}
@@ -159,53 +169,53 @@ const ShareResultCard = forwardRef<HTMLDivElement, ShareResultCardProps>(
                     flex: 1,
                     display: 'flex',
                     flexDirection: 'column',
-                    padding: '48px 80px 52px',
+                    padding: '36px 80px 36px',
                     gap: 0,
                 }}>
 
                     {/* ── RIASEC Cards (stacked) ── */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginBottom: '56px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
                         {top2.map(({ code, pct }, idx) => {
                             const info = RIASEC_TYPES[code as keyof typeof RIASEC_TYPES];
-                            const acc = RIASEC_ACCENT[code] ?? RIASEC_ACCENT.C;
                             const isFirst = idx === 0;
 
                             return (
                                 <div key={code} style={{
                                     background: '#ffffff',
-                                    borderRadius: '28px',
+                                    borderRadius: '24px',
                                     border: `3px solid ${isFirst ? '#F2B33D' : '#EBEBEB'}`,
-                                    padding: '44px 48px',
+                                    padding: '24px 40px',
                                     boxShadow: isFirst
-                                        ? '0 12px 48px rgba(242,179,61,0.20)'
-                                        : '0 4px 20px rgba(0,0,0,0.06)',
+                                        ? '0 8px 36px rgba(242,179,61,0.20)'
+                                        : '0 4px 16px rgba(0,0,0,0.05)',
                                     position: 'relative',
                                     overflow: 'hidden',
                                 }}>
-                                    {/* Icon + Name (inline) — ไม่มี rank badge แล้ว */}
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '24px' }}>
+                                    {/* Icon + Name (inline) */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '16px' }}>
                                         {/* Icon */}
                                         <div style={{
-                                            width: '88px', height: '88px',
-                                            borderRadius: '22px',
-                                            background: acc.light,
+                                            width: '72px', height: '72px',
+                                            borderRadius: '18px',
+                                            background: isFirst ? '#F2B33D' : '#C0C0C0',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            color: acc.color, fontSize: '42px',
+                                            color: isFirst ? '#2C2C2C' : '#ffffff',
+                                            fontSize: '34px',
                                             flexShrink: 0,
                                         }}>
                                             {RIASEC_ICON[code]}
                                         </div>
                                         <div style={{ flex: 1 }}>
                                             <p style={{
-                                                fontSize: '24px', color: '#AAAAAA',
-                                                fontWeight: 600, margin: '0 0 4px',
+                                                fontSize: '22px', color: '#AAAAAA',
+                                                fontWeight: 600, margin: '0 0 2px',
                                                 textTransform: 'uppercase', letterSpacing: '0.1em',
                                             }}>
                                                 {info?.name ?? code}
                                             </p>
                                             <p style={{
-                                                fontSize: '58px', fontWeight: 900,
-                                                color: '#111111', margin: 0, lineHeight: 1.1,
+                                                fontSize: '48px', fontWeight: 900,
+                                                color: '#2C2C2C', margin: 0, lineHeight: 1.1,
                                             }}>
                                                 {info?.thaiName ?? code}
                                             </p>
@@ -214,32 +224,30 @@ const ShareResultCard = forwardRef<HTMLDivElement, ShareResultCardProps>(
 
                                     {/* Description */}
                                     <p style={{
-                                        fontSize: '30px', color: '#666666',
-                                        lineHeight: 1.65, margin: '0 0 28px',
+                                        fontSize: '26px', color: '#666666',
+                                        lineHeight: 1.6, margin: '0 0 20px',
                                     }}>
                                         {info?.description}
                                     </p>
 
                                     {/* Progress bar + percentage */}
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                                         <div style={{
-                                            flex: 1, height: '14px',
+                                            flex: 1, height: '12px',
                                             borderRadius: '99px',
                                             background: '#F0F0F0',
                                             overflow: 'hidden',
                                         }}>
                                             <div style={{
                                                 height: '100%', width: `${pct}%`,
-                                                background: isFirst
-                                                    ? 'linear-gradient(90deg, #F2B33D, #f8d76b)'
-                                                    : acc.color,
+                                                background: isFirst ? '#F2B33D' : '#C0C0C0',
                                                 borderRadius: '99px',
                                             }} />
                                         </div>
                                         <span style={{
-                                            fontSize: '48px', fontWeight: 900,
-                                            color: isFirst ? '#F2B33D' : acc.color,
-                                            minWidth: '120px', textAlign: 'right',
+                                            fontSize: '40px', fontWeight: 900,
+                                            color: isFirst ? '#F2B33D' : '#C0C0C0',
+                                            minWidth: '100px', textAlign: 'right',
                                         }}>
                                             {pct}%
                                         </span>
@@ -254,12 +262,12 @@ const ShareResultCard = forwardRef<HTMLDivElement, ShareResultCardProps>(
                         {/* Section header */}
                         <div style={{
                             display: 'flex', alignItems: 'center',
-                            gap: '20px', marginBottom: '28px',
+                            gap: '20px', marginBottom: '20px',
                         }}>
                             <div style={{
                                 width: '56px', height: '56px',
                                 borderRadius: '16px',
-                                background: '#111111',
+                                background: '#2C2C2C',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 color: '#F2B33D', fontSize: '28px',
                             }}>
@@ -267,7 +275,7 @@ const ShareResultCard = forwardRef<HTMLDivElement, ShareResultCardProps>(
                             </div>
                             <span style={{
                                 fontSize: '32px', fontWeight: 800,
-                                color: '#111111',
+                                color: '#2C2C2C',
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.06em',
                             }}>
@@ -276,7 +284,7 @@ const ShareResultCard = forwardRef<HTMLDivElement, ShareResultCardProps>(
                         </div>
 
                         {/* Career list */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             {topCareers.length > 0
                                 ? topCareers.map((career, idx) => (
                                     <div key={career.id} style={{
@@ -291,10 +299,8 @@ const ShareResultCard = forwardRef<HTMLDivElement, ShareResultCardProps>(
                                         <div style={{
                                             width: '68px', height: '68px',
                                             borderRadius: '18px',
-                                            background: idx === 0
-                                                ? '#F2B33D'
-                                                : idx === 1 ? '#111111' : '#F0F0F0',
-                                            color: idx === 0 ? '#111' : idx === 1 ? '#F2B33D' : '#777',
+                                            background: idx === 0 ? '#F2B33D' : '#2C2C2C',
+                                            color: idx === 0 ? '#2C2C2C' : '#F2B33D',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                                             fontSize: '28px', fontWeight: 900,
                                             flexShrink: 0,
@@ -304,7 +310,7 @@ const ShareResultCard = forwardRef<HTMLDivElement, ShareResultCardProps>(
                                         <div>
                                             <p style={{
                                                 fontWeight: 800, fontSize: '38px',
-                                                color: '#111111', margin: '0 0 6px', lineHeight: 1.15,
+                                                color: '#2C2C2C', margin: '0 0 6px', lineHeight: 1.15,
                                             }}>
                                                 {career.nameTh}
                                             </p>
@@ -325,44 +331,116 @@ const ShareResultCard = forwardRef<HTMLDivElement, ShareResultCardProps>(
                         </div>
                     </div>
 
-                    {/* ── Footer ── */}
+                    {/* ── QR + Invite Footer ── */}
                     <div style={{
                         marginTop: 'auto',
-                        paddingTop: '36px',
+                        paddingTop: '24px',
                         borderTop: '2px solid #EBEBEB',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
                     }}>
-                        {/* Keywords badges */}
-                        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                        {/* QR invite block */}
+                        <div style={{
+                            background: '#2C2C2C',
+                            borderRadius: '28px',
+                            padding: '28px 40px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '40px',
+                        }}>
+                            {/* QR Code */}
                             <div style={{
-                                background: '#111111',
-                                color: '#F2B33D',
-                                borderRadius: '12px',
-                                padding: '10px 24px',
-                                fontSize: '22px',
-                                fontWeight: 700,
-                                letterSpacing: '0.06em',
+                                background: '#ffffff',
+                                borderRadius: '20px',
+                                padding: '16px',
+                                flexShrink: 0,
+                                boxShadow: '0 0 0 4px #F2B33D',
                             }}>
-                                Path Finder
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                    src="/skillscout-qr.png"
+                                    alt="QR SkillScout"
+                                    style={{ width: '160px', height: '160px', display: 'block', objectFit: 'contain' }}
+                                />
                             </div>
-                            <div style={{
-                                background: '#F2B33D',
-                                color: '#111111',
-                                borderRadius: '12px',
-                                padding: '10px 24px',
-                                fontSize: '22px',
-                                fontWeight: 700,
-                                letterSpacing: '0.06em',
-                            }}>
-                                Skill Scout
+
+                            {/* Invite text */}
+                            <div style={{ flex: 1 }}>
+                                <p style={{
+                                    fontSize: '22px',
+                                    color: '#F2B33D',
+                                    fontWeight: 700,
+                                    letterSpacing: '0.12em',
+                                    textTransform: 'uppercase',
+                                    margin: '0 0 8px',
+                                }}>
+                                    ค้นพบบุคลิกภาพของคุณ
+                                </p>
+                                <p style={{
+                                    fontSize: '46px',
+                                    fontWeight: 900,
+                                    color: '#ffffff',
+                                    margin: '0 0 6px',
+                                    lineHeight: 1.2,
+                                }}>
+                                    สแกนเพื่อทำแบบทดสอบ!
+                                </p>
+                                <p style={{
+                                    fontSize: '28px',
+                                    color: '#AAAAAA',
+                                    margin: '0 0 12px',
+                                    lineHeight: 1.5,
+                                }}>
+                                    ค้นหาอาชีพ IT ที่ใช่ · ร่วมค่ายที่เหมาะกับคุณ
+                                </p>
+                                <div style={{
+                                    display: 'inline-block',
+                                    background: '#F2B33D',
+                                    color: '#2C2C2C',
+                                    borderRadius: '12px',
+                                    padding: '10px 28px',
+                                    fontSize: '30px',
+                                    fontWeight: 900,
+                                    letterSpacing: '0.05em',
+                                }}>
+                                    skillscout.site
+                                </div>
                             </div>
                         </div>
-                        {/* URL */}
-                        <p style={{ fontSize: '28px', fontWeight: 800, color: '#F2B33D', margin: 0 }}>
-                            skillscout.site
-                        </p>
+
+                        {/* Bottom badges */}
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginTop: '20px',
+                        }}>
+                            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                                <div style={{
+                                    background: '#2C2C2C',
+                                    color: '#F2B33D',
+                                    borderRadius: '12px',
+                                    padding: '10px 24px',
+                                    fontSize: '22px',
+                                    fontWeight: 700,
+                                    letterSpacing: '0.06em',
+                                }}>
+                                    Path Finder
+                                </div>
+                                <div style={{
+                                    background: '#F2B33D',
+                                    color: '#2C2C2C',
+                                    borderRadius: '12px',
+                                    padding: '10px 24px',
+                                    fontSize: '22px',
+                                    fontWeight: 700,
+                                    letterSpacing: '0.06em',
+                                }}>
+                                    Skill Scout
+                                </div>
+                            </div>
+                            <p style={{ fontSize: '26px', fontWeight: 800, color: '#AAAAAA', margin: 0 }}>
+                                #ค้นหาตัวเอง · #ITCareer
+                            </p>
+                        </div>
                     </div>
 
                 </div>

@@ -65,7 +65,7 @@ async function updateCampStatus() {
 // Run the script
 updateCampStatus()
   .then(() => {
-    console.log('\n🎉 เสร็จสิ้น!');
+    console.log('\nเสร็จสิ้น!');
     process.exit(0);
   })
   .catch((error) => {

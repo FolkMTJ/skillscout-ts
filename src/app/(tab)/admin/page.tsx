@@ -24,7 +24,7 @@ import {
   Input,
   Textarea,
 } from '@heroui/react';
-import { FiUsers, FiCalendar, FiShield, FiTrash2, FiEye, FiSearch, FiAlertCircle, FiXCircle, FiAlertTriangle, FiCheck, FiX, FiPlus, FiEdit2, FiBookOpen, FiToggleLeft, FiToggleRight, FiSave } from 'react-icons/fi';
+import { FiUsers, FiCalendar, FiShield, FiTrash2, FiEye, FiSearch, FiAlertCircle, FiXCircle, FiAlertTriangle, FiCheck, FiX, FiPlus, FiEdit2, FiBookOpen, FiToggleLeft, FiToggleRight, FiSave, FiMonitor, FiRefreshCw } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { StatCard } from '@/components/common';
 
@@ -95,6 +95,69 @@ export default function AdminDashboard() {
   const [selectedCamp, setSelectedCamp] = useState<Camp | null>(null);
   const [rejectReason, setRejectReason] = useState('');
 
+  // Showcase Mode state
+  const [showcaseMode, setShowcaseMode] = useState(false);
+  const [showcaseSaving, setShowcaseSaving] = useState(false);
+  const [showcaseCampCount, setShowcaseCampCount] = useState(0);
+  const [showcaseSeeding, setShowcaseSeeding] = useState(false);
+
+  const fetchShowcaseSettings = async () => {
+    try {
+      const res = await fetch('/api/admin/settings');
+      const data = await res.json();
+      setShowcaseMode(data.showcaseMode ?? false);
+      const campRes = await fetch('/api/admin/showcase');
+      const campData = await campRes.json();
+      setShowcaseCampCount(campData.count ?? 0);
+    } catch { /* ignore */ }
+  };
+
+  const saveShowcaseSettings = async (mode?: boolean) => {
+    setShowcaseSaving(true);
+    try {
+      const newMode = mode !== undefined ? mode : showcaseMode;
+      await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ showcaseMode: newMode }),
+      });
+      setShowcaseMode(newMode);
+      toast.success(newMode ? 'เปิด Showcase Mode แล้ว' : 'ปิด Showcase Mode แล้ว');
+    } catch { toast.error('เกิดข้อผิดพลาด'); }
+    setShowcaseSaving(false);
+  };
+
+  const seedShowcaseCamps = async () => {
+    setShowcaseSeeding(true);
+    try {
+      const res = await fetch('/api/admin/showcase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'seed' }),
+      });
+      const data = await res.json();
+      toast.success(`เพิ่มค่ายตัวอย่าง ${data.inserted} ค่ายสำเร็จ`);
+      fetchShowcaseSettings();
+    } catch { toast.error('เกิดข้อผิดพลาด'); }
+    setShowcaseSeeding(false);
+  };
+
+  const clearShowcaseCamps = async () => {
+    if (!confirm('ต้องการลบค่ายตัวอย่างทั้งหมดหรือไม่?')) return;
+    setShowcaseSeeding(true);
+    try {
+      const res = await fetch('/api/admin/showcase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'clear' }),
+      });
+      const data = await res.json();
+      toast.success(`ลบค่ายตัวอย่าง ${data.deleted} ค่ายสำเร็จ`);
+      fetchShowcaseSettings();
+    } catch { toast.error('เกิดข้อผิดพลาด'); }
+    setShowcaseSeeding(false);
+  };
+
   // Holland Careers state
   const [hollandCareers, setHollandCareers] = useState<HollandCareer[]>([]);
   const [careerLoading, setCareerLoading] = useState(false);
@@ -126,6 +189,7 @@ export default function AdminDashboard() {
         return;
       }
       fetchData();
+      fetchShowcaseSettings();
     }
   }, [status, session, router]);
 
@@ -541,6 +605,120 @@ export default function AdminDashboard() {
             onSelectionChange={(key) => setActiveTab(key as string)}
             variant="underlined"
           >
+            <Tab key="showcase" title={<span className="flex items-center gap-1.5"><FiMonitor className={showcaseMode ? 'text-[#F2B33D]' : ''} />Showcase {showcaseMode && <span className="w-2 h-2 rounded-full bg-[#F2B33D] inline-block" />}</span>}>
+              <div className="py-6 space-y-6">
+
+                {/* Toggle Card */}
+                <div className={`rounded-2xl border-2 p-6 transition-all ${showcaseMode ? 'border-[#F2B33D] bg-[#FEF6E0]' : 'border-gray-200 bg-white'}`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xl font-bold flex items-center gap-2">
+                        <FiMonitor className={showcaseMode ? 'text-[#F2B33D]' : 'text-gray-400'} />
+                        Showcase Mode
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1">เปิดเพื่อแสดงชื่อที่กำหนดบน Discovery Path และ Path Finder (แทนชื่อ user จริง)</p>
+                    </div>
+                    <button
+                      onClick={() => saveShowcaseSettings(!showcaseMode)}
+                      disabled={showcaseSaving}
+                      className={`relative w-16 h-8 rounded-full transition-all duration-300 flex items-center ${showcaseMode ? 'bg-[#F2B33D]' : 'bg-gray-300'}`}
+                    >
+                      <span className={`absolute w-6 h-6 bg-white rounded-full shadow-md transition-all duration-300 ${showcaseMode ? 'left-9' : 'left-1'}`} />
+                    </button>
+                  </div>
+
+                  {showcaseMode && (
+                    <div className="mt-4 p-3 bg-[#F2B33D]/20 rounded-xl text-sm text-[#7a5a00] flex items-center gap-2">
+                      <span className="text-lg">🎯</span>
+                      <span>Showcase Mode เปิดอยู่ — กดแชร์ผลลัพธ์ในแต่ละหน้าเพื่อใส่ชื่อบน Share Card ได้เลย</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* QR Download Preview */}
+                <div className="bg-white border-2 border-gray-200 rounded-2xl p-6">
+                  <h4 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
+                    QR สำหรับโหลดรูป Share Card
+                  </h4>
+                  <p className="text-sm text-gray-500 mb-4">แสดง QR Code นี้ที่งาน Showcase เพื่อให้ผู้เข้าชมสแกนโหลดรูป Share Card ของตัวเองได้ทันที</p>
+                  <div className="flex gap-4 flex-wrap">
+                    <div className="flex flex-col items-center gap-2 p-4 border-2 border-dashed border-gray-200 rounded-xl">
+                      <img src="/skillscout-qr.png" alt="QR" className="w-32 h-32 object-contain" />
+                      <p className="text-xs text-gray-500 font-medium">skillscout.site</p>
+                    </div>
+                    <div className="flex flex-col justify-center gap-2">
+                      <p className="text-sm text-gray-600">ผู้เข้าชมทำ Path Finder เสร็จแล้วสแกน QR นี้ เพื่อ:</p>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        <li>• เปิดหน้าผลลัพธ์บนมือถือตัวเอง</li>
+                        <li>• กดโหลดรูป Share Card ได้เลย</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Showcase Camps */}
+                <div className="bg-white border-2 border-gray-200 rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 className="font-bold text-gray-700 flex items-center gap-2">
+                        ค่ายตัวอย่าง Showcase
+                        <span className={`text-sm font-normal px-2 py-0.5 rounded-full ${showcaseCampCount > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                          {showcaseCampCount} ค่าย
+                        </span>
+                      </h4>
+                      <p className="text-sm text-gray-500 mt-1">6 ค่าย IT พร้อม Comment จำลอง สำหรับสาธิตในงาน Showcase</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="flat"
+                        size="sm"
+                        onPress={fetchShowcaseSettings}
+                        startContent={<FiRefreshCw />}
+                        isIconOnly
+                        title="รีเฟรช"
+                      />
+                      {showcaseCampCount > 0 && (
+                        <Button
+                          variant="flat"
+                          color="danger"
+                          size="sm"
+                          onPress={clearShowcaseCamps}
+                          isLoading={showcaseSeeding}
+                        >
+                          ลบค่ายตัวอย่าง
+                        </Button>
+                      )}
+                      <Button
+                        color="warning"
+                        size="sm"
+                        onPress={seedShowcaseCamps}
+                        isLoading={showcaseSeeding}
+                        startContent={<FiPlus />}
+                      >
+                        {showcaseCampCount > 0 ? 'Reseed ค่าย' : 'เพิ่มค่ายตัวอย่าง'}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {showcaseCampCount > 0 ? (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {['Web Development Bootcamp','Data Science & AI Workshop','Cybersecurity Essentials','Mobile App Development','Game Development with Unity','Cloud & DevOps Fundamentals'].map((name, i) => (
+                        <div key={i} className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                          <p className="text-sm font-medium text-gray-700 truncate">{name}</p>
+                          <p className="text-xs text-gray-400 mt-1">2-3 comments · Active</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-400">
+                      <FiMonitor className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">ยังไม่มีค่ายตัวอย่าง กด &ldquo;เพิ่มค่ายตัวอย่าง&rdquo; เพื่อ seed ข้อมูล</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Tab>
+
             <Tab key="overview" title="ภาพรวม">
               <div className="py-6 space-y-6">
                 <Card className="p-6">

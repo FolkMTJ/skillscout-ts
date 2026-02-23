@@ -7,6 +7,7 @@ import { Card, CardBody, CardHeader, Button, Chip, Divider } from '@heroui/react
 import { FiTrendingUp, FiTarget, FiBook, FiAward, FiArrowRight, FiShare2 } from 'react-icons/fi';
 import ShareDiscoveryModal from '@/components/common/ShareDiscoveryModal';
 import HeroBanner from '@/components/HeroBanner';
+
 import SkillPieChart from '@/components/discovery/SkillPieChart';
 import RIASECProfile from '@/components/discovery/RIASECProfile';
 import CareerCard from '@/components/discovery/CareerCard';
@@ -91,7 +92,7 @@ interface StatCardProps {
 }
 
 export default function DiscoveryPathPage() {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [data, setData] = useState<DiscoveryData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -378,6 +379,7 @@ export default function DiscoveryPathPage() {
           }}
           isOpen={shareModalOpen}
           onClose={() => setShareModalOpen(false)}
+          userName={session?.user?.name ?? undefined}
         />
       </HeroBanner>
 
