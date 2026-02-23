@@ -96,7 +96,7 @@ export default function CampCarousel({ camps }: CampCarouselProps) {
             <div className="relative">
                 <div
                     ref={scrollRef}
-                    className="flex gap-6 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4"
+                    className="flex items-stretch gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4"
                     style={{
                         scrollbarWidth: "none",
                         msOverflowStyle: "none",
@@ -106,7 +106,7 @@ export default function CampCarousel({ camps }: CampCarouselProps) {
                     {camps.map((camp) => (
                         <div
                             key={camp.id}
-                            className="flex-none w-[85%] sm:w-[45%] lg:w-[31%] snap-start"
+                            className="flex-none w-[78%] sm:w-[44%] lg:w-[31%] snap-start h-full"
                         >
                             <CampCard camp={camp} variant="compact" />
                         </div>
@@ -118,29 +118,12 @@ export default function CampCarousel({ camps }: CampCarouselProps) {
                 <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white-50 dark:from-[#1a1a1a] to-transparent" />
             </div>
 
-            {/* Mobile Navigation Indicators */}
-            <div className="flex md:hidden justify-center gap-2 mt-6">
-                <Button
-                    isIconOnly
-                    size="sm"
-                    variant="flat"
-                    onPress={() => scroll("left")}
-                    isDisabled={!canScrollLeft}
-                    className="rounded-full border-2 border-[#F2B33D]"
-                >
-                    <FaChevronLeft size={14} className="text-[#F2B33D]" />
-                </Button>
-                <Button
-                    isIconOnly
-                    size="sm"
-                    variant="flat"
-                    onPress={() => scroll("right")}
-                    isDisabled={!canScrollRight}
-                    className="rounded-full border-2 border-[#F2B33D]"
-                >
-                    <FaChevronRight size={14} className="text-[#F2B33D]" />
-                </Button>
-            </div>
+            {/* Scroll hint on mobile */}
+            {/* <div className="flex md:hidden justify-center mt-3">
+                <p className="text-xs text-gray-400 flex items-center gap-1">
+                    <span>←</span> เลื่อนดูเพิ่มเติม <span>→</span>
+                </p>
+            </div> */}
 
             <style jsx>{`
         .scrollbar-hide::-webkit-scrollbar {

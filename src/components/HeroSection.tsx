@@ -5,95 +5,136 @@ import Image from "next/image";
 import { Button } from "@heroui/react";
 import { FaArrowRight, FaLightbulb, FaCompass, FaChartBar, FaBolt } from "react-icons/fa";
 
-// Theme Colors
-const theme = {
-  primary: "#F2B33D", // Amber Gold
-  white: "#FFFFFF",
-  dark: "#2C2C2C",
-};
-
 export default function HeroSection() {
   return (
-    <section className="relative w-full min-h-[100px] flex items-center bg-white dark:bg-[#2C2C2C] overflow-hidden">
+    <section className="relative w-full overflow-hidden">
 
-      {/* --- Background Shape (ย้ายไปด้านขวา เพื่อรองรับโลโก้สีขาว) --- */}
-      <div
-        className="absolute top-0 right-0 w-full lg:w-[55%] h-full bg-gradient-to-bl from-[#F2B33D] to-[#FFB347] z-0 shadow-[-20px_0_60px_rgba(242,179,61,0.2)]"
-        style={{
-          // ปรับมุมตัด: ตัดเฉียงจากซ้ายบนลงขวาล่าง
-          clipPath: "polygon(20% 0%, 100% 0, 100% 100%, 0% 100%)"
-        }}
-      />
+      {/* ─── Mobile Layout (full yellow) ─── */}
+      <div className="lg:hidden w-full bg-gradient-to-b from-[#F2B33D] to-[#F59E0B] px-5 pt-8 pb-10">
+        {/* dot pattern overlay */}
+        <div
+          className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{
+            backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)",
+            backgroundSize: "22px 22px",
+          }}
+        />
 
-      {/* Pattern Overlay บนพื้นสีทอง */}
-      <div className="absolute top-0 right-0 w-full lg:w-[55%] h-full opacity-10 z-0 pointer-events-none"
-        style={{
-          backgroundImage: `radial-gradient(circle, ${theme.white} 1px, transparent 1px)`,
-          backgroundSize: '24px 24px',
-          clipPath: "polygon(20% 0%, 100% 0, 100% 100%, 0% 100%)"
-        }}
-      />
+        {/* Badge */}
+        <div className="flex justify-center mb-3 relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/30 border border-white/50 shadow-sm">
+            <FaCompass className="text-white" size={12} />
+            <span className="text-xs font-bold tracking-wide uppercase text-white">
+              ค้นหาเส้นทางของคุณ
+            </span>
+          </div>
+        </div>
 
-      <div className="container mx-auto px-6 relative">
-        <div className="flex flex-col lg:flex-row items-center justify-between">
+        {/* Headline */}
+        <h1 className="text-center text-3xl font-extrabold leading-tight text-white drop-shadow-md mb-3 relative z-10">
+          ค้นหาเส้นทางไอที
+          <br />
+          <span className="text-[#2C2C2C]">ที่ใช่ในตัวคุณ</span>
+        </h1>
 
-          {/* --- Left Column: Text Content (พื้นหลังขาว -> Text สีเข้ม) --- */}
-          <div className="flex-1 text-center lg:text-left relative z-20">
+        {/* Description */}
+        <p className="text-center text-sm leading-relaxed font-medium text-white/90 mb-6 max-w-xs mx-auto relative z-10">
+          แบบทดสอบของเราช่วยวิเคราะห์หาอาชีพไอทีที่เหมาะกับคุณ
+          พร้อมแนะนำค่ายที่ตรงใจ
+        </p>
 
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-5 bg-orange-50 dark:bg-white/5 border border-orange-100 dark:border-white/10 shadow-sm cursor-default">
-              <FaCompass style={{ color: theme.primary }} />
+        {/* CTA */}
+        <div className="flex justify-center mb-5 relative z-10">
+          <Link href="/path-finder/quiz" className="group">
+            <Button
+              size="md"
+              className="h-11 px-8 font-bold text-sm bg-white text-[#2C2C2C] rounded-xl shadow-xl hover:scale-105 transition-all"
+              endContent={<FaArrowRight className="text-[#F2B33D] group-hover:translate-x-1 transition-transform" size={14} />}
+            >
+              ทำแบบทดสอบ
+            </Button>
+          </Link>
+        </div>
+
+        {/* Pills */}
+        <div className="flex flex-wrap justify-center gap-2 relative z-10">
+          {[
+            { text: "วิเคราะห์แม่นยำ", icon: FaChartBar },
+            { text: "แนะนำค่ายฟรี", icon: FaLightbulb },
+            { text: "รู้ผลทันที", icon: FaBolt },
+          ].map((item, idx) => (
+            <div
+              key={idx}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/25 text-xs font-bold border border-white/40 text-white"
+            >
+              <item.icon size={11} className="text-white" />
+              <span>{item.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ─── Desktop Layout (split diagonal) ─── */}
+      <div className="hidden lg:flex relative w-full min-h-[520px] items-center bg-white dark:bg-[#2C2C2C]">
+
+        {/* Right yellow panel */}
+        <div
+          className="absolute top-0 right-0 w-[55%] h-full bg-gradient-to-bl from-[#F2B33D] to-[#FFB347] z-0 shadow-[-20px_0_60px_rgba(242,179,61,0.2)]"
+          style={{ clipPath: "polygon(20% 0%, 100% 0, 100% 100%, 0% 100%)" }}
+        />
+        <div
+          className="absolute top-0 right-0 w-[55%] h-full opacity-10 z-0 pointer-events-none"
+          style={{
+            backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+            clipPath: "polygon(20% 0%, 100% 0, 100% 100%, 0% 100%)",
+          }}
+        />
+
+        <div className="container mx-auto px-8 relative z-10 flex items-center justify-between">
+          {/* Text */}
+          <div className="flex-1 max-w-xl py-16">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-5 bg-orange-50 dark:bg-white/5 border border-orange-100 dark:border-white/10 shadow-sm">
+              <FaCompass className="text-[#F2B33D]" />
               <span className="text-xs font-bold tracking-wide uppercase text-orange-600 dark:text-orange-400">
                 ค้นหาเส้นทางของคุณ
               </span>
             </div>
 
-            {/* Headline */}
-            <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] mb-3 font-extrabold leading-[1.1] tracking-tight text-[#2C2C2C] dark:text-white">
+            <h1 className="text-[3.5rem] font-extrabold leading-[1.1] tracking-tight text-[#2C2C2C] dark:text-white mb-4">
               ค้นหาเส้นทางไอที
               <br />
-              <span className="relative inline-block">
-                {/* ใช้สีทองไล่เฉดให้เด่นบนพื้นขาว */}
-                <span className="relative z-10 bg-gradient-to-r from-[#F2B33D] to-[#F59E0B] bg-clip-text text-transparent">
-                  ที่ใช่ในตัวคุณ
-                </span>
+              <span className="bg-gradient-to-r from-[#F2B33D] to-[#F59E0B] bg-clip-text text-transparent">
+                ที่ใช่ในตัวคุณ
               </span>
             </h1>
 
-            {/* Paragraph */}
-            <div className="mb-5">
-              <p className="text-base md:text-lg max-w-xl leading-relaxed font-medium text-gray-600 dark:text-gray-300">
-                คุณสงสัยไหมว่าอาชีพในวงการไอทีแบบไหนที่เหมาะกับคุณ?
-              </p>
-              <p className="text-base md:text-lg max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium text-gray-600 dark:text-gray-300">
-                แบบทดสอบของเราจะช่วยวิเคราะห์หาคำตอบ พร้อมแนะนำค่ายที่ตรงใจ
-              </p>
-            </div>
+            <p className="text-base max-w-md leading-relaxed font-medium text-gray-600 dark:text-gray-300 mb-6">
+              คุณสงสัยไหมว่าอาชีพในวงการไอทีแบบไหนที่เหมาะกับคุณ?
+              แบบทดสอบของเราจะช่วยวิเคราะห์หาคำตอบ พร้อมแนะนำค่ายที่ตรงใจ
+            </p>
 
-            {/* CTA Button */}
-            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4 mb-5">
-              <Link href="/path-finder/quiz" className="relative group">
-                <div className="absolute -inset-1 rounded-xl blur opacity-30 group-hover:opacity-60 transition duration-200" style={{ background: theme.primary }}></div>
-                <Button
-                  size="lg"
-                  className="relative h-14 px-10 font-bold text-base text-white rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-                  style={{ backgroundColor: theme.primary }}
-                  endContent={<FaArrowRight className="group-hover:translate-x-1 transition-transform" />}
-                >
-                  ทำแบบทดสอบ
-                </Button>
-              </Link>
-            </div>
+            <Link href="/path-finder/quiz" className="relative group inline-block mb-6">
+              <div className="absolute -inset-1 rounded-xl blur opacity-30 group-hover:opacity-60 transition duration-200 bg-[#F2B33D]" />
+              <Button
+                size="lg"
+                className="relative h-14 px-10 font-bold text-base text-white rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all bg-[#F2B33D]"
+                endContent={<FaArrowRight className="group-hover:translate-x-1 transition-transform" />}
+              >
+                ทำแบบทดสอบ
+              </Button>
+            </Link>
 
-            {/* Feature Pills */}
-            <div className="flex flex-wrap justify-center lg:justify-start gap-3 pt-4">
+            <div className="flex flex-wrap gap-3">
               {[
                 { text: "วิเคราะห์แม่นยำ", icon: FaChartBar },
                 { text: "แนะนำค่ายฟรี", icon: FaLightbulb },
-                { text: "รู้ผลทันที", icon: FaBolt }
+                { text: "รู้ผลทันที", icon: FaBolt },
               ].map((item, idx) => (
-                <div key={idx}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-white/5 text-sm font-bold border border-gray-100 dark:border-white/10 text-gray-700 dark:text-gray-300">
+                <div
+                  key={idx}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-white/5 text-sm font-bold border border-gray-100 dark:border-white/10 text-gray-700 dark:text-gray-300"
+                >
                   <item.icon size={14} className="text-[#F2B33D]" />
                   <span>{item.text}</span>
                 </div>
@@ -101,14 +142,9 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* --- Right Column: Logo Banner (พื้นหลังทอง -> Logo ขาวขึ้นชัด) --- */}
-          <div className="flex-1 relative w-full flex items-center justify-center lg:justify-end z-10 p-8 lg:p-0">
-
-            {/* Logo Image */}
-            <div className="relative w-full max-w-[500px] lg:max-w-[600px] animate-float-slow">
-              {/* Logo สีขาวจะมองเห็นชัดเจนเพราะวางอยู่บนพื้นหลัง Gradient สีทอง (#F2B33D) 
-                  เพิ่ม Drop Shadow สีเข้มเล็กน้อยให้ตัวโลโก้มีมิติ 
-               */}
+          {/* Logo */}
+          <div className="flex-1 flex items-center justify-end">
+            <div className="w-full max-w-[540px] animate-float-slow">
               <Image
                 src="/logo-banner.png"
                 alt="Skill Scout Banner"
@@ -118,9 +154,7 @@ export default function HeroSection() {
                 priority
               />
             </div>
-
           </div>
-
         </div>
       </div>
 

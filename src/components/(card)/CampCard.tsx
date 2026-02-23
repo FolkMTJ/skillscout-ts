@@ -62,7 +62,7 @@ export default function CampCard({ camp, variant = "compact", className = "" }: 
             setBookmarkLoading(false);
         }
     };
-    
+
     if (variant === "detailed") {
         return (
             <Link href={`/camps/${camp.id}`} className="block">
@@ -91,11 +91,10 @@ export default function CampCard({ camp, variant = "compact", className = "" }: 
 
                                 {/* หมดเขตในกี่วัน — ขวาบน */}
                                 {camp.daysLeft > 0 ? (
-                                    <span className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full shadow-lg ${
-                                        camp.daysLeft <= 3
+                                    <span className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full shadow-lg ${camp.daysLeft <= 3
                                             ? 'bg-red-500 text-white animate-pulse'
                                             : 'bg-white/90 text-[#1a1a1a]'
-                                    }`}>
+                                        }`}>
                                         <FaClock size={10} />
                                         หมดเขตใน {camp.daysLeft} วัน
                                     </span>
@@ -148,13 +147,12 @@ export default function CampCard({ camp, variant = "compact", className = "" }: 
         );
     }
 
-    // Compact Card — classic style (used in CampCarousel)
     return (
-        <div className="w-full">
-            <Link href={`/camps/${camp.id}`} className="block w-full">
+        <div className="w-full h-full">
+            <Link href={`/camps/${camp.id}`} className="block w-full h-full">
                 <Card
                     isPressable
-                    className={`group w-full overflow-hidden bg-white dark:bg-[#1a1a1a] border border-zinc-200 dark:border-zinc-800 hover:border-[#F2B33D] hover:shadow-xl hover:shadow-[#F2B33D]/10 transition-all duration-300 ${className}`}
+                    className={`group w-full h-full overflow-hidden bg-white dark:bg-[#1a1a1a] border border-zinc-200 dark:border-zinc-800 hover:border-[#F2B33D] hover:shadow-xl hover:shadow-[#F2B33D]/10 transition-all duration-300 ${className}`}
                 >
                     <CardBody className="p-0">
                         {/* Image 16:9 */}
@@ -163,7 +161,7 @@ export default function CampCard({ camp, variant = "compact", className = "" }: 
                                 className="w-full h-full bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
                                 style={{ backgroundImage: `url(${camp.image})` }}
                             />
-                            <span className="absolute top-3 left-3 bg-[#F2B33D] text-[#1a1a1a] text-xs font-extrabold px-3 py-1 rounded-full shadow-lg">
+                            <span className="absolute top-1.5 left-1.5 md:top-3 md:left-3 bg-[#F2B33D] text-[#1a1a1a] text-[10px] md:text-xs font-extrabold px-2 py-0.5 md:px-3 md:py-1 rounded-full shadow-lg">
                                 {camp.category}
                             </span>
                             <div
@@ -171,54 +169,64 @@ export default function CampCard({ camp, variant = "compact", className = "" }: 
                                 aria-label={bookmarked ? 'ยกเลิก Bookmark' : 'Bookmark ค่าย'}
                                 onClick={handleBookmark}
                                 aria-disabled={bookmarkLoading}
-                                className="absolute top-3 right-3 w-8 h-8 bg-white/90 dark:bg-black/70 rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-all z-10 cursor-pointer select-none"
+                                className="absolute top-1.5 right-1.5 md:top-3 md:right-3 w-6 h-6 md:w-8 md:h-8 bg-white/90 dark:bg-black/70 rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-all z-10 cursor-pointer select-none"
                             >
                                 {bookmarked
-                                    ? <FaBookmark className="text-[#F2B33D] text-sm" />
-                                    : <FaRegBookmark className="text-gray-500 text-sm" />
+                                    ? <FaBookmark className="text-[#F2B33D] text-[10px] md:text-sm" />
+                                    : <FaRegBookmark className="text-gray-500 text-[10px] md:text-sm" />
                                 }
                             </div>
                             {camp.daysLeft > 0 && (
-                                <span className={`absolute bottom-3 right-3 flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full shadow-lg ${
-                                    camp.daysLeft <= 3 ? 'bg-red-600 text-white animate-pulse' : 'bg-white text-[#1a1a1a]'
-                                }`}>
-                                    <FaClock size={10} />
-                                    หมดเขตใน {camp.daysLeft} วัน
+                                <span className={`absolute bottom-1.5 right-1.5 md:bottom-3 md:right-3 flex items-center gap-1 text-[10px] md:text-xs font-medium px-1.5 py-0.5 md:px-2.5 md:py-1 rounded-full shadow-lg ${camp.daysLeft <= 3 ? 'bg-red-600 text-white animate-pulse' : 'bg-white text-[#1a1a1a]'
+                                    }`}>
+                                    <FaClock size={8} />
+                                    <span className="hidden sm:inline">หมดเขตใน </span>{camp.daysLeft} วัน
                                 </span>
                             )}
                         </div>
 
                         {/* Content */}
-                        <div className="p-4 space-y-3">
-                            <h3 className="text-lg font-bold text-[#2C2C2C] dark:text-white line-clamp-2 leading-snug group-hover:text-[#F2B33D] transition-colors">
+                        <div className="p-2 md:p-4 flex flex-col gap-1.5 md:gap-2">
+                            <h3 className="text-xs md:text-sm font-bold text-[#2C2C2C] dark:text-white line-clamp-2 leading-snug group-hover:text-[#F2B33D] transition-colors">
                                 {camp.name}
                             </h3>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
-                                        <FaCalendarAlt size={12} className="text-[#F2B33D] flex-shrink-0" />
-                                        <span className="text-sm font-medium">{camp.date}</span>
+                            {/* Mobile: แสดงแค่ราคา */}
+                            <div className="flex md:hidden items-center justify-between">
+                                <div className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400 min-w-0">
+                                    <FaMapMarkerAlt size={9} className="text-[#F2B33D] flex-shrink-0" />
+                                    <span className="text-[10px] truncate">{camp.location}</span>
+                                </div>
+                                <span className="text-xs font-bold text-[#F2B33D] flex-shrink-0 ml-1">
+                                    {camp.price === '฿0' ? 'ฟรี' : camp.price}
+                                </span>
+                            </div>
+                            {/* Desktop: full details */}
+                            <div className="hidden md:grid grid-cols-2 gap-1 mt-auto">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400">
+                                        <FaCalendarAlt size={10} className="text-[#F2B33D] flex-shrink-0" />
+                                        <span className="text-xs font-medium truncate">{camp.date}</span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
-                                        <FaMapMarkerAlt size={12} className="text-[#F2B33D] flex-shrink-0" />
-                                        <span className="text-sm font-medium truncate">{camp.location}</span>
+                                    <div className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400">
+                                        <FaMapMarkerAlt size={10} className="text-[#F2B33D] flex-shrink-0" />
+                                        <span className="text-xs font-medium truncate">{camp.location}</span>
                                     </div>
                                 </div>
-                                <div className="space-y-2 text-right">
+                                <div className="space-y-1 text-right">
                                     {camp.capacity !== undefined && camp.enrolled !== undefined ? (
-                                        <div className="flex items-center gap-2 justify-end">
-                                            <FaUsers className="text-[#F97316] flex-shrink-0" size={12} />
-                                            <span className="text-sm font-medium text-[#2C2C2C] dark:text-white">
+                                        <div className="flex items-center gap-1.5 justify-end">
+                                            <FaUsers className="text-[#F97316] flex-shrink-0" size={10} />
+                                            <span className="text-xs font-medium text-[#2C2C2C] dark:text-white">
                                                 เหลือ {camp.capacity - camp.enrolled} ที่
                                             </span>
                                         </div>
                                     ) : (
-                                        <div className="flex items-center gap-2 justify-end">
-                                            <FaUsers className="text-zinc-400" size={12} />
-                                            <span className="text-sm text-zinc-400">ไม่ระบุ</span>
+                                        <div className="flex items-center gap-1.5 justify-end">
+                                            <FaUsers className="text-zinc-400" size={10} />
+                                            <span className="text-xs text-zinc-400">ไม่ระบุ</span>
                                         </div>
                                     )}
-                                    <span className="text-base font-bold text-[#F2B33D]">
+                                    <span className="text-sm font-bold text-[#F2B33D]">
                                         {camp.price === '฿0' ? 'ฟรี' : camp.price}
                                     </span>
                                 </div>

@@ -244,86 +244,119 @@ export default function NavBar(props: NavbarProps) {
                 </NavbarContent>
 
                 <NavbarMenu
-                    className="bg-default-200/50 shadow-medium dark:bg-default-100/50 top-[calc(var(--navbar-height)-1px)] max-h-[70vh] pt-6 backdrop-blur-md backdrop-saturate-150"
+                    className="bg-[#2C2C2C] top-[calc(var(--navbar-height)-1px)] max-h-screen pt-4 pb-6 px-6 shadow-2xl"
                     motionProps={{
-                        initial: { opacity: 0, y: -20 },
+                        initial: { opacity: 0, y: -10 },
                         animate: { opacity: 1, y: 0 },
-                        exit: { opacity: 0, y: -20 },
+                        exit: { opacity: 0, y: -10 },
                         transition: { ease: "easeInOut", duration: 0.2 },
                     }}
                 >
-                    {navLinks.map((link) => (
-                        <NavbarMenuItem key={link.href}>
-                            <Link
-                                className="text-default-500 w-full"
-                                href={link.href}
-                                size="md"
-                                color={pathname === link.href ? "primary" : "foreground"}
-                            >
-                                {link.name}
-                            </Link>
-                        </NavbarMenuItem>
-                    ))}
+                    {/* Nav Links */}
+                    <div className="space-y-1 mb-4">
+                        {navLinks.map((link) => (
+                            <NavbarMenuItem key={link.href}>
+                                <Link
+                                    href={link.href}
+                                    className={`block w-full py-3 px-4 rounded-xl text-base font-medium transition-colors ${pathname === link.href
+                                            ? 'bg-[#F2B33D]/10 text-[#F2B33D]'
+                                            : 'text-white/80 hover:text-white hover:bg-white/5'
+                                        }`}
+                                >
+                                    {link.name}
+                                </Link>
+                            </NavbarMenuItem>
+                        ))}
+                    </div>
 
                     {session ? (
                         <>
-                            <NavbarMenuItem key="dashboard-menu">
-                                <Link
-                                    className="text-default-500 w-full"
-                                    href={
-                                        session.user?.role === 'admin' ? '/admin' :
-                                            session.user?.role === 'organizer' ? '/organizer' : '/profile'
-                                    }
-                                    size="md"
-                                >
-                                    {
-                                        session.user?.role === 'admin' ? 'Admin Dashboard' :
-                                            session.user?.role === 'organizer' ? 'แดชบอร์ด' : 'โปรไฟล์'
-                                    }
-                                </Link>
-                            </NavbarMenuItem>
-                            {session.user?.role === 'admin' ? (
-                                <NavbarMenuItem key="organizer-menu">
+                            {/* Divider */}
+                            <div className="border-t border-white/10 my-3" />
+
+                            {/* User Menu */}
+                            <div className="space-y-1">
+                                <NavbarMenuItem key="dashboard-menu">
                                     <Link
-                                        className="text-default-500 w-full"
-                                        href="/organizer"
-                                        size="md"
+                                        href={
+                                            session.user?.role === 'admin' ? '/admin' :
+                                                session.user?.role === 'organizer' ? '/organizer' : '/profile'
+                                        }
+                                        className={`block w-full py-3 px-4 rounded-xl text-base font-medium transition-colors ${(pathname === '/admin' || pathname === '/organizer' || pathname === '/profile')
+                                                ? 'bg-[#F2B33D]/10 text-[#F2B33D]'
+                                                : 'text-white/80 hover:text-white hover:bg-white/5'
+                                            }`}
                                     >
-                                        Organizer Dashboard
+                                        {
+                                            session.user?.role === 'admin' ? 'Admin Dashboard' :
+                                                session.user?.role === 'organizer' ? 'แดชบอร์ด' : 'โปรไฟล์'
+                                        }
                                     </Link>
                                 </NavbarMenuItem>
-                            ) : null}
-                            {(session.user?.role === 'user' || session.user?.role === 'admin') ? (
-                                <NavbarMenuItem key="my-camps-menu">
-                                    <Link
-                                        className="text-default-500 w-full"
-                                        href="/my-camps"
-                                        size="md"
-                                        color={pathname === '/my-camps' ? "primary" : "foreground"}
+
+                                {session.user?.role === 'admin' ? (
+                                    <NavbarMenuItem key="organizer-menu">
+                                        <Link
+                                            href="/organizer"
+                                            className="block w-full py-3 px-4 rounded-xl text-base font-medium text-white/80 hover:text-white hover:bg-white/5 transition-colors"
+                                        >
+                                            Organizer Dashboard
+                                        </Link>
+                                    </NavbarMenuItem>
+                                ) : null}
+
+                                {(session.user?.role === 'user' || session.user?.role === 'admin') ? (
+                                    <NavbarMenuItem key="my-camps-menu">
+                                        <Link
+                                            href="/my-camps"
+                                            className={`block w-full py-3 px-4 rounded-xl text-base font-medium transition-colors ${pathname === '/my-camps'
+                                                    ? 'bg-[#F2B33D]/10 text-[#F2B33D]'
+                                                    : 'text-white/80 hover:text-white hover:bg-white/5'
+                                                }`}
+                                        >
+                                            ค่ายของฉัน
+                                        </Link>
+                                    </NavbarMenuItem>
+                                ) : null}
+
+                                <NavbarMenuItem key="settings-menu">
+                                    <button
+                                        className="block w-full text-left py-3 px-4 rounded-xl text-base font-medium text-white/80 hover:text-white hover:bg-white/5 transition-colors"
+                                        onClick={handleOpenProfileModal}
                                     >
-                                        ค่ายของฉัน
-                                    </Link>
+                                        ตั้งค่า
+                                    </button>
                                 </NavbarMenuItem>
-                            ) : null}
-                            <NavbarMenuItem key="settings-menu">
-                                <button
-                                    className="text-default-500 w-full text-left"
-                                    onClick={handleOpenProfileModal}
-                                >
-                                    ตั้งค่า
-                                </button>
-                            </NavbarMenuItem>
+                            </div>
+
+                            {/* Divider */}
+                            <div className="border-t border-white/10 my-3" />
+
+                            {/* Logout */}
                             <NavbarMenuItem key="logout-menu">
                                 <button
-                                    className="text-danger w-full text-left"
+                                    className="block w-full text-left py-3 px-4 rounded-xl text-base font-medium text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-colors"
                                     onClick={handleSignOut}
                                 >
                                     ออกจากระบบ
                                 </button>
                             </NavbarMenuItem>
                         </>
-                    ) : null}
+                    ) : (
+                        <>
+                            <div className="border-t border-white/10 my-3" />
+                            <div className="flex flex-col gap-2 px-2">
+                                <Link href="/login" className="block w-full py-3 px-4 rounded-xl text-base font-medium text-white/80 hover:text-white hover:bg-white/5 transition-colors">
+                                    เข้าสู่ระบบ
+                                </Link>
+                                <Link href="/register" className="block w-full py-3 px-4 rounded-xl text-base font-bold bg-[#F2B33D] text-[#2C2C2C] text-center">
+                                    สมัครสมาชิก
+                                </Link>
+                            </div>
+                        </>
+                    )}
                 </NavbarMenu>
+
             </Navbar >
 
             {/* Profile Modal */}
