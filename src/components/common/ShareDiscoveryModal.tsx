@@ -2,12 +2,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import {
-    Modal, ModalContent,
-    Button,
-} from '@heroui/react';
-import { FiDownload, FiShare2, FiEdit2, FiX } from 'react-icons/fi';
-import { FaQrcode } from 'react-icons/fa';
+import { Modal, ModalContent, Button } from '@heroui/react';
+import { FiDownload, FiShare2, FiEdit2, FiCheck, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import ShareDiscoveryCard, { DiscoveryShareData } from './ShareDiscoveryCard';
 
@@ -31,29 +27,20 @@ export default function ShareDiscoveryModal({
     const previewWrapperRef = useRef<HTMLDivElement>(null);
     const captureRef = useRef<HTMLDivElement>(null);
     const [capturing, setCapturing] = useState(false);
-    const [previewScale, setPreviewScale] = useState(0.25);
+    const [previewScale, setPreviewScale] = useState(0.3);
 
-    // Name state
     const [displayName, setDisplayName] = useState(userName ?? '');
     const [editingName, setEditingName] = useState(false);
     const [tempName, setTempName] = useState('');
 
-    // QR panel
-    const [showQR, setShowQR] = useState(false);
-    const [qrUrl, setQrUrl] = useState('https://skillscout.site/discovery');
-
-    // Init 
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            setQrUrl(window.location.href);
-        }
-    }, []);
+    const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
+    const [qrLoading, setQrLoading] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
             setDisplayName(userName ?? '');
             setEditingName(false);
-            setShowQR(false);
+            setQrImageUrl(null);
         }
     }, [isOpen, userName]);
 
@@ -62,30 +49,22 @@ export default function ShareDiscoveryModal({
         const measure = () => {
             if (previewWrapperRef.current) {
                 const containerW = previewWrapperRef.current.clientWidth;
-                // Height based on visual port to avoid scroll
-                const maxH = window.innerHeight * 0.75;
-                const scaleFromW = (containerW - 32) / 1080;
-                const scaleFromH = (maxH - 32) / 1920;
-                setPreviewScale(Math.min(scaleFromW, scaleFromH));
+                const maxH = window.innerHeight - 80;
+                setPreviewScale(Math.min(containerW / 1080, maxH / 1920, 0.35));
             }
         };
-        const timer = setTimeout(measure, 100);
+        const timer = setTimeout(measure, 80);
         window.addEventListener('resize', measure);
-        return () => {
-            clearTimeout(timer);
-            window.removeEventListener('resize', measure);
-        }
+        return () => { clearTimeout(timer); window.removeEventListener('resize', measure); };
     }, [isOpen]);
 
-    const captureCard = async (): Promise<Blob | null> => {
+    const captureDataUrl = async (): Promise<string> => {
         const el = captureRef.current;
-        if (!el) return null;
+        if (!el) throw new Error('No element');
         await document.fonts.ready;
         const { toPng } = await import('html-to-image');
-        const dataUrl = await toPng(el, {
-            width: 1080,
-            height: 1920,
-            pixelRatio: 1,
+        return toPng(el, {
+            width: 1080, height: 1920, pixelRatio: 1,
             style: { transform: 'none', transformOrigin: 'unset', opacity: '1' },
             filter: (node: HTMLElement) => {
                 if (node.nodeType === 1) {
@@ -97,20 +76,20 @@ export default function ShareDiscoveryModal({
                 return true;
             },
         });
-        const res = await fetch(dataUrl);
+    };
+
+    const captureBlob = async (): Promise<Blob> => {
+        const res = await fetch(await captureDataUrl());
         return res.blob();
     };
 
     const handleDownload = async () => {
         try {
             setCapturing(true);
-            const blob = await captureCard();
-            if (!blob) throw new Error();
+            const blob = await captureBlob();
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
-            a.download = `${filename}.png`;
-            a.click();
+            a.href = url; a.download = `${filename}.png`; a.click();
             URL.revokeObjectURL(url);
             toast.success('บันทึกรูปภาพสำเร็จ!');
         } catch { toast.error('ไม่สามารถบันทึกรูปภาพได้'); }
@@ -120,8 +99,7 @@ export default function ShareDiscoveryModal({
     const handleShare = async () => {
         try {
             setCapturing(true);
-            const blob = await captureCard();
-            if (!blob) throw new Error();
+            const blob = await captureBlob();
             const file = new File([blob], `${filename}.png`, { type: 'image/png' });
             if (navigator.share && navigator.canShare({ files: [file] })) {
                 await navigator.share({ title, text: 'ดูอาชีพที่เหมาะกับฉันจาก SkillScout!', files: [file] });
@@ -129,11 +107,26 @@ export default function ShareDiscoveryModal({
             } else if (navigator.clipboard?.write) {
                 await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
                 toast.success('คัดลอกรูปไปยัง Clipboard แล้ว!');
-            } else {
-                await handleDownload(); return;
-            }
+            } else { await handleDownload(); return; }
         } catch { toast.error('แชร์ไม่สำเร็จ ลองบันทึกรูปแทน'); }
         finally { setCapturing(false); }
+    };
+
+    const generateQR = async () => {
+        if (qrImageUrl) return;
+        try {
+            setQrLoading(true);
+            const dataUrl = await captureDataUrl();
+            const res = await fetch('/api/share/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageBase64: dataUrl }),
+            });
+            const json = await res.json() as { url?: string };
+            if (json.url) setQrImageUrl(json.url);
+            else toast.error('ไม่สามารถสร้าง QR ได้');
+        } catch { toast.error('เกิดข้อผิดพลาดในการสร้าง QR'); }
+        finally { setQrLoading(false); }
     };
 
     const effectiveName = displayName || undefined;
@@ -142,31 +135,27 @@ export default function ShareDiscoveryModal({
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            size="5xl"
+            size="4xl"
+            scrollBehavior="outside"
+            classNames={{ base: 'bg-white rounded-3xl overflow-hidden', wrapper: 'items-center' }}
             hideCloseButton
-            classNames={{
-                base: 'bg-white rounded-[32px] overflow-hidden m-4',
-            }}
         >
             <ModalContent>
-                <div className="flex flex-col md:flex-row w-full bg-white max-h-[90vh]">
+                <div className="flex min-h-[520px]">
 
-                    {/* LEFT: Preview Block */}
-                    <div className="w-full md:w-[45%] bg-[#F7F7F5] border-b md:border-b-0 md:border-r border-gray-200 relative flex flex-col items-center justify-center p-6 lg:p-10 shrink-0">
-                        <div className="absolute top-6 left-6 text-sm font-bold text-gray-400 bg-white px-4 py-1.5 rounded-full shadow-sm border border-gray-200 z-10 hidden md:block">
-                            ขนาด Story 1080×1920
+                    {/* ── Left: Card Preview ── */}
+                    <div className="flex-shrink-0 bg-gray-100 flex flex-col items-center justify-center px-6 py-6 rounded-l-3xl">
+                        {/* <p className="text-xs text-gray-400 font-medium mb-3 tracking-wide">ขนาด 1080×1920</p> */}
+
+                        {/* Hidden capture element */}
+                        <div style={{ position: 'fixed', top: 0, left: '-1100px', width: '1080px', height: '1920px', opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
+                            <ShareDiscoveryCard ref={captureRef} data={data} userName={effectiveName} />
                         </div>
 
-                        <div ref={previewWrapperRef} className="w-full h-[300px] md:h-full flex items-center justify-center">
-                            <div
-                                className="rounded-[24px] border-2 border-[#EBEBEB] shadow-xl overflow-hidden bg-white"
-                                style={{
-                                    width: `${Math.round(1080 * previewScale)}px`,
-                                    height: `${Math.round(1920 * previewScale)}px`,
-                                    position: 'relative',
-                                    flexShrink: 0
-                                }}
-                            >
+                        {/* Scaled preview */}
+                        <div ref={previewWrapperRef} style={{ width: `${Math.round(1080 * previewScale)}px` }}>
+                            <div className="rounded-2xl overflow-hidden shadow-lg"
+                                style={{ width: `${Math.round(1080 * previewScale)}px`, height: `${Math.round(1920 * previewScale)}px`, position: 'relative' }}>
                                 <div style={{ position: 'absolute', top: 0, left: 0, width: '1080px', transformOrigin: 'top left', transform: `scale(${previewScale})` }}>
                                     <ShareDiscoveryCard data={data} userName={effectiveName} />
                                 </div>
@@ -174,108 +163,133 @@ export default function ShareDiscoveryModal({
                         </div>
                     </div>
 
-                    {/* RIGHT: Controls Block */}
-                    <div className="w-full md:w-[55%] flex flex-col p-6 lg:p-10 overflow-y-auto custom-scrollbar">
-                        <div className="flex justify-between items-start mb-8">
+                    {/* ── Right: Controls ── */}
+                    <div className="flex-1 flex flex-col px-8 py-8 gap-5">
+
+                        {/* Header */}
+                        <div className="flex items-start justify-between">
                             <div>
-                                <h2 className="text-3xl sm:text-4xl font-black text-[#2C2C2C] mb-2 tracking-tight">แชร์ผลลัพธ์</h2>
-                                <p className="text-gray-500 font-medium text-base sm:text-lg">บันทึกหรือแชร์เพื่อบอกเพื่อนๆ ของคุณ</p>
+                                <h2 className="text-2xl font-black text-[#1a1a1a]">แชร์ผลลัพธ์</h2>
+                                <p className="text-sm text-gray-400 mt-1">บันทึกหรือแชร์เพื่อบอกเพื่อนๆ ของคุณ</p>
                             </div>
-                            <button onClick={onClose} className="w-12 h-12 shrink-0 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors">
-                                <FiX size={24} />
+                            <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 hover:text-gray-700 transition-all">
+                                <FiX size={16} />
                             </button>
                         </div>
 
-                        {/* Name Edit Section */}
-                        <div className="bg-white border-2 border-gray-100 rounded-2xl p-5 mb-8 flex flex-col gap-3 shadow-sm">
-                            <span className="text-sm font-black text-gray-400 uppercase tracking-wider">ชื่อบนรูปภาพ</span>
+                        {/* Name Box */}
+                        <div className="border border-gray-200 rounded-2xl px-5 py-4">
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">ชื่อบนรูปภาพ</p>
                             {editingName ? (
-                                <div className="flex bg-gray-50 rounded-xl overflow-hidden border-2 border-[#F2B33D] focus-within:ring-4 focus-within:ring-[#F2B33D]/20 transition-all">
+                                <div className="flex items-center gap-2">
                                     <input
                                         autoFocus
                                         value={tempName}
                                         onChange={e => setTempName(e.target.value)}
                                         onKeyDown={e => {
-                                            if (e.key === 'Enter') { setDisplayName(tempName); setEditingName(false); }
+                                            if (e.key === 'Enter') { setDisplayName(tempName); setEditingName(false); setQrImageUrl(null); }
                                             if (e.key === 'Escape') setEditingName(false);
                                         }}
-                                        className="flex-1 bg-transparent px-4 py-3 text-[#2C2C2C] font-bold outline-none text-lg"
-                                        placeholder="ใส่ชื่อที่ต้องการแสดง..."
+                                        className="flex-1 text-lg font-bold text-[#1a1a1a] border-b-2 border-[#F2B33D] outline-none bg-transparent pb-1"
+                                        placeholder="ใส่ชื่อ..."
                                     />
                                     <button
-                                        onClick={() => { setDisplayName(tempName); setEditingName(false); }}
-                                        className="bg-[#F2B33D] text-[#1a1a1a] font-black px-6 py-3 hover:bg-[#d69a2e] transition-colors"
+                                        onClick={() => { setDisplayName(tempName); setEditingName(false); setQrImageUrl(null); }}
+                                        className="flex items-center gap-1 bg-[#F2B33D] text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-[#d69a2e] transition-all"
                                     >
-                                        ตกลง
+                                        <FiCheck size={12} /> ตกลง
                                     </button>
                                 </div>
                             ) : (
-                                <div className="flex items-center justify-between bg-gray-50 px-5 py-4 rounded-xl border-2 border-transparent">
-                                    <span className="text-xl font-black text-[#2C2C2C] truncate">
-                                        {displayName || <span className="text-gray-400 font-medium">ไม่ระบุชื่อ</span>}
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xl font-black text-[#1a1a1a]">
+                                        {displayName || <span className="text-gray-300 font-normal text-base">ไม่ระบุ</span>}
                                     </span>
                                     <button
                                         onClick={() => { setTempName(displayName); setEditingName(true); }}
-                                        className="flex shrink-0 items-center gap-2 text-gray-600 font-bold hover:text-[#F2B33D] transition-colors bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm"
+                                        className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-[#F2B33D] transition-colors"
                                     >
-                                        <FiEdit2 size={16} /> เปลี่ยนชื่อ
+                                        <FiEdit2 size={13} /> เปลี่ยนชื่อ
                                     </button>
                                 </div>
                             )}
                         </div>
 
-                        {/* Action Buttons */}
-                        <div className="space-y-4 mt-auto">
-                            <Button
-                                onPress={handleShare}
-                                isLoading={capturing}
-                                className="w-full h-auto bg-[#F2B33D] text-[#1a1a1a] font-black text-xl py-5 rounded-2xl border-b-4 border-[#d69a2e] active:border-b-0 active:translate-y-1 transition-all"
-                                startContent={!capturing && <FiShare2 className="w-6 h-6" />}
-                            >
-                                แชร์ให้เพื่อนเลย!
-                            </Button>
+                        {/* Share CTA */}
+                        <Button
+                            size="lg"
+                            onPress={handleShare}
+                            isLoading={capturing}
+                            startContent={!capturing ? <FiShare2 size={18} /> : undefined}
+                            className="w-full bg-[#F2B33D] text-[#1a1a1a] font-black text-base rounded-2xl h-14"
+                        >
+                            แชร์ให้เพื่อนเลย!
+                        </Button>
 
-                            <div className="flex gap-4">
-                                <Button
-                                    onPress={handleDownload}
-                                    isLoading={capturing}
-                                    className="flex-1 h-auto bg-white border-2 border-gray-200 text-[#2C2C2C] font-bold text-lg py-4 rounded-2xl hover:border-[#2C2C2C] transition-all"
-                                    startContent={!capturing && <FiDownload className="w-5 h-5" />}
-                                >
-                                    บันทึกรูป
-                                </Button>
-                                <Button
-                                    onPress={() => setShowQR(v => !v)}
-                                    className={`w-[100px] sm:w-[120px] h-auto font-bold py-4 rounded-2xl border-2 transition-all ${showQR ? 'bg-[#2C2C2C] text-[#F2B33D] border-[#2C2C2C]' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-transparent'
-                                        }`}
-                                >
-                                    <FaQrcode className="w-6 h-6" />
-                                </Button>
+                        {/* Download + QR button row */}
+                        <div className="flex gap-3">
+                            <Button
+                                variant="bordered"
+                                onPress={handleDownload}
+                                isLoading={capturing}
+                                startContent={!capturing ? <FiDownload size={16} /> : undefined}
+                                className="flex-1 border-2 border-gray-200 text-gray-600 font-semibold rounded-2xl h-12 hover:border-[#F2B33D] hover:text-[#F2B33D] transition-colors"
+                            >
+                                บันทึกรูป
+                            </Button>
+                            <Button
+                                isIconOnly
+                                onPress={generateQR}
+                                isLoading={qrLoading}
+                                className="w-12 h-12 rounded-2xl bg-[#1a1a1a] text-white flex-shrink-0"
+                                title="สร้าง QR โหลดรูป"
+                            >
+                                {!qrLoading && (
+                                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                                        <path d="M3 3h7v7H3zm1 1v5h5V4zm1 1h3v3H5zm9-2h7v7h-7zm1 1v5h5V4zm1 1h3v3h-3zM3 14h7v7H3zm1 1v5h5v-5zm1 1h3v3H5zm9 0h2v2h-2zm2 0h2v2h-2zm-2 2h2v2h-2zm2 0h2v2h-2zm2-4h2v2h-2zm-4 4h2v2h-2zm2 0h2v2h-2z"/>
+                                    </svg>
+                                )}
+                            </Button>
+                        </div>
+
+                        {/* QR Panel — แชร์ผ่านมือถือ */}
+                        <div
+                            className="bg-[#1a1a1a] rounded-2xl px-5 py-4 cursor-pointer hover:bg-[#222] transition-colors"
+                            onClick={!qrImageUrl && !qrLoading ? generateQR : undefined}
+                        >
+                            <div className="flex items-center gap-4">
+                                {/* QR box with yellow border */}
+                                <div className="flex-shrink-0 bg-white rounded-xl border-4 border-[#F2B33D] w-[84px] h-[84px] flex items-center justify-center overflow-hidden p-1.5">
+                                    {qrLoading ? (
+                                        <div className="w-9 h-9 border-[3px] border-[#F2B33D] border-t-transparent rounded-full animate-spin" />
+                                    ) : qrImageUrl ? (
+                                        <img
+                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrImageUrl)}&margin=2`}
+                                            alt="QR"
+                                            className="w-full h-full object-contain"
+                                        />
+                                    ) : (
+                                        <svg viewBox="0 0 24 24" fill="#d1d5db" className="w-9 h-9">
+                                            <path d="M3 3h7v7H3zm1 1v5h5V4zm1 1h3v3H5zm9-2h7v7h-7zm1 1v5h5V4zm1 1h3v3h-3zM3 14h7v7H3zm1 1v5h5v-5zm1 1h3v3H5zm9 0h2v2h-2zm2 0h2v2h-2zm-2 2h2v2h-2zm2 0h2v2h-2zm2-4h2v2h-2zm-4 4h2v2h-2zm2 0h2v2h-2z"/>
+                                        </svg>
+                                    )}
+                                </div>
+
+                                {/* Text */}
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-white font-bold text-[15px]">แชร์ผ่านมือถือ</p>
+                                    <p className="text-gray-400 text-xs mt-1.5 leading-relaxed">
+                                        {qrImageUrl
+                                            ? 'สแกนเพื่อเปิดรูปบนมือถือ แล้วบันทึกหรือแชร์ Story ได้เลย'
+                                            : qrLoading
+                                                ? 'กำลังสร้าง QR...'
+                                                : 'แตะปุ่ม QR เพื่อสร้างลิงค์โหลดรูปบนมือถือ'}
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
-                        {/* QR Panel */}
-                        {showQR && (
-                            <div className="mt-4 p-5 border-2 border-[#2C2C2C] bg-[#2C2C2C] rounded-2xl flex flex-col sm:flex-row items-center gap-5 animate-fade-in shadow-xl">
-                                <div className="bg-white rounded-xl p-2 shrink-0">
-                                    <img
-                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(qrUrl)}`}
-                                        alt="QR"
-                                        className="w-20 h-20 sm:w-24 sm:h-24 object-contain"
-                                    />
-                                </div>
-                                <div className="text-white space-y-1.5 text-center sm:text-left">
-                                    <p className="font-black text-lg sm:text-xl text-[#F2B33D]">แชร์ผ่านมือถือ</p>
-                                    <p className="text-sm text-gray-300 font-medium">สแกนเพื่อเปิดผลลัพธ์บนมือถือ แล้วบันทึกหรือแชร์ลง Story ได้เลย</p>
-                                </div>
-                            </div>
-                        )}
                     </div>
-                </div>
-
-                {/* Hidden capture card */}
-                <div style={{ position: 'fixed', top: 0, left: '-2000px', width: '1080px', height: '1920px', opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
-                    <ShareDiscoveryCard ref={captureRef} data={data} userName={effectiveName} />
                 </div>
             </ModalContent>
         </Modal>

@@ -180,11 +180,11 @@ export default function PathFinderQuizPage() {
                       }`}>
                       <div className="flex justify-between items-center w-full gap-2 sm:gap-4">
                         {[
-                          { value: 1, label: 'ไม่ชอบ', color: 'border-red-400 bg-red-50', selectedStyle: 'bg-red-500 border-red-500 scale-110 shadow-lg text-white' },
-                          { value: 2, label: 'ไม่ค่อยชอบ', color: 'border-orange-300 bg-orange-50', selectedStyle: 'bg-orange-400 border-orange-400 scale-110 shadow-lg text-white' },
-                          { value: 3, label: 'เฉยๆ', color: 'border-gray-300 bg-gray-50', selectedStyle: 'bg-gray-400 border-gray-400 scale-110 shadow-lg text-white' },
-                          { value: 4, label: 'ชอบ', color: 'border-green-300 bg-green-50', selectedStyle: 'bg-green-400 border-green-400 scale-110 shadow-lg text-white' },
-                          { value: 5, label: 'ชอบมาก', color: 'border-emerald-400 bg-emerald-50', selectedStyle: 'bg-emerald-500 border-emerald-500 scale-110 shadow-lg text-white' }
+                          { value: 1, color: 'border-red-400 bg-red-50', selectedStyle: 'bg-red-500 border-red-500 scale-110 shadow-lg text-white' },
+                          { value: 2, color: 'border-orange-300 bg-orange-50', selectedStyle: 'bg-orange-400 border-orange-400 scale-110 shadow-lg text-white' },
+                          { value: 3, color: 'border-gray-300 bg-gray-50', selectedStyle: 'bg-gray-400 border-gray-400 scale-110 shadow-lg text-white' },
+                          { value: 4, color: 'border-green-300 bg-green-50', selectedStyle: 'bg-green-400 border-green-400 scale-110 shadow-lg text-white' },
+                          { value: 5, color: 'border-emerald-400 bg-emerald-50', selectedStyle: 'bg-emerald-500 border-emerald-500 scale-110 shadow-lg text-white' }
                         ].map((option) => {
                           const isSelected = currentAnswer === option.value;
                           return (
@@ -202,10 +202,10 @@ export default function PathFinderQuizPage() {
                               >
                                 {option.value}
                               </div>
-                              <span className={`absolute -bottom-7 w-max text-xs font-bold transition-all duration-300 ${isSelected ? 'text-[#2C2C2C] opacity-100 translate-y-0' : 'text-gray-400 opacity-0 -translate-y-2 group-hover:opacity-100 group-hover:translate-y-0'
+                              {/* <span className={`absolute -bottom-7 w-max text-xs font-bold transition-all duration-300 ${isSelected ? 'text-[#2C2C2C] opacity-100 translate-y-0' : 'text-gray-400 opacity-0 -translate-y-2 group-hover:opacity-100 group-hover:translate-y-0'
                                 }`}>
                                 {option.label}
-                              </span>
+                              </span> */}
                             </button>
                           );
                         })}
