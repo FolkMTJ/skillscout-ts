@@ -5,7 +5,7 @@ import { sendOTPEmail } from '@/lib/email';
 
 export async function POST(request: Request) {
   try {
-    const { email } = await request.json();
+    const { email, name } = await request.json();
 
     if (!email) {
       return NextResponse.json(
@@ -14,12 +14,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const user = await UserModel.findByEmail(email);
-    if (!user) {
-      return NextResponse.json(
-        { error: 'ไม่พบอีเมลนี้ในระบบ กรุณาสมัครสมาชิกก่อน' },
-        { status: 404 }
-      );
+    // Login flow: ต้องมี user ในระบบก่อน
+    // Register flow: ส่ง name มาด้วย → ข้ามการเช็ค user
+    if (!name) {
+      const user = await UserModel.findByEmail(email);
+      if (!user) {
+        return NextResponse.json(
+          { error: 'ไม่พบอีเมลนี้ในระบบ กรุณาสมัครสมาชิกก่อน' },
+          { status: 404 }
+        );
+      }
     }
 
     const otp = await UserModel.createOTP(email);
