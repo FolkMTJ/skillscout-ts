@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import { Card, Button, Chip, Tabs, Tab } from '@heroui/react';
-import { FiCalendar, FiMapPin, FiCheckCircle, FiClock, FiStar } from 'react-icons/fi';
+import { Button, Chip } from '@heroui/react';
+import { FiCalendar, FiMapPin, FiCheckCircle, FiClock, FiStar, FiSearch, FiArrowRight } from 'react-icons/fi';
+import { FaBookmark } from 'react-icons/fa';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -29,159 +30,97 @@ interface Registration {
   reviewedAt?: string;
 }
 
+const STATUS_MAP: Record<string, { label: string; color: 'warning' | 'primary' | 'success' | 'danger' | 'default'; dot: string }> = {
+  pending:   { label: 'รอตรวจสอบ',    color: 'warning', dot: 'bg-yellow-400' },
+  approved:  { label: 'อนุมัติแล้ว',   color: 'primary', dot: 'bg-blue-500' },
+  confirmed: { label: 'ยืนยันแล้ว',    color: 'primary', dot: 'bg-blue-500' },
+  attended:  { label: 'เข้าร่วมแล้ว',  color: 'success', dot: 'bg-green-500' },
+  rejected:  { label: 'ไม่อนุมัติ',   color: 'danger',  dot: 'bg-red-500' },
+};
+
+type TabKey = 'all' | 'upcoming' | 'attended' | 'pending';
+
 export default function MyCampsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('upcoming');
+  const [activeTab, setActiveTab] = useState<TabKey>('all');
+
+  const fetchRegistrations = useCallback(async () => {
+    if (!session?.user?.email) { setLoading(false); return; }
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/registrations?userId=${encodeURIComponent(session.user.email)}`);
+      const data = await response.json();
+      if (data.registrations && Array.isArray(data.registrations)) {
+        const withCamps = await Promise.all(
+          data.registrations.map(async (reg: Registration) => {
+            try {
+              const campResponse = await fetch(`/api/camps/${reg.campId}`);
+              if (!campResponse.ok) return reg;
+              const campData: CampDetails = await campResponse.json();
+              return { ...reg, campName: campData.name, campImage: campData.image, campLocation: campData.location, campDate: campData.date };
+            } catch { return reg; }
+          })
+        );
+        setRegistrations(withCamps);
+      }
+    } catch { toast.error('ไม่สามารถโหลดข้อมูลได้'); }
+    finally { setLoading(false); }
+  }, [session?.user?.email]);
 
   useEffect(() => {
-    const fetchRegistrations = async () => {
-      if (!session?.user?.email) {
-        setLoading(false);
-        return;
-      }
-      
-      try {
-        setLoading(true);
-        console.log('Fetching registrations for:', session.user.email);
-        
-        const response = await fetch(`/api/registrations?userId=${encodeURIComponent(session.user.email)}`);
-        const data = await response.json();
-        
-        console.log('Registrations response:', data);
-        console.log('data.registrations exists?', !!data.registrations);
-        console.log('data.registrations length:', data.registrations?.length);
-        console.log('data.registrations type:', typeof data.registrations);
-        console.log('data.registrations is array?', Array.isArray(data.registrations));
-        
-        if (data.registrations && Array.isArray(data.registrations)) {
-          console.log('Raw registrations from API:', data.registrations);
-          const registrationsWithCamps = await Promise.all(
-            data.registrations.map(async (reg: Registration) => {
-              try {
-                const campResponse = await fetch(`/api/camps/${reg.campId}`);
-                if (!campResponse.ok) {
-                  console.warn(`Camp ${reg.campId} not found, using registration data only`);
-                  return reg;
-                }
-                const campData: CampDetails = await campResponse.json();
-                console.log('Camp data for', reg.campId, ':', campData);
-                return {
-                  ...reg,
-                  campName: campData.name,
-                  campImage: campData.image,
-                  campLocation: campData.location,
-                  campDate: campData.date,
-                };
-              } catch (error) {
-                console.error(`Error fetching camp ${reg.campId}:`, error);
-                return reg;
-              }
-            })
-          );
-          console.log('Final registrations with camps:', registrationsWithCamps);
-          console.log('About to setRegistrations with', registrationsWithCamps.length, 'items');
-          setRegistrations(registrationsWithCamps);
-          console.log('setRegistrations called successfully');
-        }
-      } catch (error) {
-        console.error('Error in fetchRegistrations:', error);
-        toast.error('ไม่สามารถโหลดข้อมูลได้');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (status === 'authenticated') {
-      fetchRegistrations();
-    } else if (status === 'unauthenticated') {
-      setLoading(false);
-    }
-  }, [status, session?.user?.email]);
+    if (status === 'authenticated') fetchRegistrations();
+    else if (status === 'unauthenticated') setLoading(false);
+  }, [status, fetchRegistrations]);
 
   const handleConfirmAttendance = async (registrationId: string, campName: string) => {
     if (!confirm(`ยืนยันการเข้าร่วมค่าย "${campName}" หรือไม่?`)) return;
-
     try {
-      const response = await fetch(`/api/registrations/${registrationId}/confirm`, {
-        method: 'POST',
-      });
-
+      const response = await fetch(`/api/registrations/${registrationId}/confirm`, { method: 'POST' });
       if (!response.ok) throw new Error('Failed to confirm');
-
       toast.success('ยืนยันการเข้าร่วมสำเร็จ!');
-      
-      // Refetch registrations
-      if (session?.user?.email) {
-        const regResponse = await fetch(`/api/registrations?userId=${encodeURIComponent(session.user.email)}`);
-        const data = await regResponse.json();
-        if (data.registrations) {
-          const registrationsWithCamps = await Promise.all(
-            data.registrations.map(async (reg: Registration) => {
-              try {
-                const campResponse = await fetch(`/api/camps/${reg.campId}`);
-                if (!campResponse.ok) return reg;
-                const campData: CampDetails = await campResponse.json();
-                return {
-                  ...reg,
-                  campName: campData.name,
-                  campImage: campData.image,
-                  campLocation: campData.location,
-                  campDate: campData.date,
-                };
-              } catch {
-                return reg;
-              }
-            })
-          );
-          setRegistrations(registrationsWithCamps);
-        }
-      }
-    } catch {
-      toast.error('เกิดข้อผิดพลาดในการยืนยัน');
-    }
+      fetchRegistrations();
+    } catch { toast.error('เกิดข้อผิดพลาดในการยืนยัน'); }
   };
 
-  const attendedCamps = registrations.filter(r => r.status === 'attended');
-  // กำลังจะมาถึง = อนุมัติแล้ว (approved) หรือยืนยันแล้ว (confirmed) แต่ยังไม่ได้เข้าร่วม (ไม่ใช่ attended)
-  const upcomingCamps = registrations.filter(r => 
-    r.status === 'approved' || r.status === 'confirmed'
-  );
-  
-  console.log('=== MY CAMPS DEBUG ===');
-  console.log('Total registrations:', registrations.length);
-  console.log('Registrations statuses:', registrations.map(r => ({ id: r._id, status: r.status })));
-  console.log('Attended camps:', attendedCamps.length);
-  console.log('Upcoming camps (approved):', upcomingCamps.length);
-  console.log('=====================');
+  const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
+    { key: 'all',      label: 'ทั้งหมด',          icon: <FaBookmark size={13} /> },
+    { key: 'pending',  label: 'รอตรวจสอบ',        icon: <FiClock size={13} /> },
+    { key: 'upcoming', label: 'กำลังจะมาถึง',    icon: <FiCalendar size={13} /> },
+    { key: 'attended', label: 'เข้าร่วมแล้ว',    icon: <FiCheckCircle size={13} /> },
+  ];
+
+  const getFiltered = () => {
+    if (activeTab === 'all') return registrations;
+    if (activeTab === 'pending') return registrations.filter(r => r.status === 'pending');
+    if (activeTab === 'upcoming') return registrations.filter(r => r.status === 'approved' || r.status === 'confirmed');
+    if (activeTab === 'attended') return registrations.filter(r => r.status === 'attended');
+    return registrations;
+  };
+
+  const filtered = getFiltered();
+
+  const counts = {
+    all: registrations.length,
+    pending: registrations.filter(r => r.status === 'pending').length,
+    upcoming: registrations.filter(r => r.status === 'approved' || r.status === 'confirmed').length,
+    attended: registrations.filter(r => r.status === 'attended').length,
+  };
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-white">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          {/* Tabs Skeleton */}
-          <div className="flex gap-4 mb-6 animate-pulse">
-            <div className="h-12 bg-gray-200 rounded-xl w-48"></div>
-            <div className="h-12 bg-gray-200 rounded-xl w-48"></div>
-          </div>
-
-          {/* Cards Grid Skeleton */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="bg-white rounded-2xl overflow-hidden border border-gray-200">
-                <div className="h-48 bg-gray-200"></div>
-                <div className="p-4 space-y-3">
-                  <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-                  <div className="space-y-2">
-                    <div className="h-4 bg-gray-200 rounded w-full"></div>
-                    <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                  </div>
-                  <div className="space-y-2 pt-2">
-                    <div className="h-10 bg-gray-200 rounded-xl"></div>
-                    <div className="h-10 bg-gray-200 rounded-xl"></div>
-                  </div>
+      <div className="min-h-screen bg-[#F8F9FA]">
+        <HeroBanner badge="My Journey" title="MY" titleHighlight="CAMPS" subtitle="ค่ายของคุณ" showButtons={false} />
+        <div className="max-w-[1536px] mx-auto px-6 py-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 animate-pulse">
+            {[1,2,3,4,5,6].map(i => (
+              <div key={i} className="bg-white rounded-2xl overflow-hidden border border-gray-100">
+                <div className="aspect-video bg-gray-200" />
+                <div className="p-4 space-y-2">
+                  <div className="h-5 bg-gray-200 rounded w-3/4" />
+                  <div className="h-3 bg-gray-200 rounded w-1/2" />
                 </div>
               </div>
             ))}
@@ -193,173 +132,170 @@ export default function MyCampsPage() {
 
   if (status === 'unauthenticated') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="p-8 text-center">
-          <h2 className="text-2xl font-bold mb-4">กรุณาเข้าสู่ระบบ</h2>
-          <Button color="primary" onPress={() => router.push('/login')}>
+      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA]">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-[#2C2C2C] mb-4">กรุณาเข้าสู่ระบบ</h2>
+          <button onClick={() => router.push('/login')} className="bg-[#F2B33D] text-white font-bold py-3 px-6 rounded-2xl">
             เข้าสู่ระบบ
-          </Button>
-        </Card>
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Hero Banner */}
+    <div className="min-h-screen bg-[#F8F9FA]">
       <HeroBanner
         badge="My Journey"
         title="MY"
         titleHighlight="CAMPS"
-        subtitle="ค่ายทั้งหมดของคุณ"
-        description="จัดการและยืนยันการเข้าร่วมค่าย"
+        subtitle="ค่ายของคุณ"
+        description={registrations.length > 0 ? `${registrations.length} ค่ายที่คุณสมัคร • ติดตามสถานะและจัดการได้ที่นี่` : 'ยังไม่มีค่ายที่สมัคร'}
         showButtons={false}
       />
 
-      <div className="container mx-auto px-6 h-full mt-8">
-        <Tabs
-          selectedKey={activeTab}
-          onSelectionChange={(key) => setActiveTab(key as string)}
-        >
-          <Tab
-            key="upcoming"
-            title={
-              <div className="flex items-center gap-2">
-                <FiClock />
-                <span>กำลังจะมาถึง ({upcomingCamps.length})</span>
-              </div>
-            }
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-              {upcomingCamps.length === 0 ? (
-                <div className="col-span-full text-center py-12">
-                  <p className="text-gray-500">ไม่มีค่ายที่กำลังจะมาถึง</p>
-                </div>
-              ) : (
-                upcomingCamps.map((reg) => (
-                  <Card key={reg._id} className="overflow-hidden">
-                    <div className="relative h-48">
-                      <Image
-                        src={reg.campImage || '/api/placeholder/400/300'}
-                        alt={reg.campName || 'Camp'}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      />
-                      <div className="absolute top-2 right-2">
-                        <Chip size="sm" color="primary" variant="shadow">
-                          อนุมัติแล้ว
-                        </Chip>
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-bold text-lg mb-2">{reg.campName}</h3>
-                      <div className="space-y-2 text-sm text-gray-600 mb-4">
-                        <div className="flex items-center gap-2">
-                          <FiMapPin />
-                          <span>{reg.campLocation}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <FiCalendar />
-                          <span>{reg.campDate}</span>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Button
-                          size="sm"
-                          color="primary"
-                          className="w-full"
-                          onPress={() => router.push(`/camps/${reg.campId}`)}
-                        >
-                          ดูรายละเอียด
-                        </Button>
-                        <Button
-                          size="sm"
-                          color="success"
-                          variant="flat"
-                          className="w-full"
-                          startContent={<FiCheckCircle />}
-                          onPress={() => handleConfirmAttendance(reg._id, reg.campName || 'ค่าย')}
-                        >
-                          ยืนยันการเข้าร่วม
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))
-              )}
-            </div>
-          </Tab>
+      <div className="max-w-[1536px] mx-auto px-6 py-10">
 
-          <Tab
-            key="attended"
-            title={
-              <div className="flex items-center gap-2">
-                <FiCheckCircle />
-                <span>เข้าร่วมแล้ว ({attendedCamps.length})</span>
+        {/* Tab Bar */}
+        <div className="flex items-center gap-2 mb-8 bg-white rounded-2xl p-1.5 shadow-sm border border-gray-100 w-fit">
+          {tabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === tab.key
+                  ? 'bg-[#F2B33D] text-white shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
+                activeTab === tab.key ? 'bg-white/30 text-white' : 'bg-gray-100 text-gray-500'
+              }`}>
+                {counts[tab.key]}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Empty State */}
+        {filtered.length === 0 ? (
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="h-1.5 w-full bg-gradient-to-r from-[#F2B33D] to-orange-400" />
+            <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-[#FFF3D0] flex items-center justify-center mb-4">
+                <FiSearch className="text-[#F2B33D]" size={28} />
               </div>
-            }
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-2">
-              {attendedCamps.length === 0 ? (
-                <div className="col-span-full text-center py-12">
-                  <p className="text-gray-500">ยังไม่มีค่ายที่เข้าร่วม</p>
-                </div>
-              ) : (
-                attendedCamps.map((reg) => (
-                  <Card key={reg._id} className="overflow-hidden">
-                    <div className="relative h-48">
-                      <Image
-                        src={reg.campImage || '/api/placeholder/400/300'}
-                        alt={reg.campName || 'Camp'}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      />
-                      <div className="absolute top-2 right-2">
-                        <Chip size="sm" color="success" variant="shadow">
-                          
-                        </Chip>
-                      </div>
+              <h2 className="text-xl font-bold text-[#2C2C2C] mb-2">
+                {activeTab === 'all' ? 'ยังไม่มีค่ายที่สมัคร' : `ไม่มีค่ายใน "${tabs.find(t=>t.key===activeTab)?.label}"`}
+              </h2>
+              <p className="text-gray-400 text-sm mb-8 max-w-xs">
+                {activeTab === 'all' ? 'ค้นหาค่ายที่สนใจและเริ่มสมัครได้เลย' : 'ลองดูที่แท็บอื่น หรือค้นหาค่ายใหม่'}
+              </p>
+              <button
+                onClick={() => router.push('/allcamps')}
+                className="flex items-center gap-2 bg-[#F2B33D] hover:bg-[#e0a530] text-white font-bold py-3 px-6 rounded-2xl transition-all text-sm shadow-sm hover:shadow-md"
+              >
+                ค้นหาค่ายที่น่าสนใจ
+                <FiArrowRight />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filtered.map(reg => {
+              const statusInfo = STATUS_MAP[reg.status] ?? { label: reg.status, color: 'default', dot: 'bg-gray-400' };
+              const isUpcoming = reg.status === 'approved' || reg.status === 'confirmed';
+              const isAttended = reg.status === 'attended';
+
+              return (
+                <div key={reg._id} className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md hover:border-[#F2B33D]/30 transition-all duration-200 group flex flex-col">
+                  {/* Image */}
+                  <div className="relative aspect-video overflow-hidden">
+                    <Image
+                      src={reg.campImage || '/placeholder.png'}
+                      alt={reg.campName || 'Camp'}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+
+                    {/* Status badge */}
+                    <div className="absolute top-3 left-3">
+                      <Chip
+                        size="sm"
+                        color={statusInfo.color}
+                        variant="shadow"
+                        startContent={<span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dot} inline-block`} />}
+                        classNames={{ base: "h-6 text-xs font-semibold" }}
+                      >
+                        {statusInfo.label}
+                      </Chip>
                     </div>
-                    <div className="p-4">
-                      <h3 className="font-bold text-lg mb-2">{reg.campName}</h3>
-                      <div className="space-y-2 text-sm text-gray-600 mb-4">
-                        <div className="flex items-center gap-2">
-                          <FiMapPin />
-                          <span>{reg.campLocation}</span>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-4 flex flex-col flex-1 gap-3">
+                    <h3 className="font-bold text-[#2C2C2C] text-base leading-snug line-clamp-2 group-hover:text-[#F2B33D] transition-colors">
+                      {reg.campName || 'ชื่อค่าย'}
+                    </h3>
+
+                    <div className="space-y-1.5">
+                      {reg.campLocation && (
+                        <div className="flex items-center gap-2 text-gray-500 text-xs">
+                          <FiMapPin size={11} className="text-[#F2B33D] flex-shrink-0" />
+                          <span className="truncate">{reg.campLocation}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <FiCalendar />
+                      )}
+                      {reg.campDate && (
+                        <div className="flex items-center gap-2 text-gray-500 text-xs">
+                          <FiCalendar size={11} className="text-[#F2B33D] flex-shrink-0" />
                           <span>{reg.campDate}</span>
                         </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Button
-                          size="sm"
-                          color="primary"
-                          className="w-full"
-                          onPress={() => router.push(`/camps/${reg.campId}`)}
-                        >
-                          ดูรายละเอียด
-                        </Button>
-                        <Button
-                          size="sm"
-                          color="warning"
-                          variant="flat"
-                          className="w-full"
-                          startContent={<FiStar />}
-                        >
-                          เขียนรีวิว
-                        </Button>
+                      )}
+                      <div className="flex items-center gap-2 text-gray-400 text-xs">
+                        <FiClock size={11} className="flex-shrink-0" />
+                        <span>สมัครเมื่อ {new Date(reg.appliedAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                       </div>
                     </div>
-                  </Card>
-                ))
-              )}
-            </div>
-          </Tab>
-        </Tabs>
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col gap-2 mt-auto pt-2 border-t border-gray-50">
+                      <button
+                        onClick={() => router.push(`/camps/${reg.campId}`)}
+                        className="w-full bg-gray-50 hover:bg-[#FFF3D0] text-[#2C2C2C] hover:text-[#F2B33D] font-semibold py-2.5 px-4 rounded-xl text-sm transition-all"
+                      >
+                        ดูรายละเอียดค่าย
+                      </button>
+
+                      {isUpcoming && (
+                        <button
+                          onClick={() => handleConfirmAttendance(reg._id, reg.campName || 'ค่าย')}
+                          className="w-full bg-[#F2B33D] hover:bg-[#e0a530] text-white font-bold py-2.5 px-4 rounded-xl text-sm transition-all flex items-center justify-center gap-2"
+                        >
+                          <FiCheckCircle size={14} />
+                          ยืนยันการเข้าร่วม
+                        </button>
+                      )}
+
+                      {isAttended && (
+                        <button
+                          onClick={() => router.push(`/camps/${reg.campId}#reviews`)}
+                          className="w-full bg-green-50 hover:bg-green-100 text-green-700 font-bold py-2.5 px-4 rounded-xl text-sm transition-all flex items-center justify-center gap-2"
+                        >
+                          <FiStar size={14} />
+                          เขียนรีวิว
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -24,7 +24,7 @@ import React, { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { LogOut, Settings, LayoutDashboard, Calendar, Shield } from 'lucide-react';
+import { LogOut, Settings, LayoutDashboard, Calendar, Shield, Bookmark } from 'lucide-react';
 import ProfileModal from '@/components/profile/ProfileModal';
 import { User } from '@/types';
 
@@ -201,6 +201,15 @@ export default function NavBar(props: NavbarProps) {
                                             ค่ายของฉัน
                                         </DropdownItem>
                                     ) : null}
+                                    {(session.user?.role === 'user' || session.user?.role === 'admin') ? (
+                                        <DropdownItem
+                                            key="bookmarks"
+                                            startContent={<Bookmark className="w-4 h-4" />}
+                                            href="/bookmarks"
+                                        >
+                                            ค่ายที่บันทึกไว้
+                                        </DropdownItem>
+                                    ) : null}
                                     <DropdownItem
                                         key="settings"
                                         startContent={<Settings className="w-4 h-4" />}
@@ -315,6 +324,19 @@ export default function NavBar(props: NavbarProps) {
                                                 }`}
                                         >
                                             ค่ายของฉัน
+                                        </Link>
+                                    </NavbarMenuItem>
+                                ) : null}
+                                {(session.user?.role === 'user' || session.user?.role === 'admin') ? (
+                                    <NavbarMenuItem key="bookmarks-menu">
+                                        <Link
+                                            href="/bookmarks"
+                                            className={`block w-full py-3 px-4 rounded-xl text-base font-medium transition-colors ${pathname === '/bookmarks'
+                                                    ? 'bg-[#F2B33D]/10 text-[#F2B33D]'
+                                                    : 'text-white/80 hover:text-white hover:bg-white/5'
+                                                }`}
+                                        >
+                                            ค่ายที่บันทึกไว้
                                         </Link>
                                     </NavbarMenuItem>
                                 ) : null}

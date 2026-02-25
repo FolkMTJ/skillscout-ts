@@ -14,11 +14,19 @@ export async function POST(request: Request) {
       );
     }
 
-    // Login flow: ต้องมี user ในระบบก่อน
-    // Register flow: ส่ง name มาด้วย → ข้ามการเช็ค user
-    if (!name) {
-      const user = await UserModel.findByEmail(email);
-      if (!user) {
+    const existingUser = await UserModel.findByEmail(email);
+
+    if (name) {
+      // Register flow: ถ้ามี user อยู่แล้ว → ห้ามสมัครซ้ำ
+      if (existingUser) {
+        return NextResponse.json(
+          { error: 'อีเมลนี้มีในระบบแล้ว กรุณาเข้าสู่ระบบแทน' },
+          { status: 409 }
+        );
+      }
+    } else {
+      // Login flow: ต้องมี user ในระบบก่อน
+      if (!existingUser) {
         return NextResponse.json(
           { error: 'ไม่พบอีเมลนี้ในระบบ กรุณาสมัครสมาชิกก่อน' },
           { status: 404 }

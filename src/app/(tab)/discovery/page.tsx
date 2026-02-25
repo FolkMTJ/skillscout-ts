@@ -253,7 +253,7 @@ export default function DiscoveryPathPage() {
 
   if (!data || data.campsAttended === 0) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-[#F8F9FA]">
         <HeroBanner
           badge="Find your Path"
           title="DISCOVERY"
@@ -263,23 +263,21 @@ export default function DiscoveryPathPage() {
           showButtons={false}
         />
 
-        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-0 overflow-hidden">
-            
-            <div className="bg-[#F2B33D] h-2 w-full" />
+        <div className="max-w-[760px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="h-1.5 w-full bg-gradient-to-r from-[#F2B33D] to-orange-400" />
 
-            <div className="p-10 md:p-14">
-              <div className="flex flex-col md:flex-row items-start md:items-center gap-6 mb-10">
-                <div className="bg-[#F2B33D] border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex-shrink-0">
-                  <FiTarget className="w-10 h-10 text-black" />
+            <div className="p-8 md:p-12">
+              {/* Header */}
+              <div className="flex items-center gap-5 mb-8">
+                <div className="w-14 h-14 rounded-2xl bg-[#FFF3D0] flex items-center justify-center flex-shrink-0">
+                  <FiTarget className="w-7 h-7 text-[#F2B33D]" />
                 </div>
                 <div>
-                  <h1 className="text-3xl md:text-4xl font-black text-[#2C2C2C] mb-2">
-                    ยังไม่มีข้อมูลเพียงพอ
-                  </h1>
-                  <p className="text-gray-600 text-lg">
-                    คุณต้องเข้าร่วมค่ายที่{' '}
-                    <span className="inline-flex items-center bg-green-100 text-green-700 font-bold px-3 py-0.5 border-2 border-green-700 text-sm">
+                  <h2 className="text-2xl font-bold text-[#2C2C2C]">ยังไม่มีข้อมูลเพียงพอ</h2>
+                  <p className="text-gray-500 mt-0.5 text-sm">
+                    เข้าร่วมค่ายที่{' '}
+                    <span className="inline-flex items-center bg-green-50 text-green-700 font-semibold px-2 py-0.5 rounded-md text-xs border border-green-200">
                       Check-in แล้ว
                     </span>{' '}
                     อย่างน้อย <strong>1 ค่าย</strong> เพื่อเริ่มวิเคราะห์
@@ -287,35 +285,37 @@ export default function DiscoveryPathPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+              {/* Steps */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
                 {[
-                  { step: '01', title: 'สมัครค่ายและชำระเงิน', desc: 'เลือกค่ายที่สนใจและดำเนินการชำระเงิน', icon: FiBook },
-                  { step: '02', title: 'อัปโหลดสลิปโอนเงิน', desc: 'แนบหลักฐานการชำระเงินเพื่อยืนยัน', icon: FiTarget },
-                  { step: '03', title: 'รอผู้จัดค่ายอนุมัติ', desc: 'ผู้จัดค่ายจะตรวจสอบและยืนยันการสมัคร', icon: FiAward },
-                  { step: '04', title: 'Check-in ด้วย QR Code', desc: 'เข้าร่วมค่ายและ Check-in เพื่อรับข้อมูล', icon: FiArrowRight },
-                ].map(({ step, title, desc, icon: Icon }) => (
-                  <div key={step} className="flex items-start gap-4 p-4 border-2 border-black bg-gray-50 hover:bg-[#FFF9ED] transition-colors">
-                    <div className="bg-black text-white font-black text-sm px-2 py-1 flex-shrink-0 min-w-[36px] text-center">
-                      {step}
+                  { step: '01', title: 'สมัครค่ายและชำระเงิน', desc: 'เลือกค่ายที่สนใจและดำเนินการชำระเงิน', icon: FiBook, color: 'bg-blue-50 text-blue-500' },
+                  { step: '02', title: 'อัปโหลดสลิปโอนเงิน', desc: 'แนบหลักฐานการชำระเงินเพื่อยืนยัน', icon: FiTarget, color: 'bg-purple-50 text-purple-500' },
+                  { step: '03', title: 'รอผู้จัดค่ายอนุมัติ', desc: 'ผู้จัดค่ายจะตรวจสอบและยืนยันการสมัคร', icon: FiAward, color: 'bg-orange-50 text-orange-500' },
+                  { step: '04', title: 'Check-in ด้วย QR Code', desc: 'เข้าร่วมค่ายและ Check-in เพื่อรับข้อมูล', icon: FiArrowRight, color: 'bg-green-50 text-green-500' },
+                ].map(({ step, title, desc, icon: Icon, color }) => (
+                  <div key={step} className="flex items-start gap-3 p-4 rounded-2xl bg-gray-50 hover:bg-[#FFFBF0] transition-colors">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
+                      <Icon size={16} />
                     </div>
-                    <div className="flex items-start gap-3">
-                      <Icon className="text-[#F2B33D] mt-0.5 flex-shrink-0" size={16} />
-                      <div>
-                        <p className="font-bold text-[#2C2C2C] text-sm">{title}</p>
-                        <p className="text-gray-500 text-xs mt-0.5">{desc}</p>
+                    <div>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-xs font-bold text-[#F2B33D]">{step}</span>
+                        <p className="font-semibold text-[#2C2C2C] text-sm">{title}</p>
                       </div>
+                      <p className="text-gray-400 text-xs">{desc}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 bg-amber-50 border-2 border-[#F2B33D] mb-8">
-                <FiTrendingUp className="text-[#F2B33D] flex-shrink-0" size={20} />
-                <p className="text-sm text-gray-700">
+              {/* Info note */}
+              <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-2xl border border-amber-100 mb-8">
+                <FiTrendingUp className="text-[#F2B33D] flex-shrink-0 mt-0.5" size={16} />
+                <p className="text-sm text-gray-600">
                   ตรวจสอบสถานะได้ที่เมนู{' '}
                   <button
                     onClick={() => router.push('/my-camps')}
-                    className="font-black text-[#2C2C2C] underline underline-offset-2 hover:text-[#F2B33D] transition-colors"
+                    className="font-bold text-[#F2B33D] hover:underline transition-colors"
                   >
                     ค่ายของฉัน
                   </button>{' '}
@@ -323,17 +323,18 @@ export default function DiscoveryPathPage() {
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4">
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={() => router.push('/allcamps')}
-                  className="flex-1 bg-[#F2B33D] text-black font-black py-4 px-8 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 text-lg"
+                  className="flex-1 bg-[#F2B33D] hover:bg-[#e0a530] text-white font-bold py-3.5 px-6 rounded-2xl transition-all flex items-center justify-center gap-2 text-sm shadow-sm hover:shadow-md"
                 >
                   ค้นหาค่ายที่น่าสนใจ
                   <FiArrowRight />
                 </button>
                 <button
                   onClick={() => router.push('/path-finder')}
-                  className="flex-1 bg-white text-black font-black py-4 px-8 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 text-lg"
+                  className="flex-1 bg-white hover:bg-gray-50 text-[#2C2C2C] font-bold py-3.5 px-6 rounded-2xl border border-gray-200 transition-all flex items-center justify-center gap-2 text-sm"
                 >
                   ลองทำ Path Finder
                 </button>

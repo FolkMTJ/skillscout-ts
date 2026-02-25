@@ -6,16 +6,17 @@ import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn, FaGithub, FaEnvelope
 import { BsFillPeopleFill } from "react-icons/bs";
 import { FiActivity } from "react-icons/fi";
 
-// offset เพื่อให้ตัวเลขเริ่มจาก 100 เสมอ
-const VISITOR_OFFSET = 100;
+// offset เพื่อให้ตัวเลขเริ่มต้นสวยงาม
+const VISITOR_OFFSET = 1000;
 
-function getOrCreateDeviceId(): string {
+// สร้าง sessionId ใหม่ทุก tab/session (sessionStorage หายเมื่อปิด tab)
+function getOrCreateSessionId(): string {
   if (typeof window === 'undefined') return '';
-  const key = 'skillscout_device_id';
-  let id = localStorage.getItem(key);
+  const key = 'skillscout_sid';
+  let id = sessionStorage.getItem(key);
   if (!id) {
     id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-    localStorage.setItem(key, id);
+    sessionStorage.setItem(key, id);
   }
   return id;
 }
@@ -35,38 +36,48 @@ const FooterBody = () => {
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
 
   const trackAndFetchVisitors = useCallback(async () => {
-    const deviceId = getOrCreateDeviceId();
-    if (!deviceId) return;
+    const sessionId = getOrCreateSessionId();
+    if (!sessionId) return;
+
+    // เช็คว่า session นี้นับแล้วหรือยัง
+    const counted = sessionStorage.getItem('skillscout_counted');
+    if (counted) {
+      // นับแล้ว → แค่ GET ยอดรวม
+      try {
+        const res = await fetch('/api/visitors');
+        if (res.ok) {
+          const data = await res.json() as { total: number };
+          setVisitorCount(data.total + VISITOR_OFFSET);
+        }
+      } catch { /* silent */ }
+      return;
+    }
+
+    // ยังไม่นับ → POST เพื่อ +1
     try {
       const res = await fetch('/api/visitors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deviceId }),
+        body: JSON.stringify({ sessionId }),
       });
       if (res.ok) {
-        const data = await res.json() as { count: number };
-        setVisitorCount(data.count + VISITOR_OFFSET);
+        const data = await res.json() as { total: number };
+        setVisitorCount(data.total + VISITOR_OFFSET);
+        sessionStorage.setItem('skillscout_counted', '1');
       }
     } catch {
       try {
         const res = await fetch('/api/visitors');
         if (res.ok) {
-          const data = await res.json() as { count: number };
-          setVisitorCount(data.count + VISITOR_OFFSET);
+          const data = await res.json() as { total: number };
+          setVisitorCount(data.total + VISITOR_OFFSET);
         }
-      } catch { /* silent fail */ }
+      } catch { /* silent */ }
     }
   }, []);
 
   useEffect(() => {
     trackAndFetchVisitors();
-    const interval = setInterval(() => {
-      fetch('/api/visitors')
-        .then(r => r.json())
-        .then((d: { count: number }) => setVisitorCount(d.count + VISITOR_OFFSET))
-        .catch(() => { });
-    }, 5 * 60 * 1000);
-    return () => clearInterval(interval);
   }, [trackAndFetchVisitors]);
 
   const quickLinks = [
