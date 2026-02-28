@@ -108,7 +108,7 @@ export default function DiscoveryPathPage() {
 
         const recommended = allCamps
           .filter((camp) => campIds.some(c => c.id === camp._id))
-          .slice(0, 4)
+          .slice(0, 3)
           .map((camp): CampData => {
             const calculateDaysLeft = () => {
               if (!camp.deadline && !camp.registrationDeadline) return 0;
@@ -474,7 +474,7 @@ export default function DiscoveryPathPage() {
               </Chip>
               <h2 className="text-xl md:text-2xl font-bold text-gray-800">ค่ายที่แนะนำเพื่อพัฒนาตัวเอง</h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {recommendedCampsData.map((camp) => (
                 <CampCard key={camp.id} camp={camp} variant="compact" />
               ))}

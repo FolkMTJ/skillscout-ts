@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Card, CardBody, Button, Progress, Spinner, Chip } from '@heroui/react';
-import { FiArrowRight, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiArrowRight, FiChevronDown, FiChevronUp, FiBriefcase, FiTrendingUp } from 'react-icons/fi';
 import { FaArrowRight, FaLightbulb, FaStar } from 'react-icons/fa';
 import ShareResultButton from '@/components/common/ShareResultButton';
 import HeroBanner from '@/components/HeroBanner';
@@ -18,8 +18,20 @@ interface CareerDetails {
   id: string;
   name: string;
   nameTh: string;
+  description: string;
   personality: string;
   riasecCodes?: string[];
+  requiredTags: string[];
+  recommendedTags: string[];
+  roadmapSteps: {
+    level: 'beginner' | 'intermediate' | 'advanced';
+    title: string;
+    description: string;
+    requiredSkills: string[];
+    duration?: string;
+  }[];
+  averageSalary?: string;
+  demandLevel?: 'high' | 'medium' | 'low';
 }
 
 export default function PathFinderResultsPage() {
@@ -211,150 +223,220 @@ export default function PathFinderResultsPage() {
 
       <div className="container mx-auto px-4 max-w-8xl py-12">
 
-        {/* RIASEC Scores */}
-        <Card className="mb-8 shadow-lg">
-          <CardBody className="p-8">
-            <h2 className="text-2xl font-bold mb-6">คะแนนบุคลิกภาพของคุณ (RIASEC)</h2>
-            <div className="space-y-4">
-              {normalizedRIASEC.slice(0, 2).map(({ code, percentage, info }) => (
-                <div key={code} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="flex justify-between items-center mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 bg-[#F2B33D] text-white rounded-full flex items-center justify-center font-bold">
-                        {code}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-lg">{info.thaiName}</p>
-                        <p className="text-sm text-gray-600">{info.name}</p>
-                      </div>
-                    </div>
-                    <span className="font-bold text-xl text-[#F2B33D]">{percentage}%</span>
-                  </div>
-                  <Progress value={percentage} color="warning" className="h-3" />
-                  <p className="text-sm text-gray-600 mt-1">{info.description}</p>
+        {/* ── RIASEC + Personality Summary (unified card) ── */}
+        <Card className="mb-8 overflow-hidden shadow-sm border border-gray-100">
+          {/* Dark header */}
+          <div className="bg-[#2C2C2C] px-5 py-4 md:px-8 md:py-5 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold text-[#F2B33D] uppercase tracking-widest mb-0.5">RIASEC Profile</p>
+              <h2 className="text-base md:text-lg font-black text-white">บุคลิกภาพของคุณ</h2>
+            </div>
+            <div className="flex gap-2">
+              {result.topRIASECCodes.map((code) => (
+                <div key={code} className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-[#F2B33D] text-[#2C2C2C] flex items-center justify-center font-black text-base md:text-lg">
+                  {code}
                 </div>
               ))}
+            </div>
+          </div>
 
-              <div className={`overflow-hidden transition-all duration-500 ease-in-out ${showAllRIASEC ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                <div className="space-y-4 pt-4">
-                  {normalizedRIASEC.slice(2).map(({ code, percentage, info }, index) => (
-                    <div
-                      key={code}
-                      className="rounded-lg transition-all duration-200 animate-in fade-in slide-in-from-bottom-4"
-                      style={{ animationDelay: `${index * 100}ms` }}
-                    >
-                      <div className="flex justify-between items-center mb-2">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-bold">
-                            {code}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-base text-gray-600">{info.thaiName}</p>
-                            <p className="text-sm text-gray-500">{info.name}</p>
-                          </div>
-                        </div>
-                        <span className="font-bold text-base text-gray-500">{percentage}%</span>
+          {/* Top 2 personality rows */}
+          <CardBody className="p-0">
+            {normalizedRIASEC.slice(0, 2).map(({ code, percentage, info }, idx) => (
+              <div key={code} className={`px-5 py-4 md:px-8 md:py-5 ${idx === 0 ? '' : 'border-t border-gray-100'}`}>
+                <div className="flex items-start gap-3 md:gap-4 mb-2.5">
+                  {/* Code badge */}
+                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[#F2B33D]/15 flex items-center justify-center font-black text-[#F2B33D] text-sm">
+                    {code}
+                  </div>
+                  {/* Name + percentage */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline justify-between gap-2 mb-1">
+                      <div>
+                        <span className="font-bold text-gray-900 text-sm md:text-base">{info.thaiName}</span>
+                        <span className="ml-2 text-xs text-gray-400">{info.name}</span>
                       </div>
-                      <Progress value={percentage} color="default" className="h-2" classNames={{ indicator: 'bg-gray-300' }} />
+                      <span className="font-black text-[#F2B33D] text-lg md:text-xl flex-shrink-0">{percentage}%</span>
                     </div>
-                  ))}
+                    <Progress value={percentage} color="warning" className="h-2 mb-1.5" />
+                    <p className="text-xs text-gray-500 leading-relaxed">{info.description}</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            ))}
 
-            <div
-              onClick={() => setShowAllRIASEC(!showAllRIASEC)}
-              className="mt-6 pt-6 border-t border-gray-200 cursor-pointer group transition-all duration-300"
-            >
-              <div className="flex items-center justify-center gap-2 text-[#F2B33D] font-semibold hover:text-[#d69a2e] transition-colors">
-                <span>{showAllRIASEC ? 'แตะเพื่อซ่อน' : 'แตะเพื่อเปิดดูคะแนนทั้งหมด'}</span>
-                {showAllRIASEC
-                  ? <FiChevronUp className="w-5 h-5 group-hover:-translate-y-1 transition-transform duration-300" />
-                  : <FiChevronDown className="w-5 h-5 group-hover:translate-y-1 transition-transform duration-300" />}
+            {/* Expandable: ที่เหลือ */}
+            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${showAllRIASEC ? 'max-h-[1200px] opacity-100' : 'max-h-0 opacity-0'}`}>
+              <div className="border-t border-gray-100 divide-y divide-gray-50">
+                {normalizedRIASEC.slice(2).map(({ code, percentage, info }, index) => (
+                  <div key={code} className="px-5 py-3 md:px-8 flex items-center gap-3" style={{ animationDelay: `${index * 60}ms` }}>
+                    <div className="flex-shrink-0 w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center font-bold text-gray-400 text-xs">
+                      {code}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="text-sm text-gray-500">{info.thaiName}</span>
+                        <span className="text-sm font-semibold text-gray-400 flex-shrink-0">{percentage}%</span>
+                      </div>
+                      <Progress value={percentage} color="default" className="h-1.5" classNames={{ indicator: 'bg-gray-300' }} />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          </CardBody>
-        </Card>
 
-        {/* Top RIASEC */}
-        <Card className="mb-8 shadow-lg">
-          <CardBody className="p-8">
-            <h2 className="text-2xl font-bold mb-4">บุคลิกภาพเด่นของคุณ</h2>
-            <div className="flex flex-wrap gap-3">
-              {result.topRIASECCodes.map((code) => {
-                const info = RIASEC_TYPES[code];
-                return (
-                  <Chip key={code} size="lg" className="bg-[#F2B33D] text-white font-semibold px-6 py-6">
-                    {code} - {info.thaiName}
-                  </Chip>
-                );
-              })}
-            </div>
+            {/* Toggle */}
+            <button
+              onClick={() => setShowAllRIASEC(!showAllRIASEC)}
+              className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-[#F2B33D] transition-colors py-3 border-t border-gray-100"
+            >
+              {showAllRIASEC ? 'ซ่อน' : 'ดูคะแนนทั้งหมด'}
+              {showAllRIASEC ? <FiChevronUp className="w-3.5 h-3.5" /> : <FiChevronDown className="w-3.5 h-3.5" />}
+            </button>
           </CardBody>
         </Card>
 
         {/* Recommended Careers */}
         {result.recommendedCareerDetails && result.recommendedCareerDetails.length > 0 && (
           <div className="w-full mb-12">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-[#F2B33D]/10">
-                  <FaStar className="text-[#F2B33D] text-xl" />
+            <div className="flex items-center justify-between mb-4 md:mb-6">
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="p-1.5 md:p-2 rounded-lg bg-[#F2B33D]/10">
+                  <FaStar className="text-[#F2B33D] text-base md:text-xl" />
                 </div>
-                <h2 className="text-2xl font-black text-[#2C2C2C] dark:text-white">อาชีพที่แนะนำ</h2>
+                <h2 className="text-lg md:text-2xl font-black text-[#2C2C2C]">อาชีพที่แนะนำ</h2>
               </div>
-              <Button
-                size="lg"
-                className="bg-[#F2B33D] font-medium"
-                endContent={<FiArrowRight className="w-5 h-5" />}
-                onPress={() => router.push('/path-finder/careers')}
-              >
+              <Button size="sm" className="md:hidden bg-[#F2B33D] font-medium" endContent={<FiArrowRight className="w-4 h-4" />} onPress={() => router.push('/path-finder/careers')}>
+                ดูอาชีพทั้งหมด
+              </Button>
+              <Button size="lg" className="hidden md:flex bg-[#F2B33D] font-medium" endContent={<FiArrowRight className="w-5 h-5" />} onPress={() => router.push('/path-finder/careers')}>
                 ดูอาชีพทั้งหมด
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
-              {result.recommendedCareerDetails.map((career: CareerDetails) => (
+            <div className="space-y-6">
+              {result.recommendedCareerDetails.map((career: CareerDetails, index: number) => (
                 <Card
                   key={career.id}
-                  isPressable
-                  onPress={() => router.push(`/path-finder/careers/${career.id}`)}
-                  className="group relative w-full h-full bg-white dark:bg-[#2C2C2C] border border-gray-100 dark:border-gray-700 hover:border-[#F2B33D] shadow-sm hover:shadow-xl transition-all duration-300"
+                  className="overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300"
                 >
-                  <CardBody className="p-5 flex flex-col h-full">
-                    <div className="flex items-start gap-4 mb-3">
-                      <div className="w-12 h-12 rounded-xl bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center flex-shrink-0 text-[#F2B33D]">
-                        <FaLightbulb size={20} />
+                  {/* Top accent bar */}
+                  <div className={`h-1 w-full ${index === 0 ? 'bg-[#F2B33D]' : 'bg-gray-200'}`} />
+
+                  <CardBody className="p-0">
+                    {/* Header */}
+                    <div className="p-5 md:p-6 border-b border-gray-100">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-[#F2B33D] flex-shrink-0">
+                            <FaLightbulb size={18} />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="text-xl font-bold text-[#2C2C2C]">{career.nameTh}</h3>
+                              {index === 0 && (
+                                <Chip size="sm" className="bg-[#F2B33D] text-white text-[11px] font-bold h-5">แนะนำ #1</Chip>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-500 font-medium">{career.name}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {career.riasecCodes?.map((code: string) => (
+                            <span
+                              key={code}
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 font-bold text-gray-600 text-xs"
+                            >
+                              {code}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-bold text-[#2C2C2C] dark:text-white group-hover:text-[#F2B33D] transition-colors truncate">
-                          {career.nameTh}
-                        </h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide truncate">
-                          {career.name}
-                        </p>
+
+                      {/* Salary + Demand row */}
+                      <div className="flex gap-2 mt-3 flex-wrap">
+                        {career.averageSalary && (
+                          <div className="flex items-center gap-1.5 text-sm text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg">
+                            <FiBriefcase className="text-[#F2B33D]" size={13} />
+                            {career.averageSalary}
+                          </div>
+                        )}
+                        {career.demandLevel && (
+                          <div className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg ${career.demandLevel === 'high' ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-600'}`}>
+                            <FiTrendingUp size={13} />
+                            {career.demandLevel === 'high' ? 'ต้องการสูงมาก' : career.demandLevel === 'medium' ? 'ต้องการปานกลาง' : 'ทั่วไป'}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div className="mb-6 pl-1">
-                      <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 leading-relaxed">
-                        <span className="text-[#F2B33D] mr-2">●</span>
-                        {career.personality}
-                      </p>
+
+                    <div className="p-5 md:p-6 space-y-5">
+                      {/* Description */}
+                      <p className="text-gray-700 leading-relaxed">{career.description}</p>
+
+                      {/* Personality */}
+                      <div className="bg-orange-50 rounded-xl p-4 border border-orange-100">
+                        <p className="text-[11px] font-bold text-[#F2B33D] mb-1.5 uppercase tracking-wide">บุคลิกภาพที่เหมาะสม</p>
+                        <p className="text-gray-700 text-sm leading-relaxed">{career.personality}</p>
+                      </div>
+
+                      {/* Tags */}
+                      {(career.requiredTags?.length > 0 || career.recommendedTags?.length > 0) && (
+                        <div>
+                          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-2">ทักษะที่เกี่ยวข้อง</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {career.requiredTags?.map((tag: string) => (
+                              <Chip key={tag} size="sm" className="bg-gray-100 text-gray-700 text-xs h-6">{tag}</Chip>
+                            ))}
+                            {career.recommendedTags?.map((tag: string) => (
+                              <Chip key={tag} size="sm" variant="bordered" className="text-gray-400 border-gray-200 text-xs h-6">{tag}</Chip>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Roadmap */}
+                      {career.roadmapSteps?.length > 0 && (
+                        <div>
+                          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-3">เส้นทางการเติบโต</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            {career.roadmapSteps.map((step, i) => (
+                              <div key={step.level} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="w-5 h-5 rounded-full bg-[#F2B33D] text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                                    {i + 1}
+                                  </span>
+                                  <p className="font-semibold text-gray-800 text-sm leading-tight">{step.title}</p>
+                                </div>
+                                {step.duration && (
+                                  <p className="text-xs text-gray-400 mb-2">{step.duration}</p>
+                                )}
+                                <div className="space-y-1.5">
+                                  {step.requiredSkills.slice(0, 3).map((skill) => (
+                                    <div key={skill} className="flex items-center gap-1.5 text-xs text-gray-600">
+                                      <span className="w-1 h-1 rounded-full bg-[#F2B33D] flex-shrink-0" />
+                                      {skill}
+                                    </div>
+                                  ))}
+                                  {step.requiredSkills.length > 3 && (
+                                    <p className="text-xs text-gray-400">+{step.requiredSkills.length - 3} เพิ่มเติม</p>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
-                      <div className="flex gap-1.5">
-                        {career.riasecCodes?.slice(0, 3).map((code: string) => (
-                          <span
-                            key={code}
-                            className="inline-flex items-center justify-center w-6 h-6 text-[10px] font-bold rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 group-hover:bg-[#F2B33D] group-hover:text-white transition-colors"
-                          >
-                            {code}
-                          </span>
-                        ))}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs font-semibold text-[#F2B33D] opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
-                        ดูรายละเอียด <FaArrowRight />
-                      </div>
+
+                    {/* Footer link */}
+                    <div className="px-5 md:px-6 pb-5 pt-4 border-t border-gray-100">
+                      <button
+                        onClick={() => router.push(`/path-finder/careers/${career.id}`)}
+                        className="flex items-center gap-2 text-sm font-semibold text-[#F2B33D] hover:text-[#d69a2e] transition-colors"
+                      >
+                        ดูรายละเอียดเพิ่มเติมและค่ายแนะนำ <FaArrowRight size={12} />
+                      </button>
                     </div>
                   </CardBody>
                 </Card>
@@ -366,18 +448,16 @@ export default function PathFinderResultsPage() {
         {/* Recommended Camps */}
         {recommendedCamps.length > 0 && (
           <Card className="mb-8 shadow-lg">
-            <CardBody className="p-8">
-              <div className="flex items-center justify-between mb-6">
+            <CardBody className="p-4 md:p-8">
+              <div className="flex items-center justify-between mb-4 md:mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold">ค่ายแนะนำสำหรับคุณ</h2>
-                  <p className="text-sm text-gray-600 mt-1">ค่ายที่เหมาะสมกับบุคลิกภาพและความถนัดของคุณ</p>
+                  <h2 className="text-lg md:text-2xl font-bold">ค่ายแนะนำสำหรับคุณ</h2>
+                  <p className="text-xs md:text-sm text-gray-600 mt-1">ค่ายที่เหมาะสมกับบุคลิกภาพและความถนัดของคุณ</p>
                 </div>
-                <Button
-                  size="lg"
-                  className="bg-[#F2B33D] font-medium"
-                  endContent={<FiArrowRight className="w-5 h-5" />}
-                  onPress={() => router.push('/allcamps')}
-                >
+                <Button size="sm" className="md:hidden bg-[#F2B33D] font-medium" endContent={<FiArrowRight className="w-4 h-4" />} onPress={() => router.push('/allcamps')}>
+                  ดูค่ายทั้งหมด
+                </Button>
+                <Button size="lg" className="hidden md:flex bg-[#F2B33D] font-medium" endContent={<FiArrowRight className="w-5 h-5" />} onPress={() => router.push('/allcamps')}>
                   ดูค่ายทั้งหมด
                 </Button>
               </div>

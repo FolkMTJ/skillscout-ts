@@ -128,7 +128,7 @@ export default function RIASECProfile({ scores, showDetails = true }: RIASECProf
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pie Chart - ซ้าย */}
         <div className="rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 p-4 flex flex-col">
-          <div className="h-[220px] lg:h-[320px] w-full">
+          <div className="h-[280px] lg:h-[380px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -136,7 +136,7 @@ export default function RIASECProfile({ scores, showDetails = true }: RIASECProf
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  outerRadius="42%"
+                  outerRadius="70%"
                   fill="#8884d8"
                   dataKey="value"
                   stroke="#fff"
@@ -171,9 +171,9 @@ export default function RIASECProfile({ scores, showDetails = true }: RIASECProf
               {chartData.map((item, index) => {
                 const info = RIASEC_TYPES[item.code as keyof typeof RIASEC_TYPES];
                 return (
-                  <div 
-                    key={item.code} 
-                    className="flex items-center gap-3 p-3 rounded-lg transition-all hover:scale-[1.01]"
+                  <div
+                    key={item.code}
+                    className={`flex items-center gap-3 p-3 rounded-lg transition-all hover:scale-[1.01] ${index >= 3 ? 'hidden lg:flex' : ''}`}
                     style={{ 
                       backgroundColor: `${item.color}10`,
                       borderLeft: `3px solid ${item.color}`
@@ -210,38 +210,37 @@ export default function RIASECProfile({ scores, showDetails = true }: RIASECProf
 
       {/* Top Personality Description */}
       {showDetails && (
-        <div className="rounded-2xl bg-[#2C2C2C] overflow-hidden">
-          <div className="p-5 md:p-6">
-            <div className="flex flex-col sm:flex-row items-start gap-4">
+        <Card className="overflow-hidden" style={{ borderLeft: `4px solid ${RIASEC_COLORS[topCode]}` }}>
+          <CardBody className="p-4 md:p-5">
+            <div className="flex flex-col sm:flex-row items-start gap-3">
               {/* Code badge */}
               <div
-                className="flex items-center justify-center w-14 h-14 sm:w-18 sm:h-18 rounded-xl font-black text-2xl sm:text-3xl flex-shrink-0 shadow-lg"
-                style={{ backgroundColor: RIASEC_COLORS[topCode], color: 'white' }}
+                className="flex items-center justify-center w-12 h-12 rounded-xl font-black text-xl flex-shrink-0"
+                style={{ backgroundColor: `${RIASEC_COLORS[topCode]}20`, color: RIASEC_COLORS[topCode] }}
               >
                 {topCode}
               </div>
 
               <div className="flex-1 min-w-0">
                 {/* Label */}
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F2B33D]/20 border border-[#F2B33D]/40 mb-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#F2B33D]" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#F2B33D]">บุคลิกภาพเด่น</span>
+                <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: RIASEC_COLORS[topCode] }}>
+                  บุคลิกภาพเด่น
                 </div>
 
-                <h3 className="text-xl md:text-2xl font-black text-white mb-1">
+                <h3 className="text-lg font-bold text-gray-900 mb-1">
                   {RIASEC_TYPES[topCode].thaiName}
                 </h3>
-                <p className="text-sm md:text-base mb-4 text-white/70 leading-relaxed">
+                <p className="text-sm text-gray-600 mb-3 leading-relaxed">
                   {RIASEC_TYPES[topCode].description}
                 </p>
 
-                <div className="space-y-2">
-                  <div className="text-xs font-black uppercase tracking-widest text-[#F2B33D]">อาชีพ IT ที่เหมาะสม</div>
-                  <div className="flex flex-wrap gap-2">
-                    {RIASEC_TYPES[topCode].careers.map((career) => (
+                <div className="space-y-1.5">
+                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">อาชีพ IT ที่เหมาะสม</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {RIASEC_TYPES[topCode].careers.map((career, i) => (
                       <span
                         key={career}
-                        className="px-3 py-1 rounded-full text-sm font-semibold bg-white/10 text-white border border-white/20 hover:bg-white/20 transition-colors"
+                        className={`px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 border border-gray-200 ${i >= 2 ? 'hidden sm:inline-block' : ''}`}
                       >
                         {career}
                       </span>
@@ -250,10 +249,8 @@ export default function RIASECProfile({ scores, showDetails = true }: RIASECProf
                 </div>
               </div>
             </div>
-          </div>
-          {/* Bottom accent strip */}
-          <div className="h-1 w-full" style={{ backgroundColor: RIASEC_COLORS[topCode] }} />
-        </div>
+          </CardBody>
+        </Card>
       )}
 
       {/* ข้อมูลเพิ่มเติม */}

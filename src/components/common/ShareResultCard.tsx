@@ -68,13 +68,6 @@ const ShareResultCard = forwardRef<HTMLDivElement, ShareResultCardProps>(
                     position: 'relative',
                     overflow: 'hidden',
                 }}>
-                    {/* Solid decorative pattern top-right */}
-                    <div style={{
-                        position: 'absolute', top: '-60px', right: '-60px',
-                        width: '500px', height: '500px', borderRadius: '50%',
-                        background: 'rgba(255,255,255,0.1)',
-                        pointerEvents: 'none',
-                    }} />
                     {/* Dark bottom bar */}
                     <div style={{
                         position: 'absolute', bottom: 0, left: 0, right: 0, height: '6px',

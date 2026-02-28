@@ -146,7 +146,7 @@ export default function SkillPieChart({ skills }: SkillPieChartProps) {
             ) as 'success' | 'primary' | 'secondary' | 'warning';
 
             return (
-              <div key={index} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
+              <div key={index} className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${index >= 3 ? 'hidden lg:flex' : ''}`}>
                 <div
                   className="w-3 h-3 rounded-full flex-shrink-0"
                   style={{ backgroundColor: COLORS[index % COLORS.length] }}

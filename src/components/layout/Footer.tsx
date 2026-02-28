@@ -7,7 +7,7 @@ import { BsFillPeopleFill } from "react-icons/bs";
 import { FiActivity } from "react-icons/fi";
 
 // offset เพื่อให้ตัวเลขเริ่มต้นสวยงาม
-const VISITOR_OFFSET = 1000;
+const VISITOR_OFFSET = 567;
 
 // สร้าง sessionId ใหม่ทุก tab/session (sessionStorage หายเมื่อปิด tab)
 function getOrCreateSessionId(): string {
@@ -89,10 +89,10 @@ const FooterBody = () => {
   ];
 
   const supportLinks = [
-    { label: 'เกี่ยวกับเรา', href: "/about" },
-    { label: 'ติดต่อเรา', href: "/contact" },
-    { label: 'คำถามที่พบบ่อย', href: "/faq" },
-    { label: 'ช่วยเหลือ', href: "/help" },
+    { label: 'เกี่ยวกับเรา', href: "https://about.skillscout.site" },
+    { label: 'ติดต่อเรา', href: "https://about.skillscout.site" },
+    { label: 'คำถามที่พบบ่อย', href: "https://about.skillscout.site" },
+    { label: 'ช่วยเหลือ', href: "https://about.skillscout.site" },
   ];
 
   const socialLinks = [

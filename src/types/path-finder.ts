@@ -47,5 +47,15 @@ export interface PathFinderResultWithDetails extends PathFinderResult {
     riasecCodes: RIASECCode[];
     requiredTags: string[];
     recommendedTags: string[];
+    roadmapSteps: {
+      level: 'beginner' | 'intermediate' | 'advanced';
+      title: string;
+      description: string;
+      requiredSkills: string[];
+      recommendedCamps?: string[];
+      duration?: string;
+    }[];
+    averageSalary?: string;
+    demandLevel?: 'high' | 'medium' | 'low';
   }>;
 }
