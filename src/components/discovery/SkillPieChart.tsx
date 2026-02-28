@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import { Card, CardBody, Chip, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '@heroui/react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { Card, CardBody, Chip } from '@heroui/react';
 import { getSkillLevelInfo } from '@/lib/utils/riasec-calculator';
 
 interface SkillPieChartProps {
@@ -27,9 +27,6 @@ interface TooltipProps {
   payload?: Array<{ payload: ChartDataItem }>;
 }
 
-interface LegendProps {
-  payload?: Array<{ value: string; color: string }>;
-}
 
 const COLORS = [
   '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
@@ -87,29 +84,6 @@ export default function SkillPieChart({ skills }: SkillPieChartProps) {
     return null;
   };
 
-  const CustomLegend = ({ payload }: LegendProps) => {
-    return (
-      <div className="flex flex-wrap justify-center gap-2 mt-6">
-        {payload?.map((entry, index) => (
-          <Chip
-            key={`legend-${index}`}
-            variant="flat"
-            size="sm"
-            className="cursor-pointer"
-            startContent={
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: entry.color }}
-              />
-            }
-          >
-            <span className="font-bold">{entry.value}</span>
-            <span className="text-gray-600 ml-1">({chartData[index].value}%)</span>
-          </Chip>
-        ))}
-      </div>
-    );
-  };
 
   if (skills.length === 0) {
     return (
@@ -126,89 +100,66 @@ export default function SkillPieChart({ skills }: SkillPieChartProps) {
       {/* Layout: Chart ซ้าย + Table ขวา */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pie Chart - ซ้าย */}
-        <Card className="bg-gradient-to-br from-gray-50 to-gray-100">
-          <CardBody className="p-6">
-            <ResponsiveContainer width="100%" height={400}>
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={130}
-                  fill="#8884d8"
-                  dataKey="value"
-                  stroke="#fff"
-                  strokeWidth={2}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-                <Legend content={<CustomLegend />} />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardBody>
-        </Card>
+        <div className="rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+          <ResponsiveContainer width="100%" height={240}>
+            <PieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                outerRadius={90}
+                fill="#8884d8"
+                dataKey="value"
+                stroke="#fff"
+                strokeWidth={2}
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+          {/* HTML Legend */}
+          <div className="flex flex-wrap justify-center gap-x-3 gap-y-2 mt-3">
+            {chartData.map((entry, index) => (
+              <div key={index} className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: entry.color }} />
+                <span className="text-xs font-semibold text-gray-700">{entry.name}</span>
+                <span className="text-xs font-bold">({entry.value}%)</span>
+              </div>
+            ))}
+          </div>
+        </div>
 
-        {/* ตารางแสดงรายละเอียด - ขวา */}
-        <div className="flex flex-col">
-          <Table 
-            aria-label="Skills table"
-            classNames={{
-              wrapper: "shadow-md flex-1",
-            }}
-          >
-            <TableHeader>
-              <TableColumn>ทักษะ</TableColumn>
-              <TableColumn className="text-center">ประสบการณ์</TableColumn>
-              <TableColumn className="text-center">สัดส่วน</TableColumn>
-              <TableColumn className="text-center">ระดับ</TableColumn>
-            </TableHeader>
-            <TableBody>
-              {skills.map((skill, index) => {
-                const levelInfo = getSkillLevelInfo(skill.level);
-                const displayPercentage = chartData[index].value;
-                
-                return (
-                  <TableRow key={index}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-4 h-4 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                        />
-                        <span className="font-semibold">{skill.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Chip variant="flat" size="sm" color="default">
-                        {skill.experienceCount} ค่าย
-                      </Chip>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <span className="font-bold text-lg">{displayPercentage}%</span>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Chip
-                        size="sm"
-                        variant="flat"
-                        color={
-                          levelInfo.label === 'ผู้เริ่มต้น' ? 'success' :
-                          levelInfo.label === 'มีพื้นฐาน' ? 'primary' :
-                          levelInfo.label === 'มีประสบการณ์' ? 'secondary' :
-                          'warning'
-                        }
-                      >
-                        {levelInfo.label}
-                      </Chip>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+        {/* รายละเอียดทักษะ - ขวา (responsive list) */}
+        <div className="flex flex-col rounded-xl border border-gray-200 overflow-hidden bg-white shadow-sm divide-y divide-gray-100">
+          {skills.map((skill, index) => {
+            const levelInfo = getSkillLevelInfo(skill.level);
+            const displayPercentage = chartData[index].value;
+            const levelColor = (
+              levelInfo.label === 'ผู้เริ่มต้น' ? 'success' :
+              levelInfo.label === 'มีพื้นฐาน' ? 'primary' :
+              levelInfo.label === 'มีประสบการณ์' ? 'secondary' :
+              'warning'
+            ) as 'success' | 'primary' | 'secondary' | 'warning';
+
+            return (
+              <div key={index} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
+                <div
+                  className="w-3 h-3 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                />
+                <span className="flex-1 font-semibold text-sm text-gray-800 min-w-0 truncate">{skill.name}</span>
+                <span className="text-sm font-bold text-gray-700 flex-shrink-0">{displayPercentage}%</span>
+                <Chip size="sm" variant="flat" color={levelColor} className="flex-shrink-0 hidden sm:flex">
+                  {levelInfo.label}
+                </Chip>
+                <span className="text-xs text-gray-400 flex-shrink-0">{skill.experienceCount} ค่าย</span>
+              </div>
+            );
+          })}
         </div>
       </div>
 

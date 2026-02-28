@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Card, CardBody, Chip } from '@heroui/react';
 import { RIASEC_TYPES } from '@/data/riasec';
 
@@ -127,16 +127,16 @@ export default function RIASECProfile({ scores, showDetails = true }: RIASECProf
       {/* Layout: Chart ซ้าย + Rankings ขวา */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pie Chart - ซ้าย */}
-        <Card className="bg-gradient-to-br from-gray-50 to-gray-100">
-          <CardBody className="p-6">
-            <ResponsiveContainer width="100%" height={450}>
+        <div className="rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 p-4 flex flex-col">
+          <div className="h-[220px] lg:h-[320px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={chartData}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  outerRadius={130}
+                  outerRadius="42%"
                   fill="#8884d8"
                   dataKey="value"
                   stroke="#fff"
@@ -147,11 +147,21 @@ export default function RIASECProfile({ scores, showDetails = true }: RIASECProf
                   ))}
                 </Pie>
                 <Tooltip content={<CustomTooltip />} />
-                <Legend content={<CustomLegend />} />
               </PieChart>
             </ResponsiveContainer>
-          </CardBody>
-        </Card>
+          </div>
+          {/* HTML Legend — ไม่ให้ recharts คำนวณ cy ผิด */}
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-3">
+            {chartData.map((entry) => (
+              <div key={entry.code} className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: entry.color }} />
+                <span className="text-sm font-bold">{entry.code}</span>
+                <span className="text-xs text-gray-500">- {entry.thaiName}</span>
+                <span className="text-sm font-bold ml-0.5">{entry.value}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* All Rankings - ขวา */}
         <Card>
@@ -187,7 +197,7 @@ export default function RIASECProfile({ scores, showDetails = true }: RIASECProf
                       <div className="font-bold">{info.thaiName}</div>
                       <div className="text-xs text-gray-600">{info.name}</div>
                     </div>
-                    <div className="text-2xl font-bold" style={{ color: item.color }}>
+                    <div className="text-lg md:text-2xl font-bold flex-shrink-0" style={{ color: item.color }}>
                       {item.value}%
                     </div>
                   </div>
@@ -200,48 +210,50 @@ export default function RIASECProfile({ scores, showDetails = true }: RIASECProf
 
       {/* Top Personality Description */}
       {showDetails && (
-        <Card className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200">
-          <CardBody className="p-6">
-            <div className="flex items-start gap-4">
-              <Chip
-                variant="solid"
-                size="lg"
-                className="text-2xl font-bold w-16 h-16 flex items-center justify-center"
+        <div className="rounded-2xl bg-[#2C2C2C] overflow-hidden">
+          <div className="p-5 md:p-6">
+            <div className="flex flex-col sm:flex-row items-start gap-4">
+              {/* Code badge */}
+              <div
+                className="flex items-center justify-center w-14 h-14 sm:w-18 sm:h-18 rounded-xl font-black text-2xl sm:text-3xl flex-shrink-0 shadow-lg"
                 style={{ backgroundColor: RIASEC_COLORS[topCode], color: 'white' }}
               >
                 {topCode}
-              </Chip>
-              <div className="flex-1">
-                <h3 className="text-2xl font-bold mb-2">
-                  บุคลิกภาพเด่น: {RIASEC_TYPES[topCode].thaiName}
+              </div>
+
+              <div className="flex-1 min-w-0">
+                {/* Label */}
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F2B33D]/20 border border-[#F2B33D]/40 mb-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#F2B33D]" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#F2B33D]">บุคลิกภาพเด่น</span>
+                </div>
+
+                <h3 className="text-xl md:text-2xl font-black text-white mb-1">
+                  {RIASEC_TYPES[topCode].thaiName}
                 </h3>
-                <p className="text-base mb-4 text-gray-700 leading-relaxed">
+                <p className="text-sm md:text-base mb-4 text-white/70 leading-relaxed">
                   {RIASEC_TYPES[topCode].description}
                 </p>
-                
-                <div className="space-y-3">
-                  <div className="font-semibold text-lg">อาชีพ IT ที่เหมาะสม:</div>
+
+                <div className="space-y-2">
+                  <div className="text-xs font-black uppercase tracking-widest text-[#F2B33D]">อาชีพ IT ที่เหมาะสม</div>
                   <div className="flex flex-wrap gap-2">
                     {RIASEC_TYPES[topCode].careers.map((career) => (
-                      <Chip
+                      <span
                         key={career}
-                        variant="flat"
-                        size="lg"
-                        style={{ 
-                          backgroundColor: `${RIASEC_COLORS[topCode]}20`,
-                          borderColor: RIASEC_COLORS[topCode],
-                          borderWidth: '1px'
-                        }}
+                        className="px-3 py-1 rounded-full text-sm font-semibold bg-white/10 text-white border border-white/20 hover:bg-white/20 transition-colors"
                       >
                         {career}
-                      </Chip>
+                      </span>
                     ))}
                   </div>
                 </div>
               </div>
             </div>
-          </CardBody>
-        </Card>
+          </div>
+          {/* Bottom accent strip */}
+          <div className="h-1 w-full" style={{ backgroundColor: RIASEC_COLORS[topCode] }} />
+        </div>
       )}
 
       {/* ข้อมูลเพิ่มเติม */}

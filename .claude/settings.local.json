@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat \"d:/skillscout-ts/src/app/\\(tab\\)/HomePage.tsx\")",
+      "Bash(ls \"d:/skillscout-ts/src/app/\\(tab\\)/allcamps/\")",
+      "Bash(cat \"d:/skillscout-ts/src/app/\\(tab\\)/allcamps/AllCampsContent.tsx\")",
+      "Bash(ls \"d:/skillscout-ts/src/components/\\(card\\)/\")"
+    ]
+  }
+}

@@ -72,11 +72,14 @@ type SortOption =
 export default function AllCampsContent() {
   const searchParams = useSearchParams();
   const searchFromUrl = searchParams.get('search') || '';
+  const groupFromUrl = searchParams.get('group') || '';
+  const validGroups = ['frontend', 'backend', 'data', 'design', 'mobile', 'devops', 'other'];
+  const initialGroup: TagGroupId = validGroups.includes(groupFromUrl) ? (groupFromUrl as TagCategoryKey) : "all";
   const [allCamps, setAllCamps] = useState<Camp[]>([]);
   const [filteredCamps, setFilteredCamps] = useState<Camp[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState(searchFromUrl);
-  const [selectedGroup, setSelectedGroup] = useState<TagGroupId>("all");
+  const [selectedGroup, setSelectedGroup] = useState<TagGroupId>(initialGroup);
   const [showFilters, setShowFilters] = useState(false);
   
   // Filter & Sort States
@@ -310,7 +313,7 @@ export default function AllCampsContent() {
               </button>
               {/* หมวดหมู่จาก STANDARD_TAGS */}
               {ALL_CATEGORY_KEYS.map((key) => {
-                const { label, icon } = TAG_CATEGORY_LABELS[key];
+                const { label } = TAG_CATEGORY_LABELS[key];
                 const tagCount = STANDARD_TAGS.filter(t => t.category === key).length;
                 return (
                   <button

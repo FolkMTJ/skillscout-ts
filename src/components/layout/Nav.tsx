@@ -170,19 +170,17 @@ export default function NavBar(props: NavbarProps) {
                                         <p className="font-semibold">{session.user?.name}</p>
                                         <p className="text-sm text-default-500">{session.user?.email}</p>
                                     </DropdownItem>
-                                    <DropdownItem
-                                        key="dashboard"
-                                        startContent={<LayoutDashboard className="w-4 h-4" />}
-                                        href={
-                                            session.user?.role === 'admin' ? '/admin' :
-                                                session.user?.role === 'organizer' ? '/organizer' : '/profile'
-                                        }
-                                    >
-                                        {
-                                            session.user?.role === 'admin' ? 'Admin Dashboard' :
-                                                session.user?.role === 'organizer' ? 'แดชบอร์ด' : 'โปรไฟล์'
-                                        }
-                                    </DropdownItem>
+                                    {(session.user?.role === 'admin' || session.user?.role === 'organizer') ? (
+                                        <DropdownItem
+                                            key="dashboard"
+                                            startContent={<LayoutDashboard className="w-4 h-4" />}
+                                            href={
+                                                session.user?.role === 'admin' ? '/admin' : '/organizer'
+                                            }
+                                        >
+                                            {session.user?.role === 'admin' ? 'Admin Dashboard' : 'แดชบอร์ด'}
+                                        </DropdownItem>
+                                    ) : null}
                                     {session.user?.role === 'admin' ? (
                                         <DropdownItem
                                             key="organizer-dashboard"
@@ -285,23 +283,19 @@ export default function NavBar(props: NavbarProps) {
 
                             {/* User Menu */}
                             <div className="space-y-1">
-                                <NavbarMenuItem key="dashboard-menu">
-                                    <Link
-                                        href={
-                                            session.user?.role === 'admin' ? '/admin' :
-                                                session.user?.role === 'organizer' ? '/organizer' : '/profile'
-                                        }
-                                        className={`block w-full py-3 px-4 rounded-xl text-base font-medium transition-colors ${(pathname === '/admin' || pathname === '/organizer' || pathname === '/profile')
-                                                ? 'bg-[#F2B33D]/10 text-[#F2B33D]'
-                                                : 'text-white/80 hover:text-white hover:bg-white/5'
-                                            }`}
-                                    >
-                                        {
-                                            session.user?.role === 'admin' ? 'Admin Dashboard' :
-                                                session.user?.role === 'organizer' ? 'แดชบอร์ด' : 'โปรไฟล์'
-                                        }
-                                    </Link>
-                                </NavbarMenuItem>
+                                {(session.user?.role === 'admin' || session.user?.role === 'organizer') ? (
+                                    <NavbarMenuItem key="dashboard-menu">
+                                        <Link
+                                            href={session.user?.role === 'admin' ? '/admin' : '/organizer'}
+                                            className={`block w-full py-3 px-4 rounded-xl text-base font-medium transition-colors ${(pathname === '/admin' || pathname === '/organizer')
+                                                    ? 'bg-[#F2B33D]/10 text-[#F2B33D]'
+                                                    : 'text-white/80 hover:text-white hover:bg-white/5'
+                                                }`}
+                                        >
+                                            {session.user?.role === 'admin' ? 'Admin Dashboard' : 'แดชบอร์ด'}
+                                        </Link>
+                                    </NavbarMenuItem>
+                                ) : null}
 
                                 {session.user?.role === 'admin' ? (
                                     <NavbarMenuItem key="organizer-menu">

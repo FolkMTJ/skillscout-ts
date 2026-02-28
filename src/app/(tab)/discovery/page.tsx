@@ -197,13 +197,13 @@ export default function DiscoveryPathPage() {
     
     return (
       <Card className="border-none shadow-sm hover:shadow-md transition-all duration-300 bg-white">
-        <div className="p-5 flex items-start justify-between">
+        <div className="p-3 md:p-5 flex items-start justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
-            <h3 className="text-3xl font-bold text-gray-800">{value}</h3>
+            <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">{title}</p>
+            <h3 className="text-2xl md:text-3xl font-bold text-gray-800">{value}</h3>
           </div>
-          <div className="p-3 rounded-xl">
-            <Icon className={`w-10 h-10 ${iconColor}`} />
+          <div className="p-1.5 md:p-3 rounded-xl">
+            <Icon className={`w-7 h-7 md:w-10 md:h-10 ${iconColor}`} />
           </div>
         </div>
         <div className={`h-1 w-full bg-opacity-20 ${colorClass}`}>
@@ -359,17 +359,17 @@ export default function DiscoveryPathPage() {
         showButtons={false}
       >
         <Button
-            size="lg"
-            className="bg-[#2C2C2C] text-white font-black px-8 rounded-2xl h-14 text-base hover:bg-black transition-all"
+            size="md"
+            className="bg-[#2C2C2C] text-white font-black px-6 rounded-2xl h-11 md:h-14 text-sm md:text-base hover:bg-black transition-all"
             onPress={() => router.push('/path-finder/quiz')}
           >
             ค่ายอื่นๆที่น่าสนใจ
         </Button>
         <Button
-          size="lg"
-          className="bg-[#F2B33D] text-[#1a1a1a] font-black px-8 rounded-2xl h-14 text-base hover:bg-[#d69a2e] transition-all"
+          size="md"
+          className="bg-[#F2B33D] text-[#1a1a1a] font-black px-6 rounded-2xl h-11 md:h-14 text-sm md:text-base hover:bg-[#d69a2e] transition-all"
           onPress={() => setShareModalOpen(true)}
-          startContent={<FiShare2 className="w-5 h-5" />}
+          startContent={<FiShare2 className="w-4 h-4 md:w-5 md:h-5" />}
         >
           แชร์ผลลัพธ์
         </Button>
@@ -384,10 +384,10 @@ export default function DiscoveryPathPage() {
         />
       </HeroBanner>
 
-      <div ref={resultRef} className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+      <div ref={resultRef} className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 pt-6 md:pt-8 pb-8">
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
           <ModernStatCard
             title="ค่ายที่เข้าร่วม"
             value={data.campsAttended}
@@ -416,53 +416,51 @@ export default function DiscoveryPathPage() {
 
         {/* RIASEC Profile */}
         <Card className="mb-8 shadow-sm border-none">
-          <CardHeader className="flex flex-col items-start gap-2 p-8 pb-4">
+          <CardHeader className="flex flex-col items-start gap-2 p-5 md:p-8 pb-4">
             <Chip className="bg-purple-100 text-purple-600" variant="flat" size="sm">
               บุคลิกภาพ
             </Chip>
-            <h2 className="text-2xl font-bold text-gray-800">RIASEC Personality Profile</h2>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-800">RIASEC Personality Profile</h2>
             <p className="text-gray-600 text-sm">
               บุคลิกภาพและความชอบในการทำงานของคุณ (วิเคราะห์จากค่ายที่เข้าร่วม)
             </p>
           </CardHeader>
           <Divider />
-          <CardBody className="p-8 pt-6">
+          <CardBody className="p-4 md:p-8 pt-4 md:pt-6">
             <RIASECProfile scores={data.riasecProfile} />
           </CardBody>
         </Card>
 
         {/* Skill Profile */}
         <Card className="mb-8 shadow-sm border-none">
-          <CardHeader className="flex flex-col items-start gap-2 p-8 pb-4">
+          <CardHeader className="flex flex-col items-start gap-2 p-5 md:p-8 pb-4">
             <Chip className="bg-orange-100 text-[#F2B33D]" variant="flat" size="sm">
               ทักษะ
             </Chip>
-            <h2 className="text-2xl font-bold text-gray-800">สัดส่วนประสบการณ์ของคุณ</h2>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-800">สัดส่วนประสบการณ์ของคุณ</h2>
             <p className="text-gray-600 text-sm">
               แสดงสัดส่วนทักษะจากค่ายทั้งหมดที่เข้าร่วม (ไม่ใช่การวัดความเก่งจริง)
             </p>
           </CardHeader>
           <Divider />
-          <CardBody className="p-8 pt-6">
+          <CardBody className="p-4 md:p-8 pt-4 md:pt-6">
             <SkillPieChart skills={data.skillProfile} />
           </CardBody>
         </Card>
 
         {/* Career Recommendations */}
         <div className="mb-8">
-          <div className="mb-6">
-            <Chip className="bg-green-100 text-green-600 mb-3" variant="flat" size="sm">
+          <div className="mb-4 md:mb-6">
+            <Chip className="bg-green-100 text-green-600 mb-2 md:mb-3" variant="flat" size="sm">
               แนะนำอาชีพ
             </Chip>
-            <h2 className="text-2xl font-bold text-gray-800">อาชีพที่เหมาะกับคุณ</h2>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-800">อาชีพที่เหมาะกับคุณ</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {data.recommendedCareers.map((career, index) => (
-              <CareerCard
-                key={career.id}
-                career={career}
-                rank={index + 1}
-              />
+              <div key={career.id} className={index >= 3 ? 'hidden sm:block' : ''}>
+                <CareerCard career={career} rank={index + 1} />
+              </div>
             ))}
           </div>
         </div>
@@ -470,13 +468,13 @@ export default function DiscoveryPathPage() {
         {/* Recommended Camps */}
         {recommendedCampsData.length > 0 && (
           <div className="mb-8">
-            <div className="mb-6">
-              <Chip className="bg-orange-100 text-[#F2B33D] mb-3" variant="flat" size="sm">
+            <div className="mb-4 md:mb-6">
+              <Chip className="bg-orange-100 text-[#F2B33D] mb-2 md:mb-3" variant="flat" size="sm">
                 ค่ายแนะนำ
               </Chip>
-              <h2 className="text-2xl font-bold text-gray-800">ค่ายที่แนะนำเพื่อพัฒนาตัวเอง</h2>
+              <h2 className="text-xl md:text-2xl font-bold text-gray-800">ค่ายที่แนะนำเพื่อพัฒนาตัวเอง</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
               {recommendedCampsData.map((camp) => (
                 <CampCard key={camp.id} camp={camp} variant="compact" />
               ))}

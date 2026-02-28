@@ -64,7 +64,8 @@ export default function MyCampsPage() {
             } catch { return reg; }
           })
         );
-        setRegistrations(withCamps);
+        // Filter out registrations where camp data could not be fetched
+        setRegistrations(withCamps.filter(reg => reg.campName));
       }
     } catch { toast.error('ไม่สามารถโหลดข้อมูลได้'); }
     finally { setLoading(false); }
@@ -113,8 +114,8 @@ export default function MyCampsPage() {
     return (
       <div className="min-h-screen bg-[#F8F9FA]">
         <HeroBanner badge="My Journey" title="MY" titleHighlight="CAMPS" subtitle="ค่ายของคุณ" showButtons={false} />
-        <div className="max-w-[1536px] mx-auto px-6 py-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 animate-pulse">
+        <div className="max-w-[1536px] mx-auto px-3 md:px-6 py-6 md:py-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
             {[1,2,3,4,5,6].map(i => (
               <div key={i} className="bg-white rounded-2xl overflow-hidden border border-gray-100">
                 <div className="aspect-video bg-gray-200" />
@@ -154,29 +155,53 @@ export default function MyCampsPage() {
         showButtons={false}
       />
 
-      <div className="max-w-[1536px] mx-auto px-6 py-10">
+      <div className="max-w-[1536px] mx-auto px-3 md:px-6 py-6 md:py-10 pb-16 md:pb-20">
 
-        {/* Tab Bar */}
-        <div className="flex items-center gap-2 mb-8 bg-white rounded-2xl p-1.5 shadow-sm border border-gray-100 w-fit">
-          {tabs.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                activeTab === tab.key
-                  ? 'bg-[#F2B33D] text-white shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              }`}
+        {/* Tab Bar — dropdown on mobile, pills on desktop */}
+        <div className="mb-6 md:mb-8">
+
+          {/* Mobile: select dropdown */}
+          <div className="md:hidden relative">
+            <select
+              value={activeTab}
+              onChange={e => setActiveTab(e.target.value as TabKey)}
+              className="w-full appearance-none bg-white border border-gray-200 rounded-2xl px-4 py-3 pr-10 text-sm font-semibold text-[#2C2C2C] shadow-sm focus:outline-none focus:border-[#F2B33D]"
             >
-              {tab.icon}
-              {tab.label}
-              <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
-                activeTab === tab.key ? 'bg-white/30 text-white' : 'bg-gray-100 text-gray-500'
-              }`}>
-                {counts[tab.key]}
-              </span>
-            </button>
-          ))}
+              {tabs.map(tab => (
+                <option key={tab.key} value={tab.key}>
+                  {tab.label} ({counts[tab.key]})
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#F2B33D] flex items-center justify-center">
+              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Desktop: pill tabs */}
+          <div className="hidden md:flex items-center gap-2 bg-white rounded-2xl p-1.5 shadow-sm border border-gray-100 w-fit">
+            {tabs.map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${
+                  activeTab === tab.key
+                    ? 'bg-[#F2B33D] text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+                <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
+                  activeTab === tab.key ? 'bg-white/30 text-white' : 'bg-gray-100 text-gray-500'
+                }`}>
+                  {counts[tab.key]}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Empty State */}
@@ -203,7 +228,7 @@ export default function MyCampsPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map(reg => {
               const statusInfo = STATUS_MAP[reg.status] ?? { label: reg.status, color: 'default', dot: 'bg-gray-400' };
               const isUpcoming = reg.status === 'approved' || reg.status === 'confirmed';

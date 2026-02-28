@@ -23,6 +23,20 @@ body {
   color: var(--foreground);
   font-family: var(--font-noto-sans-thai), Arial, Helvetica, sans-serif;
 }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2C2C2C;
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #2C2C2C;
+  }
 @keyframes pan-grid {
   0% {
     background-position: 0% 0%;

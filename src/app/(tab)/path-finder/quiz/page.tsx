@@ -96,8 +96,8 @@ export default function PathFinderQuizPage() {
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] pb-32">
-      {/* Header Section */}
-      <div className="bg-[#2C2C2C] text-white pt-10 pb-16 px-4 md:px-8 rounded-b-[40px] shadow-lg sticky top-0 z-20">
+      {/* Header (scrolls away) */}
+      <div className="bg-[#2C2C2C] text-white pt-10 pb-16 px-4 md:px-8 shadow-lg">
         <div className="container mx-auto max-w-5xl">
           <Button
             variant="light"
@@ -121,13 +121,14 @@ export default function PathFinderQuizPage() {
         </div>
       </div>
 
-      {/* Progress Bar (Sticky just below header) */}
-      <div className="sticky top-[200px] z-20 w-full px-4 md:px-8 -mt-6">
+      {/* Progress Bar (sticky) */}
+      <div className="sticky top-[60px] z-20 w-full px-4 md:px-8 -mt-6 pt-4">
         <div className="container mx-auto max-w-5xl">
-          <div className="bg-white rounded-2xl p-4 md:p-6 shadow-xl border border-gray-100 flex flex-col md:flex-row items-center gap-4 md:gap-8">
+          <div className="bg-white rounded-2xl px-4 py-3 md:p-6 shadow-xl border border-gray-100 flex items-center gap-3 md:gap-8">
             <div className="flex-1 w-full">
-              <div className="flex justify-between text-sm font-bold text-gray-700 mb-2">
-                <span>ความคืบหน้าการทำแบบทดสอบ</span>
+              <div className="flex justify-between text-xs md:text-sm font-bold text-gray-700 mb-1.5">
+                <span className="hidden sm:inline">ความคืบหน้าการทำแบบทดสอบ</span>
+                <span className="sm:hidden font-black text-[#2C2C2C]">ความคืบหน้า</span>
                 <span className="text-[#F2B33D]">{answers.size} / {questions.length} ข้อ</span>
               </div>
               <Progress
@@ -136,20 +137,20 @@ export default function PathFinderQuizPage() {
                   indicator: "bg-[#F2B33D]",
                   track: "bg-gray-100"
                 }}
-                className="h-3 md:h-4"
+                className="h-2.5 md:h-4"
                 radius="full"
               />
             </div>
-            <div className="shrink-0 font-black text-2xl text-[#2C2C2C] bg-[#F2B33D]/20 px-4 py-2 rounded-xl">
+            <div className="shrink-0 font-black text-lg md:text-2xl text-[#2C2C2C] bg-[#F2B33D]/20 px-3 py-1.5 md:px-4 md:py-2 rounded-xl min-w-[56px] text-center">
               {Math.round(progress)}%
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 max-w-5xl mt-12">
+      <div className="container mx-auto px-3 md:px-4 max-w-5xl mt-8 md:mt-12">
         {/* Questions List */}
-        <div className="space-y-6 md:space-y-8">
+        <div className="space-y-4 md:space-y-8">
           {questions.map((question, index) => {
             const currentAnswer = answers.get(question.id);
             const isAnswered = currentAnswer !== undefined;
@@ -157,28 +158,33 @@ export default function PathFinderQuizPage() {
             return (
               <Card
                 key={question.id}
-                className={`shadow-sm border-2 transition-all duration-300 rounded-[24px] overflow-hidden ${isAnswered ? 'border-transparent bg-white/60' : 'border-gray-200 bg-white hover:border-[#F2B33D]/50 hover:shadow-md'
+                className={`shadow-sm border-2 transition-all duration-300 rounded-[20px] md:rounded-[24px] overflow-hidden ${isAnswered ? 'border-transparent bg-white/60' : 'border-gray-200 bg-white hover:border-[#F2B33D]/50 hover:shadow-md'
                   }`}
               >
                 <CardBody className="p-0">
-                  <div className="flex flex-col lg:flex-row items-stretch min-h-[140px]">
+                  <div className="flex flex-col lg:flex-row items-stretch">
 
                     {/* Question Text */}
-                    <div className="flex-1 p-6 md:p-8 flex items-center gap-6">
-                      <div className={`w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center text-xl font-black transition-colors ${isAnswered ? 'bg-[#2C2C2C] text-[#F2B33D]' : 'bg-gray-100 text-gray-400'
+                    <div className="flex-1 px-4 py-4 md:p-8 flex items-center gap-3 md:gap-6">
+                      <div className={`w-9 h-9 md:w-12 md:h-12 shrink-0 rounded-xl md:rounded-2xl flex items-center justify-center text-base md:text-xl font-black transition-colors ${isAnswered ? 'bg-[#2C2C2C] text-[#F2B33D]' : 'bg-gray-100 text-gray-400'
                         }`}>
                         {index + 1}
                       </div>
-                      <p className={`text-xl md:text-2xl font-bold transition-colors ${isAnswered ? 'text-gray-500' : 'text-[#2C2C2C]'
+                      <p className={`text-base md:text-2xl font-bold transition-colors leading-snug ${isAnswered ? 'text-gray-400' : 'text-[#2C2C2C]'
                         }`}>
                         {question.text}
                       </p>
                     </div>
 
                     {/* Rating Options */}
-                    <div className={`flex items-center justify-center p-6 lg:p-8 lg:min-w-[480px] border-t lg:border-t-0 lg:border-l transition-colors ${isAnswered ? 'bg-gray-50/50 border-gray-100' : 'bg-gray-50 border-gray-100'
+                    <div className={`px-4 pb-4 pt-1 md:p-8 lg:min-w-[480px] border-t lg:border-t-0 lg:border-l transition-colors ${isAnswered ? 'bg-gray-50/50 border-gray-100' : 'bg-gray-50 border-gray-100'
                       }`}>
-                      <div className="flex justify-between items-center w-full gap-2 sm:gap-4">
+                      {/* Scale labels on mobile */}
+                      <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-2 px-1 lg:hidden">
+                        <span>ไม่ใช่เลย</span>
+                        <span>ใช่แน่นอน</span>
+                      </div>
+                      <div className="flex justify-between items-center w-full gap-1 sm:gap-4">
                         {[
                           { value: 1, color: 'border-red-400 bg-red-50', selectedStyle: 'bg-red-500 border-red-500 scale-110 shadow-lg text-white' },
                           { value: 2, color: 'border-orange-300 bg-orange-50', selectedStyle: 'bg-orange-400 border-orange-400 scale-110 shadow-lg text-white' },
@@ -195,17 +201,13 @@ export default function PathFinderQuizPage() {
                               className="group relative flex flex-col items-center flex-1"
                             >
                               <div
-                                className={`w-10 h-10 sm:w-14 sm:h-14 rounded-full border-2 flex items-center justify-center text-sm font-bold transition-all duration-300 ${isSelected
+                                className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 flex items-center justify-center text-sm font-bold transition-all duration-300 ${isSelected
                                     ? option.selectedStyle
                                     : `${option.color} text-gray-400 hover:scale-105 hover:shadow-md`
-                                  } ${isAnswered && !isSelected ? 'opacity-40 grayscale' : ''}`}
+                                  } ${isAnswered && !isSelected ? 'opacity-30 grayscale' : ''}`}
                               >
                                 {option.value}
                               </div>
-                              {/* <span className={`absolute -bottom-7 w-max text-xs font-bold transition-all duration-300 ${isSelected ? 'text-[#2C2C2C] opacity-100 translate-y-0' : 'text-gray-400 opacity-0 -translate-y-2 group-hover:opacity-100 group-hover:translate-y-0'
-                                }`}>
-                                {option.label}
-                              </span> */}
                             </button>
                           );
                         })}
@@ -220,21 +222,21 @@ export default function PathFinderQuizPage() {
         </div>
 
         {/* Bottom submit bar (Sticky) */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-gray-200 p-4 md:p-6 z-30 transform transition-transform duration-500 ease-out shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-          <div className="container mx-auto max-w-5xl flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex flex-col">
-              <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">สถานะ</span>
-              <span className={`text-lg font-black ${isAllComplete() ? 'text-green-500' : 'text-[#F2B33D]'}`}>
-                {isAllComplete() ? 'ทำครบทุกข้อแล้ว พร้อมส่งคำตอบ!' : `เหลืออีก ${questions.length - answers.size} ข้อ`}
+        <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-gray-200 px-4 py-3 md:p-6 z-30 shadow-[0_-10px_40px_rgba(0,0,0,0.08)]">
+          <div className="container mx-auto max-w-5xl flex flex-row items-center justify-between gap-3">
+            <div className="flex flex-col min-w-0">
+              <span className="text-[11px] md:text-sm font-bold text-gray-400 uppercase tracking-wider">สถานะ</span>
+              <span className={`text-sm md:text-lg font-black truncate ${isAllComplete() ? 'text-green-500' : 'text-[#F2B33D]'}`}>
+                {isAllComplete() ? 'ครบแล้ว! พร้อมส่ง' : `เหลืออีก ${questions.length - answers.size} ข้อ`}
               </span>
             </div>
             <Button
-              size="lg"
-              className={`w-full sm:w-auto px-10 h-14 font-black shadow-lg transition-transform ${isAllComplete()
+              size="md"
+              className={`shrink-0 px-6 md:px-10 h-11 md:h-14 font-black text-sm md:text-base shadow-lg transition-transform ${isAllComplete()
                   ? 'bg-[#F2B33D] text-[#2C2C2C] hover:scale-105 hover:bg-[#e0a331]'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 }`}
-              endContent={isAllComplete() && <FiCheck className="w-5 h-5" />}
+              endContent={isAllComplete() && <FiCheck className="w-4 h-4" />}
               onClick={handleSubmit}
               isDisabled={!isAllComplete()}
               isLoading={submitting}
