@@ -54,6 +54,28 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // ── Portfolio review check ────────────────────────────────────────────────
+    if (camp.requiresPortfolio) {
+      if (registration.status === RegistrationStatus.PENDING) {
+        return NextResponse.json({
+          registered: true,
+          canGetTicket: false,
+          status: 'pending_portfolio_review',
+          message: 'รอ Organizer ตรวจสอบ Portfolio',
+        });
+      }
+      if (registration.status === RegistrationStatus.REJECTED) {
+        return NextResponse.json({
+          registered: true,
+          canGetTicket: false,
+          status: 'portfolio_rejected',
+          message: registration.notes || 'Portfolio ไม่ผ่านการตรวจสอบ',
+        });
+      }
+      // status === APPROVED → fall through to payment check below
+      // (CONFIRMED also falls through — already paid)
+    }
+
     // 🔧 FIX: ตรวจสอบการชำระเงิน - ถ้าค่ายไม่ฟรีต้องมีการชำระเงินที่ approved
     const isFree = !camp.fee || camp.fee === 0;
 
@@ -62,6 +84,16 @@ export async function GET(request: NextRequest) {
       const payment = await PaymentModel.findByRegistrationId(registration._id.toString());
 
       if (!payment) {
+        // portfolio camp + approved → ready to pay
+        if (camp.requiresPortfolio && registration.status === RegistrationStatus.APPROVED) {
+          return NextResponse.json({
+            registered: true,
+            canGetTicket: false,
+            status: 'ready_to_pay',
+            registrationId: registration._id.toString(),
+            message: 'Portfolio ผ่านแล้ว กรุณาชำระเงิน',
+          });
+        }
         // ไม่มี payment record → รอชำระเงิน
         return NextResponse.json(
           {
@@ -132,7 +164,12 @@ export async function GET(request: NextRequest) {
     console.log('✅ All checks passed - can get ticket');
 
     // Generate verification URL (สแกนแล้วเปิดหน้า verify)
-    const verifyUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/verify?id=${registration._id}`;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+    if (!baseUrl) {
+      console.error('NEXT_PUBLIC_BASE_URL is not set');
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+    const verifyUrl = `${baseUrl}/verify?id=${registration._id}`;
 
     // Generate QR Code with verification URL
     const qrCodeDataUrl = await qrcode.toDataURL(verifyUrl, {

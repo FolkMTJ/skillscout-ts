@@ -88,8 +88,8 @@ export default function PromoCodeManager({ userId, userRole, camps = [] }: Promo
         discountType: code.discountType,
         discountValue: code.discountValue.toString(),
         maxUses: code.usageLimit?.toString() || '',
-        validFrom: new Date(code.validFrom).toISOString().slice(0, 16),
-        validUntil: new Date(code.validUntil).toISOString().slice(0, 16),
+        validFrom: new Date(code.validFrom).toISOString().slice(0, 10),
+        validUntil: new Date(code.validUntil).toISOString().slice(0, 10),
         applicableToAllCamps: !code.applicableCamps || code.applicableCamps.length === 0,
         applicableCamps: code.applicableCamps || [],
         description: code.description || '',
@@ -134,8 +134,8 @@ export default function PromoCodeManager({ userId, userRole, camps = [] }: Promo
         discountType: formData.discountType,
         discountValue: parseFloat(formData.discountValue),
         maxUses: parseInt(formData.maxUses),
-        validFrom: new Date(formData.validFrom).toISOString(),
-        validUntil: new Date(formData.validUntil).toISOString(),
+        validFrom: new Date(formData.validFrom + 'T00:00:00').toISOString(),
+        validUntil: new Date(formData.validUntil + 'T23:59:59').toISOString(),
         applicableToAllCamps: formData.applicableToAllCamps,
         applicableCamps: formData.applicableToAllCamps ? [] : formData.applicableCamps,
         description: formData.description,
@@ -264,89 +264,122 @@ export default function PromoCodeManager({ userId, userRole, camps = [] }: Promo
             สร้างรหัสแรก
           </Button>
         </div>
-      ) : (
-        <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
-          {promoCodes.map((code) => {
-            const isExpired = new Date(code.validUntil) < now;
-            const usagePct = code.usageLimit
-              ? Math.min(100, Math.round((code.usedCount / code.usageLimit) * 100))
-              : 0;
+      ) : (() => {
+        const activeCodes = promoCodes.filter(c => c.isActive && new Date(c.validUntil) >= now);
+        const expiredCodes = promoCodes.filter(c => !c.isActive || new Date(c.validUntil) < now);
 
-            return (
-              <div
-                key={code._id}
-                className={`flex items-center gap-3 rounded-2xl px-4 py-3 border transition-all ${!code.isActive || isExpired
-                  ? 'bg-gray-50 border-gray-100 opacity-60'
+        const renderCard = (code: PromoCode) => {
+          const isExpired = new Date(code.validUntil) < now;
+          const usagePct = code.usageLimit
+            ? Math.min(100, Math.round((code.usedCount / code.usageLimit) * 100))
+            : 0;
+          return (
+            <div
+              key={code._id}
+              className={`flex items-center gap-3 rounded-2xl px-4 py-3 border transition-all ${
+                isExpired
+                  ? 'bg-gray-50 border-gray-100'
+                  : !code.isActive
+                  ? 'bg-gray-50 border-gray-100'
                   : 'bg-white border-gray-100 hover:border-[#F2B33D]/30 hover:shadow-sm'
-                  }`}
-              >
-                {/* Left: Code info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className="font-black text-[#F2B33D] tracking-widest text-sm">{code.code}</span>
-                    {/* Discount badge */}
-                    <span className={`inline-flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-full ${code.discountType === DiscountType.PERCENTAGE
-                      ? 'bg-orange-100 text-orange-700'
-                      : 'bg-green-100 text-green-700'
-                      }`}>
-                      {code.discountType === DiscountType.PERCENTAGE
-                        ? <>{code.discountValue}%</>
-                        : <>฿{code.discountValue}</>
-                      }
-                    </span>
-                    {/* Scope chip */}
-                    {code.applicableCamps && code.applicableCamps.length > 0 ? (
-                      <Chip size="sm" variant="flat" color="primary" className="text-[10px] h-5">{code.applicableCamps.length} ค่าย</Chip>
-                    ) : (
-                      <Chip size="sm" variant="flat" color="success" className="text-[10px] h-5">ทั้งเว็บ</Chip>
-                    )}
-                    {isExpired && (
-                      <Chip size="sm" variant="flat" color="danger" className="text-[10px] h-5">หมดอายุ</Chip>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-gray-400">
-                    {code.description && (
-                      <span className="truncate max-w-[160px] text-gray-500">{code.description}</span>
-                    )}
-                    <span className="flex items-center gap-1">
-                      <FiCalendar size={10} />
-                      {new Date(code.validUntil).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      {code.usedCount}<span className="text-gray-300">/</span>{code.usageLimit || '∞'}
-                      {code.usageLimit && usagePct >= 80 && (
-                        <span className={`font-semibold ${usagePct >= 100 ? 'text-red-500' : 'text-orange-500'}`}>
-                          ({usagePct}%)
-                        </span>
-                      )}
-                    </span>
-                  </div>
+              }`}
+            >
+              {/* Left: Code info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span className={`font-black tracking-widest text-sm ${isExpired || !code.isActive ? 'text-gray-400' : 'text-[#F2B33D]'}`}>
+                    {code.code}
+                  </span>
+                  <span className={`inline-flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-full ${
+                    isExpired || !code.isActive
+                      ? 'bg-gray-100 text-gray-400'
+                      : code.discountType === DiscountType.PERCENTAGE
+                        ? 'bg-orange-100 text-orange-700'
+                        : 'bg-green-100 text-green-700'
+                  }`}>
+                    {code.discountType === DiscountType.PERCENTAGE
+                      ? <>{code.discountValue}%</>
+                      : <>฿{code.discountValue}</>
+                    }
+                  </span>
+                  {code.applicableCamps && code.applicableCamps.length > 0 ? (
+                    <Chip size="sm" variant="flat" color="primary" className="text-[10px] h-5">{code.applicableCamps.length} ค่าย</Chip>
+                  ) : (
+                    <Chip size="sm" variant="flat" color="success" className="text-[10px] h-5">ทั้งเว็บ</Chip>
+                  )}
                 </div>
-
-                {/* Right: Toggle + Actions */}
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-3 text-xs text-gray-400">
+                  {code.description && (
+                    <span className="truncate max-w-[160px] text-gray-500">{code.description}</span>
+                  )}
+                  <span className="flex items-center gap-1">
+                    <FiCalendar size={10} />
+                    ถึง {new Date(code.validUntil).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    {code.usedCount}<span className="text-gray-300">/</span>{code.usageLimit || '∞'}
+                    {code.usageLimit && usagePct >= 80 && (
+                      <span className={`font-semibold ${usagePct >= 100 ? 'text-red-500' : 'text-orange-500'}`}>
+                        ({usagePct}%)
+                      </span>
+                    )}
+                  </span>
+                </div>
+              </div>
+              {/* Right: Toggle + Actions */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {!isExpired && (
                   <Switch
                     size="sm"
                     isSelected={code.isActive}
                     onValueChange={() => handleToggleActive(code._id, code.isActive)}
                     classNames={{ wrapper: 'mr-0' }}
                   />
-                  <Button isIconOnly size="sm" variant="flat"
-                    className="w-7 h-7 min-w-0 bg-gray-100 text-gray-500 hover:bg-blue-50 hover:text-blue-600"
-                    onPress={() => handleOpenModal(code)}>
-                    <FiEdit2 size={13} />
-                  </Button>
-                  <Button isIconOnly size="sm" variant="flat"
-                    className="w-7 h-7 min-w-0 bg-red-50 text-red-400 hover:bg-red-100"
-                    onPress={() => { setDeletingId(code._id); onDeleteOpen(); }}>
-                    <FiTrash2 size={13} />
-                  </Button>
-                </div>
+                )}
+                <Button isIconOnly size="sm" variant="flat"
+                  className="w-7 h-7 min-w-0 bg-gray-100 text-gray-500 hover:bg-blue-50 hover:text-blue-600"
+                  onPress={() => handleOpenModal(code)}>
+                  <FiEdit2 size={13} />
+                </Button>
+                <Button isIconOnly size="sm" variant="flat"
+                  className="w-7 h-7 min-w-0 bg-red-50 text-red-400 hover:bg-red-100"
+                  onPress={() => { setDeletingId(code._id); onDeleteOpen(); }}>
+                  <FiTrash2 size={13} />
+                </Button>
               </div>
-            );
-          })}
-        </div>
-      )}
+            </div>
+          );
+        };
+
+        return (
+          <div className="space-y-4 max-h-[480px] overflow-y-auto pr-1">
+            {/* Active Section */}
+            {activeCodes.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                  </span>
+                  <p className="text-xs font-semibold text-green-600">ใช้งานอยู่ ({activeCodes.length})</p>
+                </div>
+                {activeCodes.map(renderCard)}
+              </div>
+            )}
+
+            {/* Expired/Inactive Section */}
+            {expiredCodes.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-gray-300" />
+                  <p className="text-xs font-semibold text-gray-400">หมดอายุ / ปิดใช้งาน ({expiredCodes.length})</p>
+                </div>
+                {expiredCodes.map(renderCard)}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Create/Edit Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="2xl">
@@ -432,21 +465,31 @@ export default function PromoCodeManager({ userId, userRole, camps = [] }: Promo
               />
 
               <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="เริ่มใช้งาน"
-                  type="datetime-local"
-                  value={formData.validFrom}
-                  onChange={(e) => setFormData({ ...formData, validFrom: e.target.value })}
-                  isRequired
-                />
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-gray-700">
+                    เริ่มใช้งาน <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.validFrom}
+                    onChange={(e) => setFormData({ ...formData, validFrom: e.target.value })}
+                    className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#F2B33D] focus:border-transparent bg-white"
+                    required
+                  />
+                </div>
 
-                <Input
-                  label="หมดอายุ"
-                  type="datetime-local"
-                  value={formData.validUntil}
-                  onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })}
-                  isRequired
-                />
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-gray-700">
+                    หมดอายุ <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.validUntil}
+                    onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })}
+                    className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#F2B33D] focus:border-transparent bg-white"
+                    required
+                  />
+                </div>
               </div>
 
               {userRole === 'admin' && (

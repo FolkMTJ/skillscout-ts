@@ -8,7 +8,7 @@ import {
   ModalBody, ModalFooter, Tabs, Tab,
 } from '@heroui/react';
 import {
-  FiArrowLeft, FiEye, FiCheckCircle, FiCreditCard, FiUser, FiZap, FiClock,
+  FiArrowLeft, FiEye, FiCheckCircle, FiCreditCard, FiUser, FiZap, FiClock, FiTrendingUp,
 } from 'react-icons/fi';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
@@ -33,6 +33,12 @@ interface Payment {
   verifiedAt?: string;
   createdAt: string;
   updatedAt: string;
+  // Platform fee
+  platformFeePercent?: number;
+  platformFee?: number;
+  organizerNet?: number;
+  payoutStatus?: 'pending' | 'paid_out';
+  paidOutAt?: string;
 }
 
 export default function PaymentsPage() {
@@ -208,7 +214,23 @@ export default function PaymentsPage() {
                   <div className="bg-[#F2B33D]/10 rounded-2xl p-3">
                     <p className="text-xs text-gray-400 mb-1">ยอดชำระ</p>
                     <p className="text-2xl font-black text-[#F2B33D]">฿{viewingPayment.finalAmount.toLocaleString()}</p>
+                    {viewingPayment.platformFee !== undefined && viewingPayment.platformFee > 0 && (
+                      <p className="text-[10px] text-gray-400 mt-1">
+                        หัก fee {viewingPayment.platformFeePercent}% = ฿{viewingPayment.platformFee.toLocaleString()}
+                      </p>
+                    )}
                   </div>
+                  {viewingPayment.organizerNet !== undefined && viewingPayment.platformFee !== undefined && viewingPayment.platformFee > 0 && (
+                    <div className="bg-green-50 rounded-2xl p-3">
+                      <p className="text-xs text-gray-400 mb-1 flex items-center gap-1"><FiTrendingUp size={11} />คุณได้รับ</p>
+                      <p className="text-2xl font-black text-green-600">฿{viewingPayment.organizerNet.toLocaleString()}</p>
+                      {viewingPayment.payoutStatus === 'paid_out' ? (
+                        <p className="text-[10px] text-green-500 mt-1 font-medium">โอนแล้ว ✓</p>
+                      ) : (
+                        <p className="text-[10px] text-orange-500 mt-1">รอโอน</p>
+                      )}
+                    </div>
+                  )}
                   <div className="bg-gray-50 rounded-2xl p-3">
                     <p className="text-xs text-gray-400 mb-1">ชำระเมื่อ</p>
                     <p className="text-sm font-medium text-gray-700">
@@ -299,7 +321,19 @@ function PaymentCard({ payment, onView }: { payment: Payment; onView: () => void
             )}
           </div>
           <p className="text-xs text-gray-500 truncate">{payment.campName}</p>
-          <p className="text-sm font-bold text-[#F2B33D] mt-0.5">฿{payment.finalAmount.toLocaleString()}</p>
+          {payment.organizerNet !== undefined && payment.platformFee !== undefined && payment.platformFee > 0 ? (
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <p className="text-sm font-bold text-green-600">฿{payment.organizerNet.toLocaleString()}</p>
+              <span className="text-[10px] text-gray-400">(จาก ฿{payment.finalAmount.toLocaleString()})</span>
+              {payment.payoutStatus === 'paid_out' ? (
+                <span className="text-[10px] text-green-500 font-medium">โอนแล้ว</span>
+              ) : (
+                <span className="text-[10px] text-orange-400">รอโอน</span>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm font-bold text-[#F2B33D] mt-0.5">฿{payment.finalAmount.toLocaleString()}</p>
+          )}
         </div>
 
         {/* View button */}

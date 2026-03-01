@@ -104,7 +104,7 @@ const FooterBody = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-12">
+    <div className="mx-auto max-w-[1536px] px-6 py-12">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
 
         {/* Column 1 - Brand */}
@@ -252,7 +252,7 @@ const FooterBody = () => {
 const FooterBottom = () => {
   return (
     <div className="border-t border-white/10">
-      <div className="mx-auto max-w-7xl px-6 py-6">
+      <div className="mx-auto max-w-[1536px] px-6 py-6">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-gray-400 text-center md:text-left">
             &copy; 2024 <span className="text-orange-400 font-semibold">SkillScout</span>. สงวนลิขสิทธิ์ทั้งหมด

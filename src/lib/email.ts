@@ -73,3 +73,126 @@ export async function sendOTPEmail(email: string, otp: string) {
     return false;
   }
 }
+
+export async function sendPortfolioApprovalEmail(
+  email: string,
+  userName: string,
+  campName: string,
+  campUrl: string,
+  isPaid: boolean,
+) {
+  const mailOptions = {
+    from: `"SkillScout" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: `✅ Portfolio ผ่านการตรวจสอบ — ${campName}`,
+    html: `
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { background: linear-gradient(135deg, #fadf68 0%, #ee931c 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+      .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
+      .highlight { background: #fff8e1; border-left: 4px solid #F2B33D; padding: 16px; border-radius: 4px; margin: 20px 0; }
+      .btn { display: inline-block; background: #F2B33D; color: #1a1a1a; font-weight: bold; padding: 14px 32px; border-radius: 8px; text-decoration: none; margin-top: 20px; }
+      .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>SkillScout</h1>
+        <p>Portfolio ผ่านการตรวจสอบแล้ว! 🎉</p>
+      </div>
+      <div class="content">
+        <p>สวัสดี <strong>${userName}</strong>,</p>
+        <p>ยินดีด้วย! Portfolio ของคุณสำหรับค่าย <strong>${campName}</strong> ผ่านการตรวจสอบจาก Organizer แล้ว</p>
+        <div class="highlight">
+          ${isPaid
+            ? '<p style="margin:0">👉 <strong>ขั้นตอนต่อไป:</strong> กลับไปที่หน้าค่ายเพื่อ<strong>ชำระเงิน</strong>และรับ Ticket ของคุณ</p>'
+            : '<p style="margin:0">👉 <strong>ขั้นตอนต่อไป:</strong> กลับไปที่หน้าค่ายเพื่อรับ<strong>Ticket</strong> ฟรีของคุณ</p>'
+          }
+        </div>
+        <div style="text-align:center">
+          <a href="${campUrl}" class="btn">ไปที่หน้าค่าย →</a>
+        </div>
+        <div class="footer">
+          <p>ขอบคุณที่ใช้บริการ SkillScout</p>
+          <p>© 2025 SkillScout. All rights reserved.</p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error('Error sending portfolio approval email:', error);
+    return false;
+  }
+}
+
+export async function sendPortfolioRejectionEmail(
+  email: string,
+  userName: string,
+  campName: string,
+  reason: string,
+) {
+  const mailOptions = {
+    from: `"SkillScout" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: `❌ Portfolio ไม่ผ่านการตรวจสอบ — ${campName}`,
+    html: `
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { background: linear-gradient(135deg, #f87171 0%, #dc2626 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+      .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
+      .reason-box { background: #fff5f5; border-left: 4px solid #f87171; padding: 16px; border-radius: 4px; margin: 20px 0; }
+      .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>SkillScout</h1>
+        <p>แจ้งผลการตรวจสอบ Portfolio</p>
+      </div>
+      <div class="content">
+        <p>สวัสดี <strong>${userName}</strong>,</p>
+        <p>ขออภัย Portfolio ของคุณสำหรับค่าย <strong>${campName}</strong> ไม่ผ่านการตรวจสอบในครั้งนี้</p>
+        ${reason ? `
+        <div class="reason-box">
+          <p style="margin:0;font-weight:bold">เหตุผล:</p>
+          <p style="margin:8px 0 0 0">${reason}</p>
+        </div>` : ''}
+        <p>หากมีข้อสงสัย กรุณาติดต่อ Organizer ของค่ายโดยตรง</p>
+        <div class="footer">
+          <p>ขอบคุณที่ใช้บริการ SkillScout</p>
+          <p>© 2025 SkillScout. All rights reserved.</p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error('Error sending portfolio rejection email:', error);
+    return false;
+  }
+}

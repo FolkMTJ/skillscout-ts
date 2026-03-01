@@ -33,6 +33,13 @@ interface PaymentDoc {
   confirmedAt?: Date;
   releasedAt?: Date;
   autoReleaseDate?: Date;
+  // Platform fee
+  platformFeePercent?: number;
+  platformFee?: number;
+  organizerNet?: number;
+  payoutStatus?: 'pending' | 'paid_out';
+  paidOutAt?: Date;
+  payoutNote?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -169,6 +176,30 @@ export class PaymentModel {
     } as Filter<PaymentDoc>;
     const doc = await collection.findOne(filter);
     return doc ? this.toPublic(doc) : null;
+  }
+
+  static async findAllForAdmin(): Promise<Payment[]> {
+    const collection = await getCollection<PaymentDoc>(this.collectionName);
+    const payments = await collection
+      .find({} as Filter<PaymentDoc>)
+      .sort({ createdAt: -1 })
+      .toArray();
+    return payments.map(doc => this.toPublic(doc));
+  }
+
+  static async markAsPaidOut(id: string, note?: string): Promise<boolean> {
+    const collection = await getCollection<PaymentDoc>(this.collectionName);
+    const filter: Filter<PaymentDoc> = { _id: new ObjectId(id) } as Filter<PaymentDoc>;
+    const update: UpdateFilter<PaymentDoc> = {
+      $set: {
+        payoutStatus: 'paid_out',
+        paidOutAt: new Date(),
+        payoutNote: note,
+        updatedAt: new Date(),
+      },
+    };
+    const result = await collection.updateOne(filter, update);
+    return result.modifiedCount > 0;
   }
 
   static async deleteById(id: string): Promise<boolean> {

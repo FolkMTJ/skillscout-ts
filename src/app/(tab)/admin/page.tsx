@@ -24,7 +24,7 @@ import {
   Input,
   Textarea,
 } from '@heroui/react';
-import { FiUsers, FiCalendar, FiShield, FiTrash2, FiEye, FiSearch, FiAlertCircle, FiXCircle, FiAlertTriangle, FiCheck, FiX, FiPlus, FiEdit2, FiBookOpen, FiToggleLeft, FiToggleRight, FiSave, FiMonitor, FiRefreshCw } from 'react-icons/fi';
+import { FiUsers, FiCalendar, FiShield, FiTrash2, FiEye, FiSearch, FiAlertCircle, FiXCircle, FiAlertTriangle, FiCheck, FiX, FiPlus, FiEdit2, FiBookOpen, FiToggleLeft, FiToggleRight, FiSave, FiMonitor, FiRefreshCw, FiTrendingUp } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { StatCard } from '@/components/common';
 
@@ -94,6 +94,8 @@ export default function AdminDashboard() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedCamp, setSelectedCamp] = useState<Camp | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [searchCamp, setSearchCamp] = useState('');
+  const [campStatusFilter, setCampStatusFilter] = useState<'all' | 'pending' | 'active' | 'rejected'>('all');
 
   // Showcase Mode state
   const [showcaseMode, setShowcaseMode] = useState(false);
@@ -101,11 +103,23 @@ export default function AdminDashboard() {
   const [showcaseCampCount, setShowcaseCampCount] = useState(0);
   const [showcaseSeeding, setShowcaseSeeding] = useState(false);
 
+  // Platform Fee settings state
+  const [platformPromptpayId, setPlatformPromptpayId] = useState('');
+  const [platformAccountName, setPlatformAccountName] = useState('SkillScout');
+  const [platformFeePercent, setPlatformFeePercent] = useState('5');
+  const [platformSaving, setPlatformSaving] = useState(false);
+  const [platformEnabled, setPlatformEnabled] = useState(false);
+
   const fetchShowcaseSettings = async () => {
     try {
       const res = await fetch('/api/admin/settings');
       const data = await res.json();
       setShowcaseMode(data.showcaseMode ?? false);
+      // Platform fee settings
+      setPlatformPromptpayId(data.platformPromptpayId ?? '');
+      setPlatformAccountName(data.platformAccountName ?? 'SkillScout');
+      setPlatformFeePercent(String(data.platformFeePercent ?? 5));
+      setPlatformEnabled(data.platformEnabled ?? false);
       const campRes = await fetch('/api/admin/showcase');
       const campData = await campRes.json();
       setShowcaseCampCount(campData.count ?? 0);
@@ -125,6 +139,26 @@ export default function AdminDashboard() {
       toast.success(newMode ? 'เปิด Showcase Mode แล้ว' : 'ปิด Showcase Mode แล้ว');
     } catch { toast.error('เกิดข้อผิดพลาด'); }
     setShowcaseSaving(false);
+  };
+
+  const savePlatformSettings = async () => {
+    setPlatformSaving(true);
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          platformPromptpayId: platformPromptpayId.trim(),
+          platformAccountName: platformAccountName.trim() || 'SkillScout',
+          platformFeePercent: parseFloat(platformFeePercent) || 5,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      const isEnabled = !!platformPromptpayId.trim();
+      setPlatformEnabled(isEnabled);
+      toast.success(isEnabled ? 'บันทึกตั้งค่า Platform Fee สำเร็จ' : 'ปิดระบบ Platform Fee แล้ว');
+    } catch { toast.error('เกิดข้อผิดพลาด'); }
+    setPlatformSaving(false);
   };
 
   const seedShowcaseCamps = async () => {
@@ -461,6 +495,14 @@ export default function AdminDashboard() {
     user.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const filteredCamps = camps.filter(c => {
+    const matchStatus = campStatusFilter === 'all' || c.status === campStatusFilter;
+    const matchSearch = !searchCamp ||
+      c.name.toLowerCase().includes(searchCamp.toLowerCase()) ||
+      c.organizerName?.toLowerCase().includes(searchCamp.toLowerCase());
+    return matchStatus && matchSearch;
+  });
+
   const totalUsers = users.length;
   const organizers = users.filter(u => u.role === 'organizer').length;
   const bannedUsers = users.filter(u => u.isBanned).length;
@@ -605,7 +647,53 @@ export default function AdminDashboard() {
             onSelectionChange={(key) => setActiveTab(key as string)}
             variant="underlined"
           >
-            <Tab key="showcase" title={<span className="flex items-center gap-1.5"><FiMonitor className={showcaseMode ? 'text-[#F2B33D]' : ''} />Showcase {showcaseMode && <span className="w-2 h-2 rounded-full bg-[#F2B33D] inline-block" />}</span>}>
+            <Tab key="overview" title="ภาพรวม">
+              <div className="py-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <button
+                    onClick={() => { setActiveTab('camps'); setCampStatusFilter('pending'); }}
+                    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all text-left border-2 border-transparent hover:border-orange-200"
+                  >
+                    <FiAlertCircle className="text-orange-500 text-2xl mb-3" />
+                    <p className="text-3xl font-bold text-orange-500">{pendingCamps}</p>
+                    <p className="text-sm text-gray-500 mt-1">ค่ายรออนุมัติ</p>
+                    <p className="text-xs text-[#F2B33D] mt-2 font-medium">คลิกเพื่อดู →</p>
+                  </button>
+
+                  <button
+                    onClick={() => router.push('/admin/payouts')}
+                    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all text-left border-2 border-transparent hover:border-[#F2B33D]/40"
+                  >
+                    <FiTrendingUp className="text-[#F2B33D] text-2xl mb-3" />
+                    <p className="text-xl font-bold text-[#F2B33D]">Payout</p>
+                    <p className="text-sm text-gray-500 mt-1">Dashboard</p>
+                    <p className="text-xs text-[#F2B33D] mt-2 font-medium">เปิด →</p>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('users')}
+                    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all text-left border-2 border-transparent hover:border-blue-200"
+                  >
+                    <FiUsers className="text-blue-500 text-2xl mb-3" />
+                    <p className="text-3xl font-bold text-blue-500">{totalUsers}</p>
+                    <p className="text-sm text-gray-500 mt-1">ผู้ใช้ทั้งหมด</p>
+                    <p className="text-xs text-[#F2B33D] mt-2 font-medium">จัดการ →</p>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('holland')}
+                    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all text-left border-2 border-transparent hover:border-purple-200"
+                  >
+                    <FiBookOpen className="text-purple-500 text-2xl mb-3" />
+                    <p className="text-3xl font-bold text-purple-500">{hollandCareers.length}</p>
+                    <p className="text-sm text-gray-500 mt-1">อาชีพ Holland</p>
+                    <p className="text-xs text-[#F2B33D] mt-2 font-medium">จัดการ →</p>
+                  </button>
+                </div>
+              </div>
+            </Tab>
+
+            <Tab key="settings" title={<span className="flex items-center gap-1.5"><FiMonitor className={showcaseMode ? 'text-[#F2B33D]' : ''} />ตั้งค่า {showcaseMode && <span className="w-2 h-2 rounded-full bg-[#F2B33D] inline-block" />}</span>}>
               <div className="py-6 space-y-6">
 
                 {/* Toggle Card */}
@@ -629,7 +717,6 @@ export default function AdminDashboard() {
 
                   {showcaseMode && (
                     <div className="mt-4 p-3 bg-[#F2B33D]/20 rounded-xl text-sm text-[#7a5a00] flex items-center gap-2">
-                      <span className="text-lg">🎯</span>
                       <span>Showcase Mode เปิดอยู่ — กดแชร์ผลลัพธ์ในแต่ละหน้าเพื่อใส่ชื่อบน Share Card ได้เลย</span>
                     </div>
                   )}
@@ -702,7 +789,7 @@ export default function AdminDashboard() {
 
                   {showcaseCampCount > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {['Web Development Bootcamp','Data Science & AI Workshop','Cybersecurity Essentials','Mobile App Development','Game Development with Unity','Cloud & DevOps Fundamentals'].map((name, i) => (
+                      {['Web Development Bootcamp', 'Data Science & AI Workshop', 'Cybersecurity Essentials', 'Mobile App Development', 'Game Development with Unity', 'Cloud & DevOps Fundamentals'].map((name, i) => (
                         <div key={i} className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                           <p className="text-sm font-medium text-gray-700 truncate">{name}</p>
                           <p className="text-xs text-gray-400 mt-1">2-3 comments · Active</p>
@@ -716,32 +803,70 @@ export default function AdminDashboard() {
                     </div>
                   )}
                 </div>
-              </div>
-            </Tab>
+                {/* Platform Fee Settings */}
+                <div className={`rounded-2xl border-2 p-6 transition-all ${platformEnabled ? 'border-green-300 bg-green-50/30' : 'border-gray-200 bg-white'}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold flex items-center gap-2">
+                        <FiTrendingUp className={platformEnabled ? 'text-green-500' : 'text-gray-400'} />
+                        Platform Fee
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-0.5">
+                        {platformEnabled
+                          ? `เปิดอยู่ — QR จะชี้มา SkillScout, หัก ${platformFeePercent}%`
+                          : 'ปิดอยู่ — QR ชี้ตรงหา Organizer (ไม่มีรายได้ platform)'}
+                      </p>
+                    </div>
+                    {platformEnabled && (
+                      <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">เปิดใช้งาน</span>
+                    )}
+                  </div>
 
-            <Tab key="overview" title="ภาพรวม">
-              <div className="py-6 space-y-6">
-                <Card className="p-6">
-                  <h3 className="text-xl font-bold mb-4">สถิติระบบ</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center">
-                      <p className="text-3xl font-bold text-[#F2B33D]">{totalUsers}</p>
-                      <p className="text-sm text-gray-600">Users</p>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <Input
+                        label="PromptPay ID (เบอร์หรือเลขบัตร)"
+                        placeholder="0812345678 — ว่างเปล่า = ปิด Platform Fee"
+                        value={platformPromptpayId}
+                        onValueChange={(v) => setPlatformPromptpayId(v.replace(/\D/g, '').slice(0, 13))}
+                        description={platformPromptpayId ? (platformPromptpayId.length === 10 ? 'เบอร์โทรศัพท์' : platformPromptpayId.length === 13 ? 'เลขบัตรประชาชน' : '') : 'ปล่อยว่างเพื่อปิด Platform Fee'}
+                        classNames={{ inputWrapper: 'bg-white border border-gray-200' }}
+                      />
+                      <Input
+                        label="ชื่อบัญชี"
+                        placeholder="SkillScout"
+                        value={platformAccountName}
+                        onValueChange={setPlatformAccountName}
+                        classNames={{ inputWrapper: 'bg-white border border-gray-200' }}
+                      />
+                      <Input
+                        label="Fee % (0–30)"
+                        placeholder="5"
+                        value={platformFeePercent}
+                        onValueChange={(v) => setPlatformFeePercent(v.replace(/[^0-9.]/g, ''))}
+                        endContent={<span className="text-gray-400 text-sm">%</span>}
+                        classNames={{ inputWrapper: 'bg-white border border-gray-200' }}
+                      />
                     </div>
-                    <div className="text-center">
-                      <p className="text-3xl font-bold text-green-600">{activeCamps}</p>
-                      <p className="text-sm text-gray-600">Active Camps</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-3xl font-bold text-orange-600">{pendingCamps}</p>
-                      <p className="text-sm text-gray-600">Pending</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-3xl font-bold text-[#F97316]">{organizers}</p>
-                      <p className="text-sm text-gray-600">Organizers</p>
+
+                    <div className="flex items-center justify-between">
+                      {/* <p className="text-xs text-gray-400">
+                        {platformPromptpayId
+                          ? `ตัวอย่าง: ค่าย ฿1,000 → platform รับ ฿${Math.round(1000 * parseFloat(platformFeePercent || '0') / 100)} + organizer รับ ฿${1000 - Math.round(1000 * parseFloat(platformFeePercent || '0') / 100)}`
+                          : 'ใส่ PromptPay ID เพื่อเปิดระบบ หรือปล่อยว่างเพื่อปิด'}
+                      </p> */}
+                      <Button
+                        className="bg-[#F2B33D] text-white font-semibold"
+                        size="sm"
+                        onPress={savePlatformSettings}
+                        isLoading={platformSaving}
+                        startContent={!platformSaving && <FiSave size={14} />}
+                      >
+                        บันทึก
+                      </Button>
                     </div>
                   </div>
-                </Card>
+                </div>
               </div>
             </Tab>
 
@@ -950,8 +1075,47 @@ export default function AdminDashboard() {
               </div>
             </Tab>
 
-            <Tab key="camps" title={`ค่าย (${camps.length})`}>
+            <Tab key="camps" title={
+              <div className="flex items-center gap-1.5">
+                <span>ค่าย ({camps.length})</span>
+                {pendingCamps > 0 && (
+                  <span className="w-4 h-4 bg-red-500 text-white text-[9px] rounded-full flex items-center justify-center font-bold">
+                    {pendingCamps}
+                  </span>
+                )}
+              </div>
+            }>
               <div className="py-6">
+                <div className="flex flex-col md:flex-row gap-3 mb-4">
+                  <Input
+                    placeholder="ค้นหาค่ายหรือ Organizer..."
+                    value={searchCamp}
+                    onValueChange={setSearchCamp}
+                    startContent={<FiSearch />}
+                    size="sm"
+                    className="flex-1"
+                  />
+                  <div className="flex gap-1.5 flex-wrap">
+                    {(['all', 'pending', 'active', 'rejected'] as const).map(s => (
+                      <button
+                        key={s}
+                        onClick={() => setCampStatusFilter(s)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border-2 ${campStatusFilter === s
+                          ? s === 'pending' ? 'bg-orange-500 text-white border-orange-500'
+                            : s === 'active' ? 'bg-green-500 text-white border-green-500'
+                              : s === 'rejected' ? 'bg-red-500 text-white border-red-500'
+                                : 'bg-[#F2B33D] text-white border-[#F2B33D]'
+                          : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                          }`}
+                      >
+                        {s === 'all' ? 'ทั้งหมด'
+                          : s === 'pending' ? `รออนุมัติ (${camps.filter(c => c.status === 'pending').length})`
+                            : s === 'active' ? `เปิดอยู่ (${camps.filter(c => c.status === 'active').length})`
+                              : `ปฏิเสธ (${camps.filter(c => c.status === 'rejected').length})`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <Table aria-label="Camps table">
                   <TableHeader>
                     <TableColumn>ชื่อค่าย</TableColumn>
@@ -962,7 +1126,7 @@ export default function AdminDashboard() {
                     <TableColumn>จัดการ</TableColumn>
                   </TableHeader>
                   <TableBody>
-                    {camps.map((camp) => (
+                    {filteredCamps.map((camp) => (
                       <TableRow key={camp._id}>
                         <TableCell>
                           <div className="max-w-xs">

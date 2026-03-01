@@ -35,9 +35,12 @@ interface CampDoc {
   capacity?: number;
   enrolled?: number;
   fee?: number;
+  originalFee?: number;
   tags?: string[];
   status?: CampStatus;
   views?: number;
+  requiresPortfolio?: boolean;
+  portfolioInstructions?: string;
 }
 
 export type CampInput = Omit<CampDoc, '_id'>;
@@ -124,8 +127,11 @@ export class CampModel {
       capacity: campData.capacity,
       enrolled: campData.enrolled || 0,
       fee: campData.fee,
+      originalFee: campData.originalFee,
       tags: campData.tags || [],
       status: campData.status || CampStatus.PENDING,
+      requiresPortfolio: campData.requiresPortfolio || false,
+      portfolioInstructions: campData.portfolioInstructions,
     };
     
     const result = await collection.insertOne(campDoc);

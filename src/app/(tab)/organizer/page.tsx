@@ -33,9 +33,10 @@ export default function OrganizerDashboard() {
   const { isOpen: isFormModalOpen, onOpen: onFormModalOpen, onClose: onFormModalClose } = useDisclosure();
   const { isOpen: isPromoModalOpen, onOpen: onPromoModalOpen, onClose: onPromoModalClose } = useDisclosure();
 
-  // Tab + Pagination สำหรับ ค่ายของฉัน
+  // Tab + Pagination + Search สำหรับ ค่ายของฉัน
   const [campTab, setCampTab] = useState<'active' | 'completed' | 'all'>('active');
   const [campPage, setCampPage] = useState(1);
+  const [campSearch, setCampSearch] = useState('');
   const CAMPS_PER_PAGE = 6;
 
   const [formData, setFormData] = useState({
@@ -44,6 +45,8 @@ export default function OrganizerDashboard() {
     activityFormat: 'On-site', qualificationLevel: 'ทุกระดับ', qualificationDetails: '',
     additionalInfo: [] as string[], organizers: [] as Array<{ name: string; imageUrl: string }>,
     hasCertificate: false, allowVocational: false,
+    requiresPortfolio: false, portfolioInstructions: '',
+    originalFee: '',
   });
 
   const fetchData = useCallback(async () => {
@@ -150,8 +153,11 @@ export default function OrganizerDashboard() {
         capacity: parseInt(formData.capacity || '0'),
         enrolled: 0,
         fee: parseInt(formData.fee || '0'),
+        originalFee: formData.originalFee ? parseInt(formData.originalFee) : undefined,
         tags: formData.tags,
         status: 'pending' as const,
+        requiresPortfolio: formData.requiresPortfolio,
+        portfolioInstructions: formData.requiresPortfolio ? formData.portfolioInstructions : undefined,
       };
 
       const response = await fetch('/api/camps', {
@@ -228,7 +234,9 @@ export default function OrganizerDashboard() {
         name: formData.name, description: formData.description, location: formData.location,
         startDate: startDate.toISOString(), endDate: endDate.toISOString(),
         registrationDeadline: registrationDeadline.toISOString(),
-        capacity: parseInt(formData.capacity), fee: parseInt(formData.fee), tags: formData.tags, slug,
+        capacity: parseInt(formData.capacity), fee: parseInt(formData.fee),
+        originalFee: formData.originalFee ? parseInt(formData.originalFee) : undefined,
+        tags: formData.tags, slug,
         image: formData.image, galleryImages: formData.galleryImages, activityFormat: formData.activityFormat,
         date: `${startDate.toLocaleDateString('th-TH', { day: '2-digit', month: 'short' })} - ${endDate.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' })}`,
         deadline: registrationDeadline.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }),
@@ -236,6 +244,8 @@ export default function OrganizerDashboard() {
         price: `฿${parseInt(formData.fee).toLocaleString()}`,
         qualifications: { level: formData.qualificationLevel, fields: qualificationInfo },
         additionalInfo, organizers: formData.organizers.length > 0 ? formData.organizers : editingCamp.organizers,
+        requiresPortfolio: formData.requiresPortfolio,
+        portfolioInstructions: formData.requiresPortfolio ? formData.portfolioInstructions : undefined,
         // ถ้าค่ายถูกปฏิเสธ เมื่อแก้ไขให้เปลี่ยน status เป็น pending อีกครั้ง
         ...(editingCamp.status === 'rejected' && { status: 'pending' }),
       };
@@ -321,6 +331,9 @@ export default function OrganizerDashboard() {
       qualificationLevel: camp.qualifications?.level || 'ทุกระดับ',
       qualificationDetails, additionalInfo: filteredAdditionalInfo,
       organizers: camp.organizers || [], hasCertificate, allowVocational,
+      requiresPortfolio: camp.requiresPortfolio || false,
+      portfolioInstructions: camp.portfolioInstructions || '',
+      originalFee: camp.originalFee?.toString() || '',
     });
     onFormModalOpen();
   };
@@ -335,6 +348,7 @@ export default function OrganizerDashboard() {
       location: '', capacity: '', fee: '0', tags: [], image: '', galleryImages: [],
       activityFormat: 'On-site', qualificationLevel: 'ทุกระดับ', qualificationDetails: '',
       additionalInfo: [], organizers: [], hasCertificate: false, allowVocational: false,
+      requiresPortfolio: false, portfolioInstructions: '', originalFee: '',
     });
     setEditingCamp(null);
   };
@@ -681,6 +695,8 @@ export default function OrganizerDashboard() {
                     variant="bordered"
                     className="w-full sm:w-64"
                     classNames={{ inputWrapper: "border-gray-200" }}
+                    value={campSearch}
+                    onValueChange={(v) => { setCampSearch(v); setCampPage(1); }}
                   />
                 </div>
               </div>
@@ -709,12 +725,20 @@ export default function OrganizerDashboard() {
 
               <div className="p-6">
                 {(() => {
-                  // กรองค่ายตาม tab
-                  const filteredCamps = campTab === 'active'
+                  // กรองค่ายตาม tab แล้ว search
+                  const tabCamps = campTab === 'active'
                     ? camps.filter(c => c.status === 'active')
                     : campTab === 'completed'
                       ? completedCamps
                       : camps;
+                  const q = campSearch.trim().toLowerCase();
+                  const filteredCamps = q
+                    ? tabCamps.filter(c =>
+                        c.name.toLowerCase().includes(q) ||
+                        c.location?.toLowerCase().includes(q) ||
+                        (c.tags ?? []).some(t => t.toLowerCase().includes(q))
+                      )
+                    : tabCamps;
 
                   const totalPages = Math.ceil(filteredCamps.length / CAMPS_PER_PAGE);
                   const paginated = filteredCamps.slice((campPage - 1) * CAMPS_PER_PAGE, campPage * CAMPS_PER_PAGE);

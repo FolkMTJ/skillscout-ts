@@ -39,6 +39,13 @@ export interface Payment {
   confirmedAt?: Date;
   releasedAt?: Date;
   autoReleaseDate?: Date;
+  // Platform fee
+  platformFeePercent?: number;
+  platformFee?: number;
+  organizerNet?: number;
+  payoutStatus?: 'pending' | 'paid_out';
+  paidOutAt?: Date;
+  payoutNote?: string;
   createdAt: Date;
   updatedAt: Date;
 }

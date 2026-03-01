@@ -7,10 +7,18 @@ import { getCollection } from '@/lib/mongodb';
 export async function GET() {
   try {
     const col = await getCollection('settings');
-    const doc = await col.findOne({ key: 'showcase' });
+    const [showcase, platform] = await Promise.all([
+      col.findOne({ key: 'showcase' }),
+      col.findOne({ key: 'platform' }),
+    ]);
     return NextResponse.json({
-      showcaseMode: doc?.showcaseMode ?? false,
-      showcaseName: doc?.showcaseName ?? '',
+      showcaseMode: showcase?.showcaseMode ?? false,
+      showcaseName: showcase?.showcaseName ?? '',
+      // Platform fee settings (DB values take precedence over env)
+      platformPromptpayId: platform?.promptpayId ?? process.env.PLATFORM_PROMPTPAY_ID ?? '',
+      platformAccountName: platform?.accountName ?? process.env.PLATFORM_ACCOUNT_NAME ?? 'SkillScout',
+      platformFeePercent: platform?.feePercent ?? parseFloat(process.env.PLATFORM_FEE_PERCENT ?? '5'),
+      platformEnabled: !!(platform?.promptpayId || process.env.PLATFORM_PROMPTPAY_ID),
     });
   } catch {
     return NextResponse.json({ showcaseMode: false, showcaseName: '' });
@@ -27,17 +35,31 @@ export async function POST(req: Request) {
     const body = await req.json();
     const col = await getCollection('settings');
 
-    await col.updateOne(
-      { key: 'showcase' },
-      {
-        $set: {
-          showcaseMode: Boolean(body.showcaseMode),
-          showcaseName: String(body.showcaseName ?? ''),
-          updatedAt: new Date(),
+    // Showcase settings
+    if ('showcaseMode' in body) {
+      await col.updateOne(
+        { key: 'showcase' },
+        { $set: { showcaseMode: Boolean(body.showcaseMode), showcaseName: String(body.showcaseName ?? ''), updatedAt: new Date() } },
+        { upsert: true }
+      );
+    }
+
+    // Platform fee settings
+    if ('platformPromptpayId' in body) {
+      const feePercent = Math.max(0, Math.min(100, parseFloat(body.platformFeePercent) || 0));
+      await col.updateOne(
+        { key: 'platform' },
+        {
+          $set: {
+            promptpayId: String(body.platformPromptpayId ?? '').trim(),
+            accountName: String(body.platformAccountName ?? 'SkillScout').trim(),
+            feePercent,
+            updatedAt: new Date(),
+          },
         },
-      },
-      { upsert: true }
-    );
+        { upsert: true }
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch {

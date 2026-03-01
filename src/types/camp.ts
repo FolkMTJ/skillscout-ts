@@ -62,7 +62,10 @@ export interface Camp {
   capacity?: number;
   enrolled?: number;
   fee?: number;
+  originalFee?: number;
   tags?: string[];
   status?: CampStatus;
   views?: number;
+  requiresPortfolio?: boolean;
+  portfolioInstructions?: string;
 }

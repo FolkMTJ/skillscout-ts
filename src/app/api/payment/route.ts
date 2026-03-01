@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PaymentModel } from '@/lib/db/models'
 import { PromoCodeModel } from '@/lib/db/models/PromoCode';
+import { getPlatformSettings } from '@/lib/platformSettings';
 
 // POST /api/payment - Create payment record
 export async function POST(request: NextRequest) {
@@ -19,18 +20,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Calculate platform fee — read from DB (admin-configurable), fallback to env
+    const finalAmount: number = body.finalAmount ?? 0;
+    const platform = await getPlatformSettings();
+    const platformFee = (platform.enabled && finalAmount > 0) ? Math.round(finalAmount * platform.feePercent / 100) : 0;
+    const organizerNet = finalAmount - platformFee;
+
     // Create payment
     const payment = await PaymentModel.create({
       registrationId: body.registrationId,
       campId: body.campId,
       userId: body.userId,
-      userEmail: body.userEmail, // เพิ่ม
-      userName: body.userName, // เพิ่ม
+      userEmail: body.userEmail,
+      userName: body.userName,
       organizerId: body.organizerId || 'default',
       amount: body.amount,
       discount: body.discount || 0,
-      finalAmount: body.finalAmount,
+      finalAmount,
       promoCode: body.promoCode,
+      ...(platform.enabled && finalAmount > 0 && {
+        platformFeePercent: platform.feePercent,
+        platformFee,
+        organizerNet,
+        payoutStatus: 'pending',
+      }),
     });
 
     // If promo code was used, increment its usage

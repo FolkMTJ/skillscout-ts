@@ -68,6 +68,10 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
     const [paymentCreatedAt, setPaymentCreatedAt] = useState<Date | null>(null);
     const [timeLeft, setTimeLeft] = useState<number | null>(null); // วินาทีที่เหลือ
 
+    // สำหรับ portfolio flow
+    const [portfolioStatus, setPortfolioStatus] = useState('');
+    const [readyToPayRegistrationId, setReadyToPayRegistrationId] = useState('');
+
     // 🔧 FIX: ตรวจสอบการลงทะเบียนและสิทธิ์ในการรับ Ticket
     useEffect(() => {
         let isMounted = true;
@@ -96,20 +100,29 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                         if (data.canGetTicket && data.ticket) {
                             setCanGetTicket(true);
                             setTicketData(data.ticket);
-                            // clear pending state
+                            // clear all pending state
                             setPendingPaymentId('');
                             setPendingRegistrationId('');
                             setPaymentCreatedAt(null);
+                            setPortfolioStatus('');
+                            setReadyToPayRegistrationId('');
                         } else {
                             // ยังไม่สามารถรับ ticket ได้
                             setCanGetTicket(false);
                             setTicketStatus(data.status || 'pending');
                             setTicketMessage(data.message || 'รอการดำเนินการ');
-                            // เก็บ pending payment info สำหรับ timer และปุ่มยืนยัน
+
                             if (data.status === 'pending_payment' && data.paymentId) {
                                 setPendingPaymentId(data.paymentId);
                                 setPendingRegistrationId(data.registrationId || '');
                                 setPaymentCreatedAt(new Date(data.paymentCreatedAt));
+                            } else if (data.status === 'pending_portfolio_review') {
+                                setPortfolioStatus('pending_portfolio_review');
+                            } else if (data.status === 'portfolio_rejected') {
+                                setPortfolioStatus('portfolio_rejected');
+                            } else if (data.status === 'ready_to_pay') {
+                                setPortfolioStatus('ready_to_pay');
+                                setReadyToPayRegistrationId(data.registrationId || '');
                             }
                         }
                     }
@@ -155,6 +168,8 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                         setPendingPaymentId('');
                         setPendingRegistrationId('');
                         setPaymentCreatedAt(null);
+                        setPortfolioStatus('');
+                        setReadyToPayRegistrationId('');
                     } else {
                         setCanGetTicket(false);
                         setTicketStatus(data.status || 'pending');
@@ -163,6 +178,13 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                             setPendingPaymentId(data.paymentId);
                             setPendingRegistrationId(data.registrationId || '');
                             setPaymentCreatedAt(new Date(data.paymentCreatedAt));
+                        } else if (data.status === 'pending_portfolio_review') {
+                            setPortfolioStatus('pending_portfolio_review');
+                        } else if (data.status === 'portfolio_rejected') {
+                            setPortfolioStatus('portfolio_rejected');
+                        } else if (data.status === 'ready_to_pay') {
+                            setPortfolioStatus('ready_to_pay');
+                            setReadyToPayRegistrationId(data.registrationId || '');
                         }
                     }
                 }
@@ -345,14 +367,26 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                 )}
 
                                 {/* Footer: Price & Button */}
-                                <div className="mt-4 flex flex-row items-center justify-between gap-3">
+                                <div className="mt-4 flex flex-col gap-3">
                                     {/* Price */}
-                                    <p className="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent shrink-0">
-                                        {camp.price === '฿0' ? 'ฟรี' : camp.price}
-                                    </p>
+                                    <div className="flex items-end gap-3">
+                                        <p className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+                                            {camp.price === '฿0' ? 'ฟรี' : camp.price}
+                                        </p>
+                                        {camp.originalFee != null && camp.fee != null && camp.originalFee > camp.fee && (
+                                            <>
+                                                <p className="text-base text-gray-400 line-through mb-1">
+                                                    ฿{camp.originalFee.toLocaleString()}
+                                                </p>
+                                                <span className="mb-1 px-2 py-0.5 bg-red-100 text-red-600 text-xs font-bold rounded-full">
+                                                    ลด {Math.round((1 - camp.fee / camp.originalFee) * 100)}%
+                                                </span>
+                                            </>
+                                        )}
+                                    </div>
 
                                     {/* Button */}
-                                    <div className="flex-1">
+                                    <div className="w-full">
                                         {checkingRegistration ? (
                                             <Button isDisabled className="w-full bg-gray-200 dark:bg-gray-700" size="md">
                                                 <div className="flex items-center gap-2">
@@ -370,26 +404,50 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                                 >
                                                     รับ Ticket
                                                 </Button>
+                                            ) : portfolioStatus === 'pending_portfolio_review' ? (
+                                                <Button
+                                                    isDisabled
+                                                    className="w-full bg-orange-100 font-bold text-orange-600"
+                                                    size="md"
+                                                    startContent={<FaHourglassHalf className="animate-pulse" />}
+                                                >
+                                                    รอตรวจสอบ Portfolio
+                                                </Button>
+                                            ) : portfolioStatus === 'portfolio_rejected' ? (
+                                                <Button
+                                                    isDisabled
+                                                    className="w-full bg-red-100 font-bold text-red-500"
+                                                    size="md"
+                                                >
+                                                    Portfolio ไม่ผ่าน
+                                                </Button>
+                                            ) : portfolioStatus === 'ready_to_pay' ? (
+                                                <Button
+                                                    className="w-full bg-[#F2B33D] font-bold text-gray-900"
+                                                    size="md"
+                                                    startContent={<FaTicketAlt />}
+                                                    onPress={() => setIsModalOpen(true)}
+                                                >
+                                                    ชำระเงิน
+                                                </Button>
+                                            ) : pendingPaymentId ? (
+                                                <Button
+                                                    className="w-full bg-[#F2B33D] font-bold text-gray-900"
+                                                    size="md"
+                                                    startContent={<FaHourglassHalf />}
+                                                    onPress={() => setIsModalOpen(true)}
+                                                >
+                                                    ยืนยันการชำระเงิน
+                                                </Button>
                                             ) : (
-                                                pendingPaymentId ? (
-                                                    <Button
-                                                        className="w-full bg-[#F2B33D] font-bold text-gray-900"
-                                                        size="md"
-                                                        startContent={<FaHourglassHalf />}
-                                                        onPress={() => setIsModalOpen(true)}
-                                                    >
-                                                        ยืนยันการชำระเงิน
-                                                    </Button>
-                                                ) : (
-                                                    <Button
-                                                        isDisabled
-                                                        className="w-full bg-gray-200 font-bold text-gray-500"
-                                                        size="md"
-                                                        startContent={<FaHourglassHalf />}
-                                                    >
-                                                        รอการอนุมัติ
-                                                    </Button>
-                                                )
+                                                <Button
+                                                    isDisabled
+                                                    className="w-full bg-gray-200 font-bold text-gray-500"
+                                                    size="md"
+                                                    startContent={<FaHourglassHalf />}
+                                                >
+                                                    รอการอนุมัติ
+                                                </Button>
                                             )
                                         ) : session?.user?.role === 'organizer' ? (
                                             <Button
@@ -415,17 +473,28 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
 
                                 {/* Status Message: ทำให้ Compact ขึ้น */}
                                 {isRegistered && (
-                                    <div className={`mt-3 px-3 py-2 rounded border flex items-center gap-2 text-xs ${canGetTicket
-                                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 text-green-700 dark:text-green-400'
-                                        : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 text-yellow-700 dark:text-yellow-400'
-                                        }`}>
+                                    <div className={`mt-3 px-3 py-2 rounded border flex items-center gap-2 text-xs ${
+                                        canGetTicket
+                                            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 text-green-700 dark:text-green-400'
+                                            : portfolioStatus === 'portfolio_rejected'
+                                                ? 'bg-red-50 border-red-200 text-red-600'
+                                                : portfolioStatus === 'ready_to_pay'
+                                                    ? 'bg-[#F2B33D]/10 border-[#F2B33D]/30 text-amber-700'
+                                                    : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 text-yellow-700 dark:text-yellow-400'
+                                    }`}>
                                         {canGetTicket ? <FaCheckCircle /> : <FaHourglassHalf className="animate-pulse" />}
-                                        <span className="truncate flex-1">
+                                        <span className="flex-1 text-xs">
                                             {canGetTicket
                                                 ? 'สมัครสำเร็จ: กดปุ่ม "รับ Ticket" เพื่อดาวน์โหลดบัตร'
-                                                : pendingPaymentId && timeLeft !== null && timeLeft > 0
-                                                    ? `กรุณายืนยันการชำระเงินภายใน ${Math.floor(timeLeft / 60)}:${String(timeLeft % 60).padStart(2, '0')} นาที`
-                                                    : (ticketMessage || 'รอการดำเนินการ')
+                                                : portfolioStatus === 'pending_portfolio_review'
+                                                    ? 'รอ Organizer ตรวจสอบ Portfolio ของคุณ'
+                                                    : portfolioStatus === 'portfolio_rejected'
+                                                        ? (ticketMessage || 'Portfolio ไม่ผ่านการตรวจสอบ')
+                                                        : portfolioStatus === 'ready_to_pay'
+                                                            ? 'Portfolio ผ่านแล้ว กรุณาชำระเงิน'
+                                                            : pendingPaymentId && timeLeft !== null && timeLeft > 0
+                                                                ? `กรุณายืนยันการชำระเงินภายใน ${Math.floor(timeLeft / 60)}:${String(timeLeft % 60).padStart(2, '0')} นาที`
+                                                                : (ticketMessage || 'รอการดำเนินการ')
                                             }
                                         </span>
                                     </div>
@@ -641,7 +710,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                 camp={camp}
                 onRegistrationSuccess={handleRegistrationSuccess}
                 existingPaymentId={pendingPaymentId || undefined}
-                existingRegistrationId={pendingRegistrationId || undefined}
+                existingRegistrationId={pendingRegistrationId || readyToPayRegistrationId || undefined}
             />
 
             {ticketData && (

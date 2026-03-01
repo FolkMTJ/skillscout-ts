@@ -19,6 +19,9 @@ interface RegistrationDoc {
     question: string;
     answer: string;
   }[];
+  portfolioText?: string;
+  portfolioLinks?: string[];
+  portfolioFileUrl?: string;
 }
 
 type RegistrationInput = Omit<RegistrationDoc, '_id'>;
@@ -50,6 +53,9 @@ export class RegistrationModel {
       reviewedBy: regData.reviewedBy,
       notes: regData.notes,
       answers: regData.answers || [],
+      portfolioText: regData.portfolioText,
+      portfolioLinks: regData.portfolioLinks,
+      portfolioFileUrl: regData.portfolioFileUrl,
     };
 
     const result = await collection.insertOne(registrationDoc);

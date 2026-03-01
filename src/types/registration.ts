@@ -24,4 +24,7 @@ export interface Registration {
     question: string;
     answer: string;
   }[];
+  portfolioText?: string;
+  portfolioLinks?: string[];
+  portfolioFileUrl?: string;
 }

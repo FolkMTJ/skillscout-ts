@@ -9,7 +9,8 @@ export async function POST(request: NextRequest) {
     const { email, role, secretKey } = body;
 
     // Simple security - require secret key
-    if (secretKey !== 'skillscout-admin-2024') {
+    const adminSecretKey = process.env.ADMIN_SECRET_KEY;
+    if (!adminSecretKey || secretKey !== adminSecretKey) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

@@ -28,13 +28,13 @@ import {
   FiDollarSign,
   FiImage,
   FiUserCheck,
-  FiList
+  FiList,
+  FiFileText
 } from 'react-icons/fi';
 import SimpleImageUpload from './SimpleImageUpload';
 import SimpleMultiImageUpload from './SimpleMultiImageUpload';
 import OrganizerImageUpload from './OrganizerImageUpload';
 import TagSelector from './TagSelector';
-import toast from 'react-hot-toast';
 
 // ... (Interface คงเดิม) ...
 interface FormDataType {
@@ -56,6 +56,9 @@ interface FormDataType {
   organizers: Array<{ name: string; imageUrl: string }>;
   hasCertificate: boolean;
   allowVocational: boolean;
+  requiresPortfolio: boolean;
+  portfolioInstructions: string;
+  originalFee: string;
 }
 
 interface CampFormModalProps {
@@ -259,6 +262,16 @@ export default function CampFormModal({ isOpen, onClose, formData, onFormDataCha
                       variant="bordered"
                       startContent={<FiDollarSign className="text-gray-400" />}
                     />
+                    <Input
+                      type="number"
+                      label="ราคาเดิม (บาท, ถ้ามีส่วนลด)"
+                      placeholder="เช่น 1,950 → แสดงขีดฆ่า"
+                      value={formData.originalFee}
+                      onValueChange={(v) => onFormDataChange({ ...formData, originalFee: v })}
+                      variant="bordered"
+                      description="ใส่ราคาก่อนลดเพื่อแสดงราคาขีดฆ่า (ไม่บังคับ)"
+                      startContent={<FiDollarSign className="text-gray-400" />}
+                    />
                   </div>
                 </section>
 
@@ -277,11 +290,11 @@ export default function CampFormModal({ isOpen, onClose, formData, onFormDataCha
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-600">รูปบรรยากาศ (Gallery)</label>
                       <SimpleMultiImageUpload
                         values={formData.galleryImages}
                         onChange={(urls) => onFormDataChange({ ...formData, galleryImages: urls })}
-                        label="เพิ่มรูปเพิ่มเติม"
+                        label="รูปบรรยากาศ (Gallery)"
+                        maxImages={8}
                       />
                     </div>
                   </div>
@@ -347,10 +360,11 @@ export default function CampFormModal({ isOpen, onClose, formData, onFormDataCha
                   {/* Organizer Management */}
                   <div className="mt-6 p-5 bg-gray-50 rounded-2xl border border-gray-100">
                     <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                      <FiUsers className="text-gray-400" /> ทีมผู้จัด (Organizers)
+                      <FiUsers className="text-gray-400" /> ทีมผู้จัด
                     </h3>
 
-                    <div className="flex gap-2 mb-4">
+                    {/* Add organizer row */}
+                    <div className="flex gap-2 mb-3">
                       <Input
                         placeholder="ชื่อผู้จัด / วิทยากร"
                         value={organizerName}
@@ -359,19 +373,22 @@ export default function CampFormModal({ isOpen, onClose, formData, onFormDataCha
                         size="sm"
                         className="flex-1"
                         classNames={{ inputWrapper: "bg-white" }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && organizerName.trim()) {
+                            e.preventDefault();
+                            onFormDataChange({ ...formData, organizers: [...formData.organizers, { name: organizerName.trim(), imageUrl: '' }] });
+                            setOrganizerName('');
+                          }
+                        }}
                       />
                       <Button
-                        color="primary"
+                        className="bg-[#F2B33D] text-black font-bold"
                         size="sm"
                         startContent={<FiPlus />}
                         onPress={() => {
                           if (organizerName.trim()) {
-                            onFormDataChange({
-                              ...formData,
-                              organizers: [...formData.organizers, { name: organizerName.trim(), imageUrl: '/api/placeholder/100/100' }]
-                            });
+                            onFormDataChange({ ...formData, organizers: [...formData.organizers, { name: organizerName.trim(), imageUrl: '' }] });
                             setOrganizerName('');
-                            toast.success('เพิ่มผู้จัดแล้ว');
                           }
                         }}
                       >
@@ -379,33 +396,69 @@ export default function CampFormModal({ isOpen, onClose, formData, onFormDataCha
                       </Button>
                     </div>
 
-                    <div className="space-y-3">
+                    {/* Organizer list */}
+                    <div className="space-y-2">
                       {formData.organizers.map((org, i) => (
-                        <div key={i} className="flex items-center gap-4 p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
-                          <div className="shrink-0">
-                            <OrganizerImageUpload
-                              organizerName={org.name}
-                              imageUrl={org.imageUrl}
-                              onImageChange={(url) => {
-                                const updated = [...formData.organizers];
-                                updated[i] = { ...updated[i], imageUrl: url };
-                                onFormDataChange({ ...formData, organizers: updated });
-                              }}
-                            />
+                        <div key={i} className="flex items-center gap-3 px-3 py-2.5 bg-white rounded-xl border border-gray-100 shadow-sm">
+                          <OrganizerImageUpload
+                            organizerName={org.name}
+                            imageUrl={org.imageUrl}
+                            onImageChange={(url) => {
+                              const updated = [...formData.organizers];
+                              updated[i] = { ...updated[i], imageUrl: url };
+                              onFormDataChange({ ...formData, organizers: updated });
+                            }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-700 truncate">{org.name}</p>
+                            <p className="text-[11px] text-gray-400">กดที่รูปเพื่ออัปโหลด</p>
                           </div>
-                          <div className="flex-1 font-medium text-gray-700">{org.name}</div>
                           <Button
-                            isIconOnly size="sm" color="danger" variant="light"
+                            isIconOnly size="sm" variant="light" className="text-gray-400 hover:text-red-500 shrink-0"
                             onPress={() => onFormDataChange({ ...formData, organizers: formData.organizers.filter((_, idx) => idx !== i) })}
                           >
-                            <FiX />
+                            <FiX size={14} />
                           </Button>
                         </div>
                       ))}
                       {formData.organizers.length === 0 && (
-                        <p className="text-xs text-gray-400 text-center py-2">-- ยังไม่มีข้อมูลผู้จัด --</p>
+                        <p className="text-xs text-gray-400 text-center py-3">ยังไม่มีผู้จัด — เพิ่มชื่อด้านบน</p>
                       )}
                     </div>
+                  </div>
+
+                  {/* Portfolio Toggle */}
+                  <div className="mt-6 p-5 bg-gray-50 rounded-2xl border border-gray-100">
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 bg-orange-100 text-[#F2B33D] rounded-lg">
+                          <FiFileText />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-800 text-sm">ต้องการ Portfolio</p>
+                          <p className="text-xs text-gray-500">ผู้สมัครต้องส่ง Portfolio ก่อน Organizer ตรวจสอบ</p>
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={formData.requiresPortfolio}
+                        onChange={(e) => onFormDataChange({ ...formData, requiresPortfolio: e.target.checked, portfolioInstructions: e.target.checked ? formData.portfolioInstructions : '' })}
+                        className="w-5 h-5 text-[#F2B33D] rounded focus:ring-[#F2B33D] cursor-pointer"
+                      />
+                    </label>
+                    {formData.requiresPortfolio && (
+                      <div className="mt-4">
+                        <Textarea
+                          label="คำแนะนำสำหรับ Portfolio"
+                          placeholder="เช่น ส่งลิงก์ GitHub, ตัวอย่างงานที่เคยทำ, คำอธิบายประสบการณ์..."
+                          value={formData.portfolioInstructions}
+                          onValueChange={(v) => onFormDataChange({ ...formData, portfolioInstructions: v })}
+                          minRows={3}
+                          variant="bordered"
+                          classNames={{ inputWrapper: "bg-white" }}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {/* Additional Info */}
@@ -431,7 +484,7 @@ export default function CampFormModal({ isOpen, onClose, formData, onFormDataCha
                         size="sm"
                       />
                       <Button
-                        isIconOnly size="sm" color="secondary" variant="flat"
+                        isIconOnly size="sm" color="warning" variant="flat"
                         onPress={() => {
                           if (additionalInfoInput.trim()) {
                             onFormDataChange({ ...formData, additionalInfo: [...formData.additionalInfo, additionalInfoInput.trim()] });
@@ -460,10 +513,10 @@ export default function CampFormModal({ isOpen, onClose, formData, onFormDataCha
                 ยกเลิก
               </Button>
               <Button
-                className="bg-[#F2B33D] text-white font-bold shadow-lg shadow-orange-200"
+                className="bg-[#F2B33D] text-black font-bold shadow-lg shadow-orange-200"
                 type="submit"
                 startContent={<FiSave />}
-                size="lg"
+                size="md"
               >
                 {isEditing ? 'บันทึกการแก้ไข' : 'ยืนยันสร้างค่าย'}
               </Button>

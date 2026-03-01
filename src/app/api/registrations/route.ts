@@ -148,7 +148,13 @@ export async function POST(request: NextRequest) {
         { question: 'ที่อยู่', answer: body.university || '' },
         { question: 'มหาวิทยาลัย/สถาบัน', answer: body.year || '' },
         { question: 'เหตุผลที่ต้องการเข้าร่วม', answer: body.reason || '' }
-      ]
+      ],
+      // Portfolio fields (สำหรับค่ายที่ต้องการ Portfolio)
+      portfolioText: body.portfolioText ? sanitizeString(body.portfolioText) : undefined,
+      portfolioLinks: Array.isArray(body.portfolioLinks)
+        ? body.portfolioLinks.filter((l: string) => typeof l === 'string' && l.trim())
+        : undefined,
+      portfolioFileUrl: body.portfolioFileUrl || undefined,
     };
 
     console.log('Creating registration...');

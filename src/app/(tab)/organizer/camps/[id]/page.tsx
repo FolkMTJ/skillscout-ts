@@ -37,6 +37,7 @@ interface Camp {
   status?: string;
   tags?: string[];
   activityFormat?: string;
+  requiresPortfolio?: boolean;
 }
 
 interface Registration {
@@ -52,6 +53,9 @@ interface Registration {
   reviewedBy?: string;
   notes?: string;
   answers?: { question: string; answer: string }[];
+  portfolioText?: string;
+  portfolioLinks?: string[];
+  portfolioFileUrl?: string;
 }
 
 interface Payment {
@@ -273,6 +277,7 @@ export default function CampManagePage() {
       'ชื่อ', 'อีเมล', 'เบอร์โทร', 'สถานะ', 'วันที่สมัคร', 'สถานะชำระเงิน',
       'ยอดชำระ (฿)', 'ชื่อในสลิป',
       ...allAnswers.map(a => a.question),
+      ...(camp?.requiresPortfolio ? ['Portfolio คำอธิบาย', 'Portfolio ลิงก์', 'Portfolio ไฟล์'] : []),
     ];
     const rows = registrationsWithPayment.map(r => [
       r.userName, r.userEmail, r.userPhone || '',
@@ -282,6 +287,11 @@ export default function CampManagePage() {
       r.payment?.finalAmount?.toString() ?? '0',
       r.payment?.slipSenderName ?? '',
       ...(r.answers?.filter(a => !isExcluded(a.question)).map(a => a.answer) ?? []),
+      ...(camp?.requiresPortfolio ? [
+        r.portfolioText ?? '',
+        (r.portfolioLinks ?? []).filter(l => l).join(' | '),
+        r.portfolioFileUrl ?? '',
+      ] : []),
     ]);
     const csv = [headers, ...rows]
       .map(row => row.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(','))
@@ -788,6 +798,37 @@ export default function CampManagePage() {
                     </>
                   )}
                 </div>
+
+                {/* Portfolio */}
+                {camp?.requiresPortfolio && (viewingReg.portfolioText || viewingReg.portfolioLinks?.some(l => l) || viewingReg.portfolioFileUrl) && (
+                  <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 space-y-3">
+                    <p className="text-xs font-semibold text-orange-700">Portfolio ที่ส่งมา</p>
+                    {viewingReg.portfolioText && (
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">คำอธิบาย</p>
+                        <p className="text-sm text-gray-800 whitespace-pre-wrap">{viewingReg.portfolioText}</p>
+                      </div>
+                    )}
+                    {viewingReg.portfolioLinks && viewingReg.portfolioLinks.filter(l => l).length > 0 && (
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">ลิงก์ผลงาน</p>
+                        <div className="space-y-1">
+                          {viewingReg.portfolioLinks.filter(l => l).map((link, i) => (
+                            <a key={i} href={link} target="_blank" rel="noopener noreferrer"
+                              className="block text-sm text-blue-600 underline truncate">{link}</a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {viewingReg.portfolioFileUrl && (
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">ไฟล์แนบ</p>
+                        <a href={viewingReg.portfolioFileUrl} target="_blank" rel="noopener noreferrer"
+                          className="text-sm text-blue-600 underline">ดาวน์โหลด / ดูไฟล์</a>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Notes */}
                 {viewingReg.notes && (
