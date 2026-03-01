@@ -53,7 +53,7 @@ export default function PathFinderResultsPage() {
           ...c,
           _id: c._id || (c as Camp & { id?: string }).id || '',
         }));
-        setRecommendedCamps(camps.slice(0, 4));
+        setRecommendedCamps(camps.slice(0, 6));
       } else {
         const fallback = await fetch('/api/camps');
         if (fallback.ok) {
@@ -69,7 +69,7 @@ export default function PathFinderResultsPage() {
               const stillOpen = !deadlineDate || deadlineDate >= today;
               return notFull && stillOpen;
             })
-            .slice(0, 4);
+            .slice(0, 6);
           setRecommendedCamps(matchingCamps);
         }
       }

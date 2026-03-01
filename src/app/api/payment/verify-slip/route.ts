@@ -1,7 +1,7 @@
 // src/app/api/payment/verify-slip/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'crypto';
-import { PaymentModel, RegistrationModel } from '@/lib/db/models';
+import { PaymentModel } from '@/lib/db/models';
 import { PaymentStatus } from '@/types';
 
 const RDCW_API = 'https://suba.rdcw.co.th/v1/inquiry';
@@ -45,9 +45,9 @@ function parseSlipDateTime(dateStr: string, timeStr: string): Date | null {
   let year: number, month: number, day: number;
 
   if (/^\d{8}$/.test(dateStr)) {
-    year  = parseInt(dateStr.slice(0, 4));
+    year = parseInt(dateStr.slice(0, 4));
     month = parseInt(dateStr.slice(4, 6));
-    day   = parseInt(dateStr.slice(6, 8));
+    day = parseInt(dateStr.slice(6, 8));
   } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
     const p = dateStr.split('/');
     day = parseInt(p[0]); month = parseInt(p[1]); year = parseInt(p[2]);
@@ -150,9 +150,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Normalize field names — handle both API formats
-    const rawAmount  = rdcwData.amount;
-    const dateStr    = rdcwData.transDate  || rdcwData.date  || '';
-    const timeStr    = rdcwData.transTime  || rdcwData.time  || '';
+    const rawAmount = rdcwData.amount;
+    const dateStr = rdcwData.transDate || rdcwData.date || '';
+    const timeStr = rdcwData.transTime || rdcwData.time || '';
     const senderName = rdcwData.sender?.name || rdcwData.name || '';
 
     // ── 2. Amount ────────────────────────────────────────────────────────────
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
       const BUFFER_MS = 5 * 60 * 1000; // 5-minute clock-skew tolerance
 
       if (slipDate.getTime() < paymentCreatedAt.getTime() - BUFFER_MS) {
-        const slipStr    = slipDate.toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' });
+        const slipStr = slipDate.toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' });
         const createdStr = paymentCreatedAt.toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' });
         return NextResponse.json({
           success: false,
@@ -209,17 +209,6 @@ export async function POST(request: NextRequest) {
       verifiedAt: new Date(),
       verifiedBy: 'rdcw-auto',
     });
-
-    // Auto-confirm registration so organizer sees it as CONFIRMED immediately
-    try {
-      await RegistrationModel.updateStatus(
-        payment.registrationId,
-        'confirmed' as Parameters<typeof RegistrationModel.updateStatus>[1],
-        'rdcw-auto',
-      );
-    } catch (err) {
-      console.warn('Could not auto-confirm registration:', err);
-    }
 
     return NextResponse.json({
       success: true,

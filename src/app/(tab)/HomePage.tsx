@@ -120,7 +120,7 @@ export default function HomePage() {
             const viewsB = b.views || 0;
             return viewsB - viewsA;
           })
-          .slice(0, 4)
+          .slice(0, 6)
           .map(campToCampData);
 
         setUrgentCamps(urgent);
