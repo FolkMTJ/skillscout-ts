@@ -1,6 +1,9 @@
 // src/app/api/camps/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { CampModel } from '@/lib/db/models/Camp';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { getCollection } from '@/lib/mongodb';
 
 interface RouteParams {
   params: Promise<{
@@ -103,6 +106,23 @@ export async function DELETE(
   try {
     const { id } = await params;
 
+    // Check session — only admin (super_admin) can delete a camp that has registrations
+    const session = await getServerSession(authOptions);
+    const role = (session?.user as { role?: string })?.role;
+    const isSuperAdmin = role === 'super_admin';
+
+    // If the requester is NOT super_admin, block deletion when registrations exist
+    if (!isSuperAdmin) {
+      const regCollection = await getCollection('registrations');
+      const regCount = await regCollection.countDocuments({ campId: id });
+      if (regCount > 0) {
+        return NextResponse.json(
+          { error: `ไม่สามารถลบค่ายได้ เนื่องจากมีผู้สมัครแล้ว ${regCount} คน` },
+          { status: 400 }
+        );
+      }
+    }
+
     const success = await CampModel.delete(id);
 
     if (!success) {
@@ -112,9 +132,9 @@ export async function DELETE(
       );
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: 'Camp deleted successfully',
-      deletedId: id 
+      deletedId: id
     });
   } catch (error) {
     console.error('Error deleting camp:', error);

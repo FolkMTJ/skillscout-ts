@@ -27,6 +27,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { LogOut, Settings, LayoutDashboard, Calendar, Shield, Bookmark } from 'lucide-react';
 import ProfileModal from '@/components/profile/ProfileModal';
 import { User } from '@/types';
+import { isAdminRole } from '@/lib/auth-check';
 
 const navLinks = [
     { name: "หน้าหลัก", href: "/" },
@@ -43,6 +44,7 @@ export default function NavBar(props: NavbarProps) {
     const { theme } = useTheme();
     const pathname = usePathname();
     const { data: session, status } = useSession();
+    const isAdmin = isAdminRole(session?.user?.role);
 
     useEffect(() => {
         setMounted(true);
@@ -170,18 +172,16 @@ export default function NavBar(props: NavbarProps) {
                                         <p className="font-semibold">{session.user?.name}</p>
                                         <p className="text-sm text-default-500">{session.user?.email}</p>
                                     </DropdownItem>
-                                    {(session.user?.role === 'admin' || session.user?.role === 'organizer') ? (
+                                    {(isAdmin || session.user?.role === 'organizer') ? (
                                         <DropdownItem
                                             key="dashboard"
                                             startContent={<LayoutDashboard className="w-4 h-4" />}
-                                            href={
-                                                session.user?.role === 'admin' ? '/admin' : '/organizer'
-                                            }
+                                            href={isAdmin ? '/admin' : '/organizer'}
                                         >
-                                            {session.user?.role === 'admin' ? 'Admin Dashboard' : 'แดชบอร์ด'}
+                                            {isAdmin ? 'Admin Dashboard' : 'แดชบอร์ด'}
                                         </DropdownItem>
                                     ) : null}
-                                    {session.user?.role === 'admin' ? (
+                                    {isAdmin ? (
                                         <DropdownItem
                                             key="organizer-dashboard"
                                             startContent={<Shield className="w-4 h-4" />}
@@ -190,7 +190,7 @@ export default function NavBar(props: NavbarProps) {
                                             Organizer Dashboard
                                         </DropdownItem>
                                     ) : null}
-                                    {(session.user?.role === 'user' || session.user?.role === 'admin') ? (
+                                    {(session.user?.role === 'user' || isAdmin) ? (
                                         <DropdownItem
                                             key="my-camps"
                                             startContent={<Calendar className="w-4 h-4" />}
@@ -199,7 +199,7 @@ export default function NavBar(props: NavbarProps) {
                                             ค่ายของฉัน
                                         </DropdownItem>
                                     ) : null}
-                                    {(session.user?.role === 'user' || session.user?.role === 'admin') ? (
+                                    {(session.user?.role === 'user' || isAdmin) ? (
                                         <DropdownItem
                                             key="bookmarks"
                                             startContent={<Bookmark className="w-4 h-4" />}
@@ -283,21 +283,21 @@ export default function NavBar(props: NavbarProps) {
 
                             {/* User Menu */}
                             <div className="space-y-1">
-                                {(session.user?.role === 'admin' || session.user?.role === 'organizer') ? (
+                                {(isAdmin || session.user?.role === 'organizer') ? (
                                     <NavbarMenuItem key="dashboard-menu">
                                         <Link
-                                            href={session.user?.role === 'admin' ? '/admin' : '/organizer'}
+                                            href={isAdmin ? '/admin' : '/organizer'}
                                             className={`block w-full py-3 px-4 rounded-xl text-base font-medium transition-colors ${(pathname === '/admin' || pathname === '/organizer')
                                                     ? 'bg-[#F2B33D]/10 text-[#F2B33D]'
                                                     : 'text-white/80 hover:text-white hover:bg-white/5'
                                                 }`}
                                         >
-                                            {session.user?.role === 'admin' ? 'Admin Dashboard' : 'แดชบอร์ด'}
+                                            {isAdmin ? 'Admin Dashboard' : 'แดชบอร์ด'}
                                         </Link>
                                     </NavbarMenuItem>
                                 ) : null}
 
-                                {session.user?.role === 'admin' ? (
+                                {isAdmin ? (
                                     <NavbarMenuItem key="organizer-menu">
                                         <Link
                                             href="/organizer"
@@ -308,7 +308,7 @@ export default function NavBar(props: NavbarProps) {
                                     </NavbarMenuItem>
                                 ) : null}
 
-                                {(session.user?.role === 'user' || session.user?.role === 'admin') ? (
+                                {(session.user?.role === 'user' || isAdmin) ? (
                                     <NavbarMenuItem key="my-camps-menu">
                                         <Link
                                             href="/my-camps"
@@ -321,7 +321,7 @@ export default function NavBar(props: NavbarProps) {
                                         </Link>
                                     </NavbarMenuItem>
                                 ) : null}
-                                {(session.user?.role === 'user' || session.user?.role === 'admin') ? (
+                                {(session.user?.role === 'user' || isAdmin) ? (
                                     <NavbarMenuItem key="bookmarks-menu">
                                         <Link
                                             href="/bookmarks"

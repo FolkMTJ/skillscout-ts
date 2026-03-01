@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { HollandCareerModel } from '@/lib/db/models';
 import { RIASECCode } from '@/data/riasec';
+import { isAdminRole } from '@/lib/auth-check';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -15,7 +16,7 @@ interface RouteContext {
 export async function GET(_request: NextRequest, { params }: RouteContext) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user?.role !== 'admin') {
+    if (!session || !isAdminRole(session.user?.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const { id } = await params;
@@ -34,7 +35,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 export async function PUT(request: NextRequest, { params }: RouteContext) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user?.role !== 'admin') {
+    if (!session || !isAdminRole(session.user?.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -70,7 +71,7 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
 export async function DELETE(_request: NextRequest, { params }: RouteContext) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user?.role !== 'admin') {
+    if (!session || !isAdminRole(session.user?.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

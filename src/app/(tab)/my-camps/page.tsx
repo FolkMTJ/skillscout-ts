@@ -32,13 +32,30 @@ interface Registration {
 
 const STATUS_MAP: Record<string, { label: string; color: 'warning' | 'primary' | 'success' | 'danger' | 'default'; dot: string }> = {
   pending:   { label: 'รอตรวจสอบ',    color: 'warning', dot: 'bg-yellow-400' },
-  approved:  { label: 'อนุมัติแล้ว',   color: 'primary', dot: 'bg-blue-500' },
-  confirmed: { label: 'ยืนยันแล้ว',    color: 'primary', dot: 'bg-blue-500' },
-  attended:  { label: 'เข้าร่วมแล้ว',  color: 'success', dot: 'bg-green-500' },
+  approved:  { label: 'อนุมัติแล้ว',  color: 'primary', dot: 'bg-blue-500' },
+  confirmed: { label: 'ยืนยันแล้ว',   color: 'success', dot: 'bg-green-500' },
+  attended:  { label: 'จบไปแล้ว',    color: 'default', dot: 'bg-gray-400' },
   rejected:  { label: 'ไม่อนุมัติ',   color: 'danger',  dot: 'bg-red-500' },
+  cancelled: { label: 'ยกเลิก',       color: 'danger',  dot: 'bg-red-400' },
 };
 
-type TabKey = 'all' | 'upcoming' | 'attended' | 'pending';
+function isCampDatePast(campDate?: string): boolean {
+  if (!campDate) return false;
+  try {
+    const d = new Date(campDate);
+    d.setHours(23, 59, 59, 999);
+    return d < new Date();
+  } catch { return false; }
+}
+
+function getDisplayStatus(reg: Registration): string {
+  if ((reg.status === 'approved' || reg.status === 'confirmed' || reg.status === 'attended') && isCampDatePast(reg.campDate)) {
+    return 'attended'; // จบไปแล้ว
+  }
+  return reg.status;
+}
+
+type TabKey = 'all' | 'upcoming' | 'completed' | 'pending';
 
 export default function MyCampsPage() {
   const { data: session, status } = useSession();
@@ -87,17 +104,22 @@ export default function MyCampsPage() {
   };
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-    { key: 'all',      label: 'ทั้งหมด',          icon: <FaBookmark size={13} /> },
-    { key: 'pending',  label: 'รอตรวจสอบ',        icon: <FiClock size={13} /> },
-    { key: 'upcoming', label: 'กำลังจะมาถึง',    icon: <FiCalendar size={13} /> },
-    { key: 'attended', label: 'เข้าร่วมแล้ว',    icon: <FiCheckCircle size={13} /> },
+    { key: 'all',       label: 'ทั้งหมด',          icon: <FaBookmark size={13} /> },
+    { key: 'pending',   label: 'รอตรวจสอบ',        icon: <FiClock size={13} /> },
+    { key: 'upcoming',  label: 'กำลังจะมาถึง',     icon: <FiCalendar size={13} /> },
+    { key: 'completed', label: 'จบไปแล้ว',         icon: <FiCheckCircle size={13} /> },
   ];
 
   const getFiltered = () => {
     if (activeTab === 'all') return registrations;
-    if (activeTab === 'pending') return registrations.filter(r => r.status === 'pending');
-    if (activeTab === 'upcoming') return registrations.filter(r => r.status === 'approved' || r.status === 'confirmed');
-    if (activeTab === 'attended') return registrations.filter(r => r.status === 'attended');
+    if (activeTab === 'pending') return registrations.filter(r => r.status === 'pending' || r.status === 'rejected' || r.status === 'cancelled');
+    if (activeTab === 'upcoming') return registrations.filter(r =>
+      (r.status === 'approved' || r.status === 'confirmed') && !isCampDatePast(r.campDate)
+    );
+    if (activeTab === 'completed') return registrations.filter(r =>
+      r.status === 'attended' ||
+      ((r.status === 'approved' || r.status === 'confirmed') && isCampDatePast(r.campDate))
+    );
     return registrations;
   };
 
@@ -105,9 +127,12 @@ export default function MyCampsPage() {
 
   const counts = {
     all: registrations.length,
-    pending: registrations.filter(r => r.status === 'pending').length,
-    upcoming: registrations.filter(r => r.status === 'approved' || r.status === 'confirmed').length,
-    attended: registrations.filter(r => r.status === 'attended').length,
+    pending: registrations.filter(r => r.status === 'pending' || r.status === 'rejected' || r.status === 'cancelled').length,
+    upcoming: registrations.filter(r => (r.status === 'approved' || r.status === 'confirmed') && !isCampDatePast(r.campDate)).length,
+    completed: registrations.filter(r =>
+      r.status === 'attended' ||
+      ((r.status === 'approved' || r.status === 'confirmed') && isCampDatePast(r.campDate))
+    ).length,
   };
 
   if (status === 'loading' || loading) {
@@ -213,7 +238,7 @@ export default function MyCampsPage() {
                 <FiSearch className="text-[#F2B33D]" size={28} />
               </div>
               <h2 className="text-xl font-bold text-[#2C2C2C] mb-2">
-                {activeTab === 'all' ? 'ยังไม่มีค่ายที่สมัคร' : `ไม่มีค่ายใน "${tabs.find(t=>t.key===activeTab)?.label}"`}
+                {activeTab === 'all' ? 'ยังไม่มีค่ายที่สมัคร' : `ไม่มีค่ายใน "${tabs.find(t => t.key === activeTab)?.label}"`}
               </h2>
               <p className="text-gray-400 text-sm mb-8 max-w-xs">
                 {activeTab === 'all' ? 'ค้นหาค่ายที่สนใจและเริ่มสมัครได้เลย' : 'ลองดูที่แท็บอื่น หรือค้นหาค่ายใหม่'}
@@ -230,9 +255,10 @@ export default function MyCampsPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map(reg => {
-              const statusInfo = STATUS_MAP[reg.status] ?? { label: reg.status, color: 'default', dot: 'bg-gray-400' };
-              const isUpcoming = reg.status === 'approved' || reg.status === 'confirmed';
-              const isAttended = reg.status === 'attended';
+              const displayStatus = getDisplayStatus(reg);
+              const statusInfo = STATUS_MAP[displayStatus] ?? { label: reg.status, color: 'default' as const, dot: 'bg-gray-400' };
+              const isUpcoming = (reg.status === 'approved' || reg.status === 'confirmed') && !isCampDatePast(reg.campDate);
+              const isCompleted = displayStatus === 'attended';
 
               return (
                 <div key={reg._id} className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md hover:border-[#F2B33D]/30 transition-all duration-200 group flex flex-col">
@@ -305,7 +331,7 @@ export default function MyCampsPage() {
                         </button>
                       )}
 
-                      {isAttended && (
+                      {isCompleted && (
                         <button
                           onClick={() => router.push(`/camps/${reg.campId}#reviews`)}
                           className="w-full bg-green-50 hover:bg-green-100 text-green-700 font-bold py-2.5 px-4 rounded-xl text-sm transition-all flex items-center justify-center gap-2"

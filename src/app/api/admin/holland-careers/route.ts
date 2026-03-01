@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCollection } from '@/lib/mongodb';
 import { IT_CAREERS } from '@/data/path-finder/careers';
+import { isAdminRole } from '@/lib/auth-check';
 
 interface RoadmapStepDoc {
   level: 'beginner' | 'intermediate' | 'advanced';
@@ -59,7 +60,7 @@ async function seedIfEmpty() {
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user?.role !== 'admin') {
+    if (!session || !isAdminRole(session.user?.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     await seedIfEmpty();
@@ -75,7 +76,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user?.role !== 'admin') {
+    if (!session || !isAdminRole(session.user?.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

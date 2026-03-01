@@ -10,6 +10,7 @@ import {
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { StatCard } from '@/components/common';
+import { isAdminRole } from '@/lib/auth-check';
 
 interface PayoutPayment {
   _id: string;
@@ -91,7 +92,7 @@ export default function AdminPayoutsPage() {
       </div>
     );
   }
-  if (user?.role !== 'admin') {
+  if (!isAdminRole(user?.role)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <p className="text-gray-500">ไม่มีสิทธิ์เข้าถึงหน้านี้</p>

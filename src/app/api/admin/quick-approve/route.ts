@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDatabase } from '@/lib/mongodb';
+import { isAdminRole } from '@/lib/auth-check';
 import { ObjectId } from 'mongodb';
 
 export async function POST(req: NextRequest) {
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
       _id: new ObjectId(session.user.id) 
     });
 
-    if (!user || (user.role !== 'admin' && user.role !== 'organizer')) {
+    if (!user || (!isAdminRole(user.role) && user.role !== 'organizer')) {
       return NextResponse.json(
         { error: 'Forbidden: Admin or Organizer only' },
         { status: 403 }

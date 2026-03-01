@@ -2,7 +2,8 @@
 export enum UserRole {
   USER = 'user',
   ORGANIZER = 'organizer',
-  ADMIN = 'admin'
+  ADMIN = 'admin',
+  SUPER_ADMIN = 'super_admin'
 }
 
 export interface PayoutInfo {

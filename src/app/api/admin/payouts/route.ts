@@ -8,7 +8,7 @@ import { UserModel } from '@/lib/db/models';
 // GET /api/admin/payouts — all payments with payout info (admin only)
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session || (session.user as { role?: string }).role !== 'admin') {
+  if (!session || !(['admin','super_admin'].includes((session.user as { role?: string }).role ?? ''))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -59,7 +59,7 @@ export async function GET() {
 // PATCH /api/admin/payouts — mark payment as paid out
 export async function PATCH(request: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session || (session.user as { role?: string }).role !== 'admin') {
+  if (!session || !(['admin','super_admin'].includes((session.user as { role?: string }).role ?? ''))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

@@ -48,6 +48,29 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Check if today is the camp day (startDate → endDate, inclusive)
+    if (camp.startDate) {
+      const now = new Date();
+      const campStart = new Date(camp.startDate);
+      campStart.setHours(0, 0, 0, 0);
+
+      const campEnd = camp.endDate ? new Date(camp.endDate) : new Date(camp.startDate);
+      campEnd.setHours(23, 59, 59, 999);
+
+      if (now < campStart || now > campEnd) {
+        const startStr = campStart.toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
+        const endStr = campEnd.toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
+        const rangeStr = camp.endDate && campStart.toDateString() !== campEnd.toDateString()
+          ? `${startStr} – ${endStr}`
+          : startStr;
+        return NextResponse.json({
+          success: false,
+          error: 'Not camp day',
+          message: `E-Ticket สแกนได้เฉพาะวันจัดค่าย (${rangeStr}) เท่านั้น`,
+        }, { status: 403 });
+      }
+    }
+
     // Check if already checked in
     if (registration.status === RegistrationStatus.ATTENDED) {
       console.log('⚠️ Already checked in');

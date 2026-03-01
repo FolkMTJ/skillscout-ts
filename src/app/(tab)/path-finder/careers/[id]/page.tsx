@@ -91,7 +91,7 @@ export default function CareerDetailPage() {
       {/* --- Hero Section with Gradient --- */}
       <div className="relative bg-gradient-to-r from-gray-900 to-gray-800 text-white pb-24 pt-10 px-4">
         
-        <div className="container mx-auto max-w-7xl relative z-10">
+        <div className="max-w-[1536px] mx-auto relative z-10">
           <Button
             variant="light"
             startContent={<FiArrowLeft />}
@@ -125,7 +125,7 @@ export default function CareerDetailPage() {
         </div>
       </div>
 
-      <div className="container mx-auto max-w-7xl -mt-16 relative z-20">
+      <div className="max-w-[1536px] mx-auto -mt-16 relative z-20">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* --- Left Column: Main Info --- */}

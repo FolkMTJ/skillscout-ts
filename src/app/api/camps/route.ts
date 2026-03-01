@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       today.setHours(0, 0, 0, 0);
 
       camps = camps.filter((camp: Camp) => {
-        // กรอง status ที่ไม่ใช่ active
+        // กรอง status ที่ไม่ใช่ active (showcase_hidden ก็ถูกกรองออก)
         if (camp.status !== 'active') {
           return false;
         }

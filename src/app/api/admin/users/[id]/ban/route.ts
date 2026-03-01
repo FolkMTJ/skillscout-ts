@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { UserModel } from '@/lib/db/models';
+import { isAdminRole } from '@/lib/auth-check';
 
 export async function POST(
   request: NextRequest,
@@ -10,7 +11,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session?.user?.email || session.user.role !== 'admin') {
+    if (!session?.user?.email || !isAdminRole(session.user.role)) {
       return NextResponse.json(
         { error: 'Unauthorized - Admin only' },
         { status: 403 }
@@ -27,7 +28,7 @@ export async function POST(
       );
     }
 
-    if (user.role === 'admin') {
+    if (isAdminRole(user.role)) {
       return NextResponse.json(
         { error: 'Cannot ban admin user' },
         { status: 403 }

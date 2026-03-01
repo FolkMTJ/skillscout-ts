@@ -227,7 +227,7 @@ export default function DiscoveryPathPage() {
           showButtons={false}
         />
 
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="animate-pulse space-y-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[1, 2, 3, 4].map((i) => (
@@ -384,7 +384,7 @@ export default function DiscoveryPathPage() {
         />
       </HeroBanner>
 
-      <div ref={resultRef} className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 pt-6 md:pt-8 pb-8">
+      <div ref={resultRef} className="max-w-[1536px] mx-auto px-3 sm:px-6 lg:px-8 pt-6 md:pt-8 pb-8">
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">

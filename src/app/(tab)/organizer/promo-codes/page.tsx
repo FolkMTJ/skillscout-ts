@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import PromoCodeList from '@/components/promo/PromoCodeList';
 import toast from 'react-hot-toast';
+import { isAdminRole } from '@/lib/auth-check';
 
 interface Camp {
   [x: string]: string;
@@ -25,7 +26,7 @@ export default function PromoCodesPage() {
     }
     
     if (status === 'authenticated') {
-      if (session?.user.role !== 'organizer' && session?.user.role !== 'admin') {
+      if (session?.user.role !== 'organizer' && !isAdminRole(session?.user.role)) {
         router.push('/');
         toast.error('คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
         return; // หยุดการทำงาน
@@ -45,13 +46,12 @@ export default function PromoCodesPage() {
       const data = await response.json();
       const allCamps = Array.isArray(data) ? data : (data.camps || []);
       
-      // Organizer เห็นเฉพาะค่ายของตัวเอง
+      // Organizer เห็นเฉพาะค่ายของตัวเอง, Admin/Super Admin เห็นทั้งหมด
       if (session?.user.role === 'organizer') {
         const myCamps = allCamps.filter((c: Camp) => c.organizerId === session.user.id);
         setCamps(myCamps);
       } else {
-        // Admin เห็นทั้งหมด (แต่ไม่จำเป็นต้องใช้ในการสร้างโค้ด)
-        setCamps([]);
+        setCamps(allCamps);
       }
     } catch (error) {
       console.error('Error fetching camps:', error);
@@ -63,7 +63,7 @@ export default function PromoCodesPage() {
 
   // ใช้ useMemo เพื่อป้องกัน re-render ของ PromoCodeList
   const memoizedCamps = useMemo(() => camps, [camps]);
-  const memoizedUserRole = useMemo(() => session?.user?.role as 'admin' | 'organizer', [session?.user?.role]);
+  const memoizedUserRole = useMemo(() => (isAdminRole(session?.user?.role) ? 'admin' : 'organizer') as 'admin' | 'organizer', [session?.user?.role]);
 
   if (status === 'loading' || loading) {
     return (
@@ -73,13 +73,13 @@ export default function PromoCodesPage() {
     );
   }
 
-  if (!session || (session.user.role !== 'organizer' && session.user.role !== 'admin')) {
+  if (!session || (session.user.role !== 'organizer' && !isAdminRole(session.user.role))) {
     return null;
   }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-[1536px] mx-auto">
         <PromoCodeList
           userRole={memoizedUserRole}
           organizerCamps={memoizedCamps}

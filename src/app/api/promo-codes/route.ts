@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { PromoCodeModel } from '@/lib/db/models/PromoCode';
+import { isAdminRole } from '@/lib/auth-check';
 
 // GET /api/promo-codes - ดึงรายการโปรโมชั่น
 export async function GET(request: NextRequest) {
@@ -19,8 +20,8 @@ export async function GET(request: NextRequest) {
 
     let promoCodes;
 
-    if (session.user.role === 'admin') {
-      // Admin ดูได้ทั้งหมด
+    if (isAdminRole(session.user.role)) {
+      // Admin/Super Admin ดูได้ทั้งหมด
       if (organizerId) {
         promoCodes = await PromoCodeModel.findByOrganizer(organizerId);
       } else {
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // เฉพาะ admin และ organizer
-    if (session.user.role !== 'admin' && session.user.role !== 'organizer') {
+    if (!isAdminRole(session.user.role) && session.user.role !== 'organizer') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

@@ -7,9 +7,10 @@ import { getCollection } from '@/lib/mongodb';
 export async function GET() {
   try {
     const col = await getCollection('settings');
-    const [showcase, platform] = await Promise.all([
+    const [showcase, platform, site] = await Promise.all([
       col.findOne({ key: 'showcase' }),
       col.findOne({ key: 'platform' }),
+      col.findOne({ key: 'site' }),
     ]);
     return NextResponse.json({
       showcaseMode: showcase?.showcaseMode ?? false,
@@ -19,16 +20,18 @@ export async function GET() {
       platformAccountName: platform?.accountName ?? process.env.PLATFORM_ACCOUNT_NAME ?? 'SkillScout',
       platformFeePercent: platform?.feePercent ?? parseFloat(process.env.PLATFORM_FEE_PERCENT ?? '5'),
       platformEnabled: !!(platform?.promptpayId || process.env.PLATFORM_PROMPTPAY_ID),
+      // Site settings
+      visitorOffset: site?.visitorOffset ?? 59,
     });
   } catch {
-    return NextResponse.json({ showcaseMode: false, showcaseName: '' });
+    return NextResponse.json({ showcaseMode: false, showcaseName: '', visitorOffset: 59 });
   }
 }
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email || session.user.role !== 'admin') {
+    if (!session?.user?.email || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -40,6 +43,15 @@ export async function POST(req: Request) {
       await col.updateOne(
         { key: 'showcase' },
         { $set: { showcaseMode: Boolean(body.showcaseMode), showcaseName: String(body.showcaseName ?? ''), updatedAt: new Date() } },
+        { upsert: true }
+      );
+    }
+
+    // Site settings (visitor offset)
+    if ('visitorOffset' in body) {
+      await col.updateOne(
+        { key: 'site' },
+        { $set: { visitorOffset: parseInt(body.visitorOffset) || 0, updatedAt: new Date() } },
         { upsert: true }
       );
     }

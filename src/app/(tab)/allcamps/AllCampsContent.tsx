@@ -84,7 +84,7 @@ export default function AllCampsContent() {
   
   // Filter & Sort States
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [sortBy, setSortBy] = useState<SortOption>('deadline-near');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
 
   // Pagination State
@@ -217,17 +217,17 @@ export default function AllCampsContent() {
   const clearFilters = () => {
     setSelectedGroup("all");
     setSelectedTags([]);
-    setSortBy('newest');
+    setSortBy('deadline-near');
     setPriceRange([0, 10000]);
     setSearchQuery('');
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = 
-    selectedGroup !== "all" || 
-    selectedTags.length > 0 || 
-    sortBy !== 'newest' || 
-    priceRange[0] !== 0 || 
+  const hasActiveFilters =
+    selectedGroup !== "all" ||
+    selectedTags.length > 0 ||
+    sortBy !== 'deadline-near' ||
+    priceRange[0] !== 0 ||
     priceRange[1] !== 10000 ||
     searchQuery !== '';
 

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { PromoCodeModel } from '@/lib/db/models/PromoCode';
+import { isAdminRole } from '@/lib/auth-check';
 
 interface RouteParams {
   params: Promise<{
@@ -31,7 +32,7 @@ export async function PATCH(
     }
 
     // ตรวจสอบสิทธิ์
-    if (session.user.role !== 'admin' && promoCode.createdBy !== session.user.id) {
+    if (!isAdminRole(session.user.role) && promoCode.createdBy !== session.user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -68,7 +69,7 @@ export async function DELETE(
     }
 
     // ตรวจสอบสิทธิ์
-    if (session.user.role !== 'admin' && promoCode.createdBy !== session.user.id) {
+    if (!isAdminRole(session.user.role) && promoCode.createdBy !== session.user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

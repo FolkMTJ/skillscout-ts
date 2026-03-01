@@ -333,7 +333,17 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                 {/* Organizers: ลดขนาดรูปและพื้นที่ */}
                                 {camp.organizers && camp.organizers.length > 0 && (
                                     <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                                        <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">ผู้จัดค่าย</h2>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400">ผู้จัดค่าย</h2>
+                                            {camp.organizerId && (
+                                                <button
+                                                    onClick={() => router.push(`/organizer/${camp.organizerId}`)}
+                                                    className="text-xs text-[#F2B33D] hover:text-[#e0a530] font-medium transition-colors"
+                                                >
+                                                    ดูประวัติ →
+                                                </button>
+                                            )}
+                                        </div>
                                         <div className="flex flex-wrap items-center gap-3">
                                             {camp.organizers.map((organizer: Organizer, index: number) => {
                                                 const isPlaceholder = organizer.imageUrl === '/api/placeholder/100/100' || !organizer.imageUrl;

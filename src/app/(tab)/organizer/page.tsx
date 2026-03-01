@@ -12,6 +12,7 @@ import {
 } from '@/components/organizer';
 import PromoCodeManager from '@/components/organizer/PromoCodeManager';
 import toast from 'react-hot-toast';
+import { isAdminRole } from '@/lib/auth-check';
 
 interface StatCardProps {
   title: string;
@@ -63,8 +64,8 @@ export default function OrganizerDashboard() {
       const campsData = await campsRes.json();
       const allCamps = Array.isArray(campsData) ? campsData : (campsData.camps || []);
 
-      // Admin สามารถดูค่ายทั้งหมด, Organizer ดูเฉพาะค่ายของตัวเอง
-      const myCamps = session.user.role === 'admin'
+      // Admin/Super Admin สามารถดูค่ายทั้งหมด, Organizer ดูเฉพาะค่ายของตัวเอง
+      const myCamps = isAdminRole(session.user.role)
         ? allCamps
         : allCamps.filter((c: Camp) => c.organizerId === session.user.id);
 
@@ -277,7 +278,11 @@ export default function OrganizerDashboard() {
     if (!confirm('คุณต้องการลบค่ายนี้หรือไม่?')) return;
     try {
       const response = await fetch(`/api/camps/${campId}`, { method: 'DELETE' });
-      if (!response.ok) throw new Error('Failed to delete');
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        toast.error(data.error || 'เกิดข้อผิดพลาดในการลบค่าย');
+        return;
+      }
       toast.success('ลบค่ายสำเร็จ!');
       fetchData();
     } catch {
@@ -366,7 +371,7 @@ export default function OrganizerDashboard() {
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-[1536px] mx-auto">
           {/* Header Skeleton */}
           <div className="mb-8 animate-pulse">
             <div className="h-10 bg-gray-200 rounded w-96 mb-2"></div>
@@ -512,7 +517,7 @@ export default function OrganizerDashboard() {
       {/* Decorative Background Blob */}
       <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-orange-50 to-transparent -z-10" />
 
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+      <div className="max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 pt-8">
 
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">

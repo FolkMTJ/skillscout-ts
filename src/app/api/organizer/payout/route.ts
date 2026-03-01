@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { UserModel } from '@/lib/db/models';
+import { isAdminRole } from '@/lib/auth-check';
 
 /**
  * GET /api/organizer/payout
@@ -14,7 +15,7 @@ export async function GET() {
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (session.user.role !== 'organizer' && session.user.role !== 'admin') {
+    if (session.user.role !== 'organizer' && !isAdminRole(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (session.user.role !== 'organizer' && session.user.role !== 'admin') {
+    if (session.user.role !== 'organizer' && !isAdminRole(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

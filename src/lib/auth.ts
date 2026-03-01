@@ -66,15 +66,17 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.role = token.role as UserRole;
 
-        // 🔧 FIX BUG 5: เช็คสถานะ banned ทุกครั้งที่สร้าง session
+        // Refresh role + ban status from DB on every session check
         try {
           const user = await UserModel.findByEmail(session.user.email || '');
           if (user?.isBanned) {
-            // ถ้า user ถูก ban แล้ว ให้ throw error
             throw new Error('Account has been banned');
           }
+          // Sync role from DB so MongoDB Compass changes take effect without re-login
+          if (user?.role) {
+            session.user.role = user.role as UserRole;
+          }
         } catch (error) {
-          // ถ้าเจอ error ให้ return null เพื่อบังคับ sign out
           console.error('Session validation error:', error);
           throw error;
         }

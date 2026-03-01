@@ -2,14 +2,15 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { UserModel } from '@/lib/db/models';
+import { isAdminRole } from '@/lib/auth-check';
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.email || (session.user.role !== 'admin' && session.user.role !== 'organizer')) {
+
+    if (!session?.user?.email || !isAdminRole(session.user.role)) {
       return NextResponse.json(
-        { error: 'Unauthorized - Admin/Organizer only' },
+        { error: 'Unauthorized - Admin only' },
         { status: 403 }
       );
     }

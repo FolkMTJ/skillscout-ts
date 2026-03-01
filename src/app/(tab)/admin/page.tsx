@@ -24,7 +24,7 @@ import {
   Input,
   Textarea,
 } from '@heroui/react';
-import { FiUsers, FiCalendar, FiShield, FiTrash2, FiEye, FiSearch, FiAlertCircle, FiXCircle, FiAlertTriangle, FiCheck, FiX, FiPlus, FiEdit2, FiBookOpen, FiToggleLeft, FiToggleRight, FiSave, FiMonitor, FiRefreshCw, FiTrendingUp } from 'react-icons/fi';
+import { FiUsers, FiCalendar, FiShield, FiTrash2, FiEye, FiSearch, FiAlertCircle, FiXCircle, FiAlertTriangle, FiCheck, FiX, FiPlus, FiEdit2, FiBookOpen, FiToggleLeft, FiToggleRight, FiSave, FiMonitor, FiRefreshCw, FiTrendingUp, FiDollarSign, FiClock, FiCheckCircle, FiUser, FiSmartphone } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { StatCard } from '@/components/common';
 
@@ -72,6 +72,29 @@ interface User {
   createdAt: string;
 }
 
+interface PayoutPayment {
+  _id: string;
+  campId: string;
+  userId: string;
+  userEmail?: string;
+  userName?: string;
+  organizerId: string;
+  amount: number;
+  finalAmount: number;
+  discount: number;
+  platformFeePercent?: number;
+  platformFee?: number;
+  organizerNet?: number;
+  payoutStatus?: 'pending' | 'paid_out';
+  paidOutAt?: string;
+  payoutNote?: string;
+  status: string;
+  createdAt: string;
+  organizerPromptpay?: string;
+  organizerAccountName?: string;
+  campName?: string;
+}
+
 interface Camp {
   _id: string;
   name: string;
@@ -81,6 +104,8 @@ interface Camp {
   enrolled: number;
   capacity: number;
   createdAt: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export default function AdminDashboard() {
@@ -91,11 +116,13 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
+  const [userSortKey, setUserSortKey] = useState<'name' | 'role' | 'createdAt' | 'status'>('createdAt');
+  const [userSortDir, setUserSortDir] = useState<'asc' | 'desc'>('desc');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedCamp, setSelectedCamp] = useState<Camp | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [searchCamp, setSearchCamp] = useState('');
-  const [campStatusFilter, setCampStatusFilter] = useState<'all' | 'pending' | 'active' | 'rejected'>('all');
+  const [campStatusFilter, setCampStatusFilter] = useState<'all' | 'pending' | 'active' | 'completed' | 'rejected'>('all');
 
   // Showcase Mode state
   const [showcaseMode, setShowcaseMode] = useState(false);
@@ -110,6 +137,23 @@ export default function AdminDashboard() {
   const [platformSaving, setPlatformSaving] = useState(false);
   const [platformEnabled, setPlatformEnabled] = useState(false);
 
+  // Site settings state
+  const [visitorOffset, setVisitorOffset] = useState('59');
+  const [siteSaving, setSiteSaving] = useState(false);
+
+  // Payouts state
+  const [payoutSummary, setPayoutSummary] = useState<{
+    totalPlatformFee: number; totalOrganizerNet: number;
+    pendingTotal: number; paidOutTotal: number; pendingCount: number; paidOutCount: number;
+  } | null>(null);
+  const [payoutPending, setPayoutPending] = useState<PayoutPayment[]>([]);
+  const [payoutHistory, setPayoutHistory] = useState<PayoutPayment[]>([]);
+  const [payoutLoading, setPayoutLoading] = useState(false);
+  const [payoutSubTab, setPayoutSubTab] = useState('pending');
+  const [payoutConfirm, setPayoutConfirm] = useState<PayoutPayment | null>(null);
+  const [payoutNote, setPayoutNote] = useState('');
+  const [payoutMarking, setPayoutMarking] = useState(false);
+
   const fetchShowcaseSettings = async () => {
     try {
       const res = await fetch('/api/admin/settings');
@@ -120,6 +164,8 @@ export default function AdminDashboard() {
       setPlatformAccountName(data.platformAccountName ?? 'SkillScout');
       setPlatformFeePercent(String(data.platformFeePercent ?? 5));
       setPlatformEnabled(data.platformEnabled ?? false);
+      // Site settings
+      setVisitorOffset(String(data.visitorOffset ?? 59));
       const campRes = await fetch('/api/admin/showcase');
       const campData = await campRes.json();
       setShowcaseCampCount(campData.count ?? 0);
@@ -135,8 +181,14 @@ export default function AdminDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ showcaseMode: newMode }),
       });
+      // Also update visibility of sample camps
+      await fetch('/api/admin/showcase', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visible: newMode }),
+      });
       setShowcaseMode(newMode);
-      toast.success(newMode ? 'เปิด Showcase Mode แล้ว' : 'ปิด Showcase Mode แล้ว');
+      toast.success(newMode ? 'แสดงค่ายตัวอย่างแล้ว' : 'ซ่อนค่ายตัวอย่างแล้ว');
     } catch { toast.error('เกิดข้อผิดพลาด'); }
     setShowcaseSaving(false);
   };
@@ -161,16 +213,72 @@ export default function AdminDashboard() {
     setPlatformSaving(false);
   };
 
+  const saveSiteSettings = async () => {
+    setSiteSaving(true);
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visitorOffset: parseInt(visitorOffset) || 0 }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      toast.success('บันทึกตั้งค่าเว็บไซต์สำเร็จ');
+    } catch { toast.error('เกิดข้อผิดพลาด'); }
+    setSiteSaving(false);
+  };
+
+  const fetchPayouts = async () => {
+    setPayoutLoading(true);
+    try {
+      const res = await fetch('/api/admin/payouts');
+      if (!res.ok) return;
+      const data = await res.json();
+      setPayoutSummary(data.summary);
+      setPayoutPending(data.pending || []);
+      setPayoutHistory(data.history || []);
+    } catch { /* ignore */ }
+    finally { setPayoutLoading(false); }
+  };
+
+  const handleMarkPaidOut = async () => {
+    if (!payoutConfirm) return;
+    setPayoutMarking(true);
+    try {
+      const res = await fetch('/api/admin/payouts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentId: payoutConfirm._id, note: payoutNote }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      toast.success(`โอนเงินให้ ${payoutConfirm.organizerAccountName || 'Organizer'} สำเร็จ`);
+      setPayoutConfirm(null);
+      setPayoutNote('');
+      await fetchPayouts();
+    } catch { toast.error('เกิดข้อผิดพลาด'); }
+    finally { setPayoutMarking(false); }
+  };
+
+  const fmtMoney = (n: number) => `฿${n.toLocaleString('th-TH')}`;
+  const fmtDate = (s?: string) =>
+    s ? new Date(s).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) : '—';
+
   const seedShowcaseCamps = async () => {
     setShowcaseSeeding(true);
     try {
       const res = await fetch('/api/admin/showcase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'seed' }),
+        body: JSON.stringify({ action: 'seed', visible: true }),
       });
       const data = await res.json();
       toast.success(`เพิ่มค่ายตัวอย่าง ${data.inserted} ค่ายสำเร็จ`);
+      // Auto-enable showcase mode after seeding
+      await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ showcaseMode: true }),
+      });
+      setShowcaseMode(true);
       fetchShowcaseSettings();
     } catch { toast.error('เกิดข้อผิดพลาด'); }
     setShowcaseSeeding(false);
@@ -215,10 +323,11 @@ export default function AdminDashboard() {
   const { isOpen: isDeleteModalOpen, onOpen: onDeleteModalOpen, onClose: onDeleteModalClose } = useDisclosure();
   const { isOpen: isApproveModalOpen, onOpen: onApproveModalOpen, onClose: onApproveModalClose } = useDisclosure();
   const { isOpen: isRejectModalOpen, onOpen: onRejectModalOpen, onClose: onRejectModalClose } = useDisclosure();
+  const { isOpen: isDeleteCampModalOpen, onOpen: onDeleteCampModalOpen, onClose: onDeleteCampModalClose } = useDisclosure();
 
   useEffect(() => {
     if (status === 'authenticated') {
-      if (session?.user?.role !== 'admin') {
+      if (session?.user?.role !== 'admin' && session?.user?.role !== 'super_admin') {
         router.push('/');
         return;
       }
@@ -226,6 +335,11 @@ export default function AdminDashboard() {
       fetchShowcaseSettings();
     }
   }, [status, session, router]);
+
+  useEffect(() => {
+    if (activeTab === 'payouts') fetchPayouts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const fetchHollandCareers = async () => {
     try {
@@ -371,6 +485,23 @@ export default function AdminDashboard() {
     onDeleteModalOpen();
   };
 
+  const handleDeleteCamp = (camp: Camp) => {
+    setSelectedCamp(camp);
+    onDeleteCampModalOpen();
+  };
+
+  const confirmDeleteCamp = async () => {
+    if (!selectedCamp) return;
+    try {
+      const res = await fetch(`/api/camps/${selectedCamp._id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || 'เกิดข้อผิดพลาด'); return; }
+      toast.success(`ลบค่าย "${selectedCamp.name}" สำเร็จ`);
+      onDeleteCampModalClose();
+      fetchData();
+    } catch { toast.error('เกิดข้อผิดพลาด'); }
+  };
+
   const handleApproveCamp = (camp: Camp) => {
     setSelectedCamp(camp);
     onApproveModalOpen();
@@ -490,13 +621,48 @@ export default function AdminDashboard() {
     }
   };
 
-  const filteredUsers = users.filter(user =>
-    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const roleOrder: Record<string, number> = { user: 0, organizer: 1, admin: 2, super_admin: 3 };
+  const filteredUsers = [...users]
+    .filter(user =>
+      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      let aVal: string | number;
+      let bVal: string | number;
+      if (userSortKey === 'role') {
+        aVal = roleOrder[a.role] ?? 0;
+        bVal = roleOrder[b.role] ?? 0;
+      } else if (userSortKey === 'createdAt') {
+        aVal = new Date(a.createdAt).getTime();
+        bVal = new Date(b.createdAt).getTime();
+      } else if (userSortKey === 'status') {
+        aVal = a.isBanned ? 1 : 0;
+        bVal = b.isBanned ? 1 : 0;
+      } else {
+        aVal = a.name?.toLowerCase() || '';
+        bVal = b.name?.toLowerCase() || '';
+      }
+      if (aVal < bVal) return userSortDir === 'asc' ? -1 : 1;
+      if (aVal > bVal) return userSortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+  function effectiveCampStatus(camp: Camp): string {
+    if (camp.status !== 'active') return camp.status;
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const end = camp.endDate ? new Date(camp.endDate) : camp.startDate ? new Date(camp.startDate) : null;
+    if (end) {
+      end.setHours(23, 59, 59, 999);
+      if (now > end) return 'completed';
+    }
+    return camp.status;
+  }
 
   const filteredCamps = camps.filter(c => {
-    const matchStatus = campStatusFilter === 'all' || c.status === campStatusFilter;
+    const eff = effectiveCampStatus(c);
+    const matchStatus = campStatusFilter === 'all' || eff === campStatusFilter;
     const matchSearch = !searchCamp ||
       c.name.toLowerCase().includes(searchCamp.toLowerCase()) ||
       c.organizerName?.toLowerCase().includes(searchCamp.toLowerCase());
@@ -512,7 +678,7 @@ export default function AdminDashboard() {
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-[1536px] mx-auto">
           {/* Header Skeleton */}
           <div className="mb-8 animate-pulse">
             <div className="flex items-center gap-3 mb-2">
@@ -576,7 +742,7 @@ export default function AdminDashboard() {
     );
   }
 
-  if (status === 'unauthenticated' || session?.user?.role !== 'admin') {
+  if (status === 'unauthenticated' || (session?.user?.role !== 'admin' && session?.user?.role !== 'super_admin')) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="p-8 text-center">
@@ -593,13 +759,20 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-[1536px] mx-auto">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <FiShield className="text-3xl text-[#F2B33D]" />
+            <FiShield className={`text-3xl ${session?.user?.role === 'super_admin' ? 'text-purple-500' : 'text-[#F2B33D]'}`} />
             <h1 className="text-4xl font-bold text-gray-800 dark:text-white">Admin Dashboard</h1>
+            {session?.user?.role === 'super_admin' && (
+              <span className="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-bold rounded-full border border-purple-200">
+                Super Admin
+              </span>
+            )}
           </div>
-          <p className="text-gray-600 dark:text-gray-400">จัดการระบบและผู้ใช้งาน</p>
+          <p className="text-gray-600 dark:text-gray-400">
+            {session?.user?.role === 'super_admin' ? 'จัดการระบบในฐานะ Super Admin — มีสิทธิ์เต็มรูปแบบ' : 'จัดการระบบและผู้ใช้งาน'}
+          </p>
         </div>
 
         {/* Stats Cards - ✅ แก้ไขใช้ StatCard component */}
@@ -661,13 +834,13 @@ export default function AdminDashboard() {
                   </button>
 
                   <button
-                    onClick={() => router.push('/admin/payouts')}
+                    onClick={() => setActiveTab('payouts')}
                     className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all text-left border-2 border-transparent hover:border-[#F2B33D]/40"
                   >
                     <FiTrendingUp className="text-[#F2B33D] text-2xl mb-3" />
                     <p className="text-xl font-bold text-[#F2B33D]">Payout</p>
                     <p className="text-sm text-gray-500 mt-1">Dashboard</p>
-                    <p className="text-xs text-[#F2B33D] mt-2 font-medium">เปิด →</p>
+                    <p className="text-xs text-[#F2B33D] mt-2 font-medium">จัดการ →</p>
                   </button>
 
                   <button
@@ -693,193 +866,46 @@ export default function AdminDashboard() {
               </div>
             </Tab>
 
-            <Tab key="settings" title={<span className="flex items-center gap-1.5"><FiMonitor className={showcaseMode ? 'text-[#F2B33D]' : ''} />ตั้งค่า {showcaseMode && <span className="w-2 h-2 rounded-full bg-[#F2B33D] inline-block" />}</span>}>
-              <div className="py-6 space-y-6">
 
-                {/* Toggle Card */}
-                <div className={`rounded-2xl border-2 p-6 transition-all ${showcaseMode ? 'border-[#F2B33D] bg-[#FEF6E0]' : 'border-gray-200 bg-white'}`}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-xl font-bold flex items-center gap-2">
-                        <FiMonitor className={showcaseMode ? 'text-[#F2B33D]' : 'text-gray-400'} />
-                        Showcase Mode
-                      </h3>
-                      <p className="text-sm text-gray-500 mt-1">เปิดเพื่อแสดงชื่อที่กำหนดบน Discovery Path และ Path Finder (แทนชื่อ user จริง)</p>
-                    </div>
-                    <button
-                      onClick={() => saveShowcaseSettings(!showcaseMode)}
-                      disabled={showcaseSaving}
-                      className={`relative w-16 h-8 rounded-full transition-all duration-300 flex items-center ${showcaseMode ? 'bg-[#F2B33D]' : 'bg-gray-300'}`}
-                    >
-                      <span className={`absolute w-6 h-6 bg-white rounded-full shadow-md transition-all duration-300 ${showcaseMode ? 'left-9' : 'left-1'}`} />
-                    </button>
-                  </div>
-
-                  {showcaseMode && (
-                    <div className="mt-4 p-3 bg-[#F2B33D]/20 rounded-xl text-sm text-[#7a5a00] flex items-center gap-2">
-                      <span>Showcase Mode เปิดอยู่ — กดแชร์ผลลัพธ์ในแต่ละหน้าเพื่อใส่ชื่อบน Share Card ได้เลย</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* QR Download Preview */}
-                <div className="bg-white border-2 border-gray-200 rounded-2xl p-6">
-                  <h4 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
-                    QR สำหรับโหลดรูป Share Card
-                  </h4>
-                  <p className="text-sm text-gray-500 mb-4">แสดง QR Code นี้ที่งาน Showcase เพื่อให้ผู้เข้าชมสแกนโหลดรูป Share Card ของตัวเองได้ทันที</p>
-                  <div className="flex gap-4 flex-wrap">
-                    <div className="flex flex-col items-center gap-2 p-4 border-2 border-dashed border-gray-200 rounded-xl">
-                      <img src="/skillscout-qr.png" alt="QR" className="w-32 h-32 object-contain" />
-                      <p className="text-xs text-gray-500 font-medium">skillscout.site</p>
-                    </div>
-                    <div className="flex flex-col justify-center gap-2">
-                      <p className="text-sm text-gray-600">ผู้เข้าชมทำ Path Finder เสร็จแล้วสแกน QR นี้ เพื่อ:</p>
-                      <ul className="text-sm text-gray-600 space-y-1">
-                        <li>• เปิดหน้าผลลัพธ์บนมือถือตัวเอง</li>
-                        <li>• กดโหลดรูป Share Card ได้เลย</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Showcase Camps */}
-                <div className="bg-white border-2 border-gray-200 rounded-2xl p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h4 className="font-bold text-gray-700 flex items-center gap-2">
-                        ค่ายตัวอย่าง Showcase
-                        <span className={`text-sm font-normal px-2 py-0.5 rounded-full ${showcaseCampCount > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                          {showcaseCampCount} ค่าย
-                        </span>
-                      </h4>
-                      <p className="text-sm text-gray-500 mt-1">6 ค่าย IT พร้อม Comment จำลอง สำหรับสาธิตในงาน Showcase</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="flat"
-                        size="sm"
-                        onPress={fetchShowcaseSettings}
-                        startContent={<FiRefreshCw />}
-                        isIconOnly
-                        title="รีเฟรช"
-                      />
-                      {showcaseCampCount > 0 && (
-                        <Button
-                          variant="flat"
-                          color="danger"
-                          size="sm"
-                          onPress={clearShowcaseCamps}
-                          isLoading={showcaseSeeding}
-                        >
-                          ลบค่ายตัวอย่าง
-                        </Button>
-                      )}
-                      <Button
-                        color="warning"
-                        size="sm"
-                        onPress={seedShowcaseCamps}
-                        isLoading={showcaseSeeding}
-                        startContent={<FiPlus />}
-                      >
-                        {showcaseCampCount > 0 ? 'Reseed ค่าย' : 'เพิ่มค่ายตัวอย่าง'}
-                      </Button>
-                    </div>
-                  </div>
-
-                  {showcaseCampCount > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {['Web Development Bootcamp', 'Data Science & AI Workshop', 'Cybersecurity Essentials', 'Mobile App Development', 'Game Development with Unity', 'Cloud & DevOps Fundamentals'].map((name, i) => (
-                        <div key={i} className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                          <p className="text-sm font-medium text-gray-700 truncate">{name}</p>
-                          <p className="text-xs text-gray-400 mt-1">2-3 comments · Active</p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-gray-400">
-                      <FiMonitor className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                      <p className="text-sm">ยังไม่มีค่ายตัวอย่าง กด &ldquo;เพิ่มค่ายตัวอย่าง&rdquo; เพื่อ seed ข้อมูล</p>
-                    </div>
-                  )}
-                </div>
-                {/* Platform Fee Settings */}
-                <div className={`rounded-2xl border-2 p-6 transition-all ${platformEnabled ? 'border-green-300 bg-green-50/30' : 'border-gray-200 bg-white'}`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-bold flex items-center gap-2">
-                        <FiTrendingUp className={platformEnabled ? 'text-green-500' : 'text-gray-400'} />
-                        Platform Fee
-                      </h3>
-                      <p className="text-sm text-gray-500 mt-0.5">
-                        {platformEnabled
-                          ? `เปิดอยู่ — QR จะชี้มา SkillScout, หัก ${platformFeePercent}%`
-                          : 'ปิดอยู่ — QR ชี้ตรงหา Organizer (ไม่มีรายได้ platform)'}
-                      </p>
-                    </div>
-                    {platformEnabled && (
-                      <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">เปิดใช้งาน</span>
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <Input
-                        label="PromptPay ID (เบอร์หรือเลขบัตร)"
-                        placeholder="0812345678 — ว่างเปล่า = ปิด Platform Fee"
-                        value={platformPromptpayId}
-                        onValueChange={(v) => setPlatformPromptpayId(v.replace(/\D/g, '').slice(0, 13))}
-                        description={platformPromptpayId ? (platformPromptpayId.length === 10 ? 'เบอร์โทรศัพท์' : platformPromptpayId.length === 13 ? 'เลขบัตรประชาชน' : '') : 'ปล่อยว่างเพื่อปิด Platform Fee'}
-                        classNames={{ inputWrapper: 'bg-white border border-gray-200' }}
-                      />
-                      <Input
-                        label="ชื่อบัญชี"
-                        placeholder="SkillScout"
-                        value={platformAccountName}
-                        onValueChange={setPlatformAccountName}
-                        classNames={{ inputWrapper: 'bg-white border border-gray-200' }}
-                      />
-                      <Input
-                        label="Fee % (0–30)"
-                        placeholder="5"
-                        value={platformFeePercent}
-                        onValueChange={(v) => setPlatformFeePercent(v.replace(/[^0-9.]/g, ''))}
-                        endContent={<span className="text-gray-400 text-sm">%</span>}
-                        classNames={{ inputWrapper: 'bg-white border border-gray-200' }}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      {/* <p className="text-xs text-gray-400">
-                        {platformPromptpayId
-                          ? `ตัวอย่าง: ค่าย ฿1,000 → platform รับ ฿${Math.round(1000 * parseFloat(platformFeePercent || '0') / 100)} + organizer รับ ฿${1000 - Math.round(1000 * parseFloat(platformFeePercent || '0') / 100)}`
-                          : 'ใส่ PromptPay ID เพื่อเปิดระบบ หรือปล่อยว่างเพื่อปิด'}
-                      </p> */}
-                      <Button
-                        className="bg-[#F2B33D] text-white font-semibold"
-                        size="sm"
-                        onPress={savePlatformSettings}
-                        isLoading={platformSaving}
-                        startContent={!platformSaving && <FiSave size={14} />}
-                      >
-                        บันทึก
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Tab>
 
             <Tab key="users" title={`Users (${totalUsers})`}>
               <div className="py-6">
-                <div className="mb-4">
+                <div className="flex flex-col sm:flex-row gap-3 mb-4">
                   <Input
                     placeholder="ค้นหา User..."
                     value={searchTerm}
                     onValueChange={setSearchTerm}
                     startContent={<FiSearch />}
-                    size="lg"
+                    size="sm"
+                    className="flex-1"
                   />
+                  <div className="flex gap-1.5 flex-wrap items-center">
+                    <span className="text-xs text-gray-400 mr-0.5">เรียงตาม</span>
+                    {([
+                      { key: 'createdAt', label: 'วันที่สมัคร' },
+                      { key: 'name', label: 'ชื่อ' },
+                      { key: 'role', label: 'Role' },
+                      { key: 'status', label: 'สถานะ' },
+                    ] as const).map(({ key, label }) => (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          if (userSortKey === key) setUserSortDir(d => d === 'asc' ? 'desc' : 'asc');
+                          else { setUserSortKey(key); setUserSortDir('asc'); }
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border-2 transition-all flex items-center gap-1 ${
+                          userSortKey === key
+                            ? 'bg-[#F2B33D] text-white border-[#F2B33D]'
+                            : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        {label}
+                        {userSortKey === key && (
+                          <span className="text-[10px]">{userSortDir === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <Table aria-label="Users table">
@@ -900,35 +926,32 @@ export default function AdminDashboard() {
                           <Chip
                             size="sm"
                             color={
-                              user.role === 'admin' ? 'danger' :
-                                user.role === 'organizer' ? 'primary' : 'default'
+                              user.role === 'super_admin' ? 'secondary' :
+                                user.role === 'admin' ? 'danger' :
+                                  user.role === 'organizer' ? 'primary' : 'default'
                             }
                           >
-                            {user.role}
+                            {user.role === 'super_admin' ? 'Super Admin' : user.role}
                           </Chip>
                         </TableCell>
                         <TableCell>
                           {user.isBanned ? (
-                            <Chip size="sm" color="danger" variant="flat">
-                              Banned
-                            </Chip>
+                            <Chip size="sm" color="danger" variant="flat">Banned</Chip>
                           ) : (
-                            <Chip size="sm" color="success" variant="flat">
-                              Active
-                            </Chip>
+                            <Chip size="sm" color="success" variant="flat">Active</Chip>
                           )}
                         </TableCell>
                         <TableCell>
                           {new Date(user.createdAt).toLocaleDateString('th-TH')}
                         </TableCell>
                         <TableCell>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 flex-wrap">
                             <Button
                               size="sm"
                               color={user.isBanned ? "success" : "warning"}
                               variant="flat"
                               onPress={() => handleBanUser(user)}
-                              isDisabled={user.role === 'admin'}
+                              isDisabled={user.role === 'admin' || user.role === 'super_admin'}
                             >
                               {user.isBanned ? 'ปลดแบน' : 'แบน'}
                             </Button>
@@ -937,11 +960,36 @@ export default function AdminDashboard() {
                               color="danger"
                               variant="flat"
                               onPress={() => handleDeleteUser(user)}
-                              isDisabled={user.role === 'admin'}
+                              isDisabled={user.role === 'admin' || user.role === 'super_admin'}
                               startContent={<FiTrash2 />}
                             >
                               ลบ
                             </Button>
+                            {/* Super Admin only — role changer */}
+                            {session?.user?.role === 'super_admin' && user.email !== session?.user?.email && (
+                              <select
+                                value={user.role}
+                                onChange={async (e) => {
+                                  const newRole = e.target.value;
+                                  try {
+                                    const res = await fetch(`/api/admin/users/${user._id}/role`, {
+                                      method: 'PATCH',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ role: newRole }),
+                                    });
+                                    if (!res.ok) { const d = await res.json(); toast.error(d.error || 'เกิดข้อผิดพลาด'); return; }
+                                    toast.success(`เปลี่ยน Role เป็น ${newRole} สำเร็จ`);
+                                    fetchData();
+                                  } catch { toast.error('เกิดข้อผิดพลาด'); }
+                                }}
+                                className="h-7 px-2 rounded-lg text-xs border border-gray-200 bg-white text-gray-700 cursor-pointer focus:outline-none focus:border-[#F2B33D]"
+                              >
+                                <option value="user">user</option>
+                                <option value="organizer">organizer</option>
+                                <option value="admin">admin</option>
+                                <option value="super_admin">super_admin</option>
+                              </select>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -1096,24 +1144,27 @@ export default function AdminDashboard() {
                     className="flex-1"
                   />
                   <div className="flex gap-1.5 flex-wrap">
-                    {(['all', 'pending', 'active', 'rejected'] as const).map(s => (
-                      <button
-                        key={s}
-                        onClick={() => setCampStatusFilter(s)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border-2 ${campStatusFilter === s
-                          ? s === 'pending' ? 'bg-orange-500 text-white border-orange-500'
-                            : s === 'active' ? 'bg-green-500 text-white border-green-500'
-                              : s === 'rejected' ? 'bg-red-500 text-white border-red-500'
-                                : 'bg-[#F2B33D] text-white border-[#F2B33D]'
-                          : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
-                          }`}
-                      >
-                        {s === 'all' ? 'ทั้งหมด'
-                          : s === 'pending' ? `รออนุมัติ (${camps.filter(c => c.status === 'pending').length})`
-                            : s === 'active' ? `เปิดอยู่ (${camps.filter(c => c.status === 'active').length})`
-                              : `ปฏิเสธ (${camps.filter(c => c.status === 'rejected').length})`}
-                      </button>
-                    ))}
+                    {([
+                      { key: 'all', label: 'ทั้งหมด', color: 'bg-[#F2B33D] border-[#F2B33D]' },
+                      { key: 'pending', label: 'รออนุมัติ', color: 'bg-orange-500 border-orange-500' },
+                      { key: 'active', label: 'เปิดอยู่', color: 'bg-green-500 border-green-500' },
+                      { key: 'completed', label: 'จบแล้ว', color: 'bg-blue-500 border-blue-500' },
+                      { key: 'rejected', label: 'ปฏิเสธ', color: 'bg-red-500 border-red-500' },
+                    ] as const).map(({ key, label, color }) => {
+                      const count = key === 'all' ? null : camps.filter(c => effectiveCampStatus(c) === key).length;
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => setCampStatusFilter(key)}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border-2 ${campStatusFilter === key
+                            ? `${color} text-white`
+                            : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                            }`}
+                        >
+                          {count !== null ? `${label} (${count})` : label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
                 <Table aria-label="Camps table">
@@ -1140,17 +1191,23 @@ export default function AdminDashboard() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Chip
-                            size="sm"
-                            color={
-                              camp.status === 'active' ? 'success' :
-                                camp.status === 'pending' ? 'warning' :
-                                  camp.status === 'rejected' ? 'danger' :
-                                    'default'
-                            }
-                          >
-                            {camp.status}
-                          </Chip>
+                          {(() => {
+                            const eff = effectiveCampStatus(camp);
+                            return (
+                              <Chip
+                                size="sm"
+                                color={
+                                  eff === 'active' ? 'success' :
+                                    eff === 'pending' ? 'warning' :
+                                      eff === 'rejected' ? 'danger' :
+                                        eff === 'completed' ? 'primary' :
+                                          'default'
+                                }
+                              >
+                                {eff === 'completed' && camp.status === 'active' ? 'จบแล้ว' : eff}
+                              </Chip>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>
                           {camp.enrolled || 0}/{camp.capacity}
@@ -1190,6 +1247,16 @@ export default function AdminDashboard() {
                                 </Button>
                               </>
                             )}
+                            <Button
+                              size="sm"
+                              color="danger"
+                              variant="light"
+                              isIconOnly
+                              title="ลบค่าย"
+                              onPress={() => handleDeleteCamp(camp)}
+                            >
+                              <FiTrash2 size={14} />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -1198,9 +1265,360 @@ export default function AdminDashboard() {
                 </Table>
               </div>
             </Tab>
+
+            {/* ─── Payouts Tab ─── */}
+            <Tab key="payouts" title={
+              <div className="flex items-center gap-1.5">
+                <FiDollarSign size={13} />
+                <span>Payouts</span>
+                {payoutPending.length > 0 && (
+                  <span className="w-4 h-4 bg-orange-500 text-white text-[9px] rounded-full flex items-center justify-center font-bold">
+                    {payoutPending.length}
+                  </span>
+                )}
+              </div>
+            }>
+              <div className="py-6 space-y-4">
+                {payoutLoading ? (
+                  <div className="flex justify-center py-16">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#F2B33D]" />
+                  </div>
+                ) : (
+                  <>
+                    {/* Header row: 2 stat cards + refresh */}
+                    <div className="flex items-stretch gap-3">
+                      {/* รอโอน */}
+                      <div className={`flex-1 rounded-2xl border-2 p-4 transition-all cursor-pointer ${payoutSubTab === 'pending' ? 'border-[#F2B33D] bg-[#FEF6E0]' : 'border-gray-100 bg-white'}`}
+                        onClick={() => setPayoutSubTab('pending')}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <FiClock size={14} className={payoutSubTab === 'pending' ? 'text-[#F2B33D]' : 'text-gray-400'} />
+                          <span className="text-xs font-medium text-gray-500">รอโอน</span>
+                          {payoutPending.length > 0 && (
+                            <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-full">
+                              {payoutSummary?.pendingCount ?? payoutPending.length} รายการ
+                            </span>
+                          )}
+                        </div>
+                        <p className={`text-xl font-black ${payoutSubTab === 'pending' ? 'text-[#F2B33D]' : 'text-gray-800'}`}>
+                          {fmtMoney(payoutSummary?.pendingTotal ?? 0)}
+                        </p>
+                      </div>
+
+                      {/* โอนแล้ว */}
+                      <div className={`flex-1 rounded-2xl border-2 p-4 transition-all cursor-pointer ${payoutSubTab === 'history' ? 'border-green-400 bg-green-50' : 'border-gray-100 bg-white'}`}
+                        onClick={() => setPayoutSubTab('history')}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <FiCheckCircle size={14} className={payoutSubTab === 'history' ? 'text-green-500' : 'text-gray-400'} />
+                          <span className="text-xs font-medium text-gray-500">โอนแล้ว</span>
+                          {payoutHistory.length > 0 && (
+                            <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 bg-green-100 text-green-700 rounded-full">
+                              {payoutSummary?.paidOutCount ?? payoutHistory.length} รายการ
+                            </span>
+                          )}
+                        </div>
+                        <p className={`text-xl font-black ${payoutSubTab === 'history' ? 'text-green-600' : 'text-gray-800'}`}>
+                          {fmtMoney(payoutSummary?.paidOutTotal ?? 0)}
+                        </p>
+                      </div>
+
+                      {/* Refresh button */}
+                      <button onClick={fetchPayouts}
+                        className="w-10 rounded-2xl border border-gray-100 bg-white flex items-center justify-center text-gray-400 hover:text-[#F2B33D] hover:border-[#F2B33D] transition-all"
+                        title="รีเฟรช">
+                        <FiRefreshCw size={15} />
+                      </button>
+                    </div>
+
+                    {/* Platform fee summary (small text) */}
+                    {payoutSummary && payoutSummary.totalPlatformFee > 0 && (
+                      <p className="text-xs text-gray-400 px-1">
+                        รายได้ Platform รวม: <span className="font-semibold text-[#F2B33D]">{fmtMoney(payoutSummary.totalPlatformFee)}</span>
+                        {' · '}Organizer ได้รับรวม: <span className="font-semibold text-green-600">{fmtMoney(payoutSummary.totalOrganizerNet)}</span>
+                      </p>
+                    )}
+
+                    {/* Pending */}
+                    {payoutSubTab === 'pending' && (
+                      <div className="space-y-3">
+                        {payoutPending.length === 0 ? (
+                          <div className="rounded-2xl bg-white border border-gray-100 text-center flex flex-col items-center justify-center" style={{ minHeight: 400 }}>
+                            <FiCheckCircle className="w-10 h-10 text-green-400 mb-3" />
+                            <p className="text-gray-500 text-sm font-medium">ไม่มีรายการรอโอน</p>
+                          </div>
+                        ) : payoutPending.map(p => (
+                          <div key={p._id} className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className="w-8 h-8 rounded-full bg-[#F2B33D]/10 flex items-center justify-center shrink-0">
+                                    <FiUser size={14} className="text-[#F2B33D]" />
+                                  </div>
+                                  <div>
+                                    <p className="font-semibold text-sm text-gray-900">{p.organizerAccountName || 'Organizer'}</p>
+                                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                                      <FiSmartphone size={10} />
+                                      <span className="font-mono">{p.organizerPromptpay || '—'}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="bg-gray-50 rounded-xl p-3 space-y-1.5 text-xs">
+                                  <div className="flex justify-between text-gray-500"><span>ผู้จ่าย</span><span className="font-medium text-gray-700">{p.userName}</span></div>
+                                  <div className="flex justify-between text-gray-500"><span>ยอดรับมา</span><span className="font-semibold text-gray-800">฿{p.finalAmount.toLocaleString()}</span></div>
+                                  <div className="flex justify-between text-gray-500"><span>Platform fee ({p.platformFeePercent}%)</span><span className="text-[#F2B33D] font-semibold">-฿{(p.platformFee ?? 0).toLocaleString()}</span></div>
+                                  <div className="flex justify-between border-t border-gray-200 pt-1.5"><span className="font-semibold text-gray-700">ต้องโอนให้ Organizer</span><span className="font-black text-green-600 text-sm">฿{(p.organizerNet ?? 0).toLocaleString()}</span></div>
+                                </div>
+                                <p className="text-[10px] text-gray-400 mt-2">ชำระเมื่อ {fmtDate(p.createdAt)}</p>
+                              </div>
+                              <div className="shrink-0 flex flex-col items-end gap-2">
+                                <span className="px-2 py-0.5 bg-orange-100 text-orange-600 text-[10px] font-bold rounded-full">รอโอน</span>
+                                <Button size="sm" className="bg-green-500 text-white font-semibold text-xs"
+                                  onPress={() => { setPayoutConfirm(p); setPayoutNote(''); }}
+                                  startContent={<FiCheck size={13} />}>โอนแล้ว</Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* History */}
+                    {payoutSubTab === 'history' && (
+                      <div className="space-y-3">
+                        {payoutHistory.length === 0 ? (
+                          <div className="rounded-2xl bg-white border border-gray-100 text-center flex flex-col items-center justify-center" style={{ minHeight: 400 }}>
+                            <p className="text-gray-400 text-sm">ยังไม่มีประวัติการโอน</p>
+                          </div>
+                        ) : payoutHistory.map(p => (
+                          <div key={p._id} className="rounded-2xl bg-white border border-gray-100 shadow-sm">
+                            <div className="p-4 flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-full bg-green-50 flex items-center justify-center shrink-0">
+                                <FiCheckCircle size={16} className="text-green-500" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-sm text-gray-900">{p.organizerAccountName || 'Organizer'}</p>
+                                <p className="text-xs text-gray-500">{p.userName} · โอนเมื่อ {fmtDate(p.paidOutAt)}</p>
+                                {p.payoutNote && <p className="text-xs text-gray-400 mt-0.5">หมายเหตุ: {p.payoutNote}</p>}
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p className="font-black text-green-600 text-base">฿{(p.organizerNet ?? 0).toLocaleString()}</p>
+                                <p className="text-[10px] text-gray-400">fee ฿{(p.platformFee ?? 0).toLocaleString()}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </Tab>
+
+            <Tab key="settings" title={<span className="flex items-center gap-1.5"><FiMonitor />ตั้งค่า</span>}>
+              <div className="py-6 space-y-6">
+
+                {/* Sample Camps Card */}
+                <div className={`rounded-2xl border-2 p-6 transition-all ${showcaseMode ? 'border-[#F2B33D] bg-[#FEF6E0]' : 'border-gray-200 bg-white'}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold flex items-center gap-2">
+                        <FiMonitor className={showcaseMode ? 'text-[#F2B33D]' : 'text-gray-400'} />
+                        ค่ายตัวอย่าง
+                        <span className={`text-sm font-normal px-2 py-0.5 rounded-full ${showcaseCampCount > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                          {showcaseCampCount} ค่าย
+                        </span>
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1">20 ค่าย IT สายต่างๆ พร้อมรีวิวจำลอง สำหรับทดลองใช้งานแพลตฟอร์ม</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {/* Toggle visibility */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500">{showcaseMode ? 'มองเห็น' : 'ซ่อนอยู่'}</span>
+                        <button
+                          onClick={() => saveShowcaseSettings(!showcaseMode)}
+                          disabled={showcaseSaving || showcaseCampCount === 0}
+                          className={`relative w-12 h-6 rounded-full transition-all duration-300 flex items-center disabled:opacity-40 ${showcaseMode ? 'bg-[#F2B33D]' : 'bg-gray-300'}`}
+                          title={showcaseCampCount === 0 ? 'เพิ่มค่ายตัวอย่างก่อน' : (showcaseMode ? 'ซ่อนค่ายตัวอย่าง' : 'แสดงค่ายตัวอย่าง')}
+                        >
+                          <span className={`absolute w-4 h-4 bg-white rounded-full shadow-md transition-all duration-300 ${showcaseMode ? 'left-7' : 'left-1'}`} />
+                        </button>
+                      </div>
+                      <Button
+                        variant="flat"
+                        size="sm"
+                        onPress={fetchShowcaseSettings}
+                        startContent={<FiRefreshCw />}
+                        isIconOnly
+                        title="รีเฟรช"
+                      />
+                      {showcaseCampCount > 0 && (
+                        <Button
+                          variant="flat"
+                          color="danger"
+                          size="sm"
+                          onPress={clearShowcaseCamps}
+                          isLoading={showcaseSeeding}
+                        >
+                          ลบทั้งหมด
+                        </Button>
+                      )}
+                      <Button
+                        color="warning"
+                        size="sm"
+                        onPress={seedShowcaseCamps}
+                        isLoading={showcaseSeeding}
+                        startContent={<FiPlus />}
+                      >
+                        {showcaseCampCount > 0 ? 'Reseed' : 'เพิ่มค่ายตัวอย่าง'}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {showcaseCampCount > 0 ? (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {[
+                        'Web Development Bootcamp', 'Data Science & AI Workshop', 'Cybersecurity Essentials', 'Mobile App Development',
+                        'Game Development with Unity', 'Cloud & DevOps Fundamentals', 'UI/UX Design Bootcamp', 'Backend Development with Node.js',
+                        'Blockchain & Web3 Workshop', 'IoT & Embedded Systems', 'Machine Learning with Python', 'Database Design & SQL',
+                        'Network Engineering', 'Digital Marketing & Analytics', 'Computer Vision with OpenCV', 'AR/VR Development',
+                        'Competitive Programming', 'Open Source Contribution', 'System Design & Architecture', 'Full Stack Bootcamp',
+                      ].map((name, i) => (
+                        <div key={i} className="p-2.5 bg-white rounded-xl border border-gray-200">
+                          <p className="text-xs font-medium text-gray-700 truncate">{name}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">มีรีวิว · Active</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-400">
+                      <FiMonitor className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">ยังไม่มีค่ายตัวอย่าง กด &ldquo;เพิ่มค่ายตัวอย่าง&rdquo; เพื่อ seed ข้อมูล</p>
+                    </div>
+                  )}
+                </div>
+                {/* Platform Fee Settings */}
+                <div className={`rounded-2xl border-2 p-6 transition-all ${platformEnabled ? 'border-green-300 bg-green-50/30' : 'border-gray-200 bg-white'}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold flex items-center gap-2">
+                        <FiTrendingUp className={platformEnabled ? 'text-green-500' : 'text-gray-400'} />
+                        Platform Fee
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-0.5">
+                        {platformEnabled
+                          ? `เปิดอยู่ — QR จะชี้มา SkillScout, หัก ${platformFeePercent}%`
+                          : 'ปิดอยู่ — QR ชี้ตรงหา Organizer (ไม่มีรายได้ platform)'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {platformEnabled && (
+                        <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">เปิดใช้งาน</span>
+                      )}
+                      <Button
+                        className="bg-[#F2B33D] text-white font-semibold"
+                        size="sm"
+                        onPress={savePlatformSettings}
+                        isLoading={platformSaving}
+                        startContent={!platformSaving && <FiSave size={14} />}
+                      >
+                        บันทึก
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <Input
+                        label="PromptPay ID (เบอร์หรือเลขบัตร)"
+                        placeholder="0812345678 — ว่างเปล่า = ปิด Platform Fee"
+                        value={platformPromptpayId}
+                        onValueChange={(v) => setPlatformPromptpayId(v.replace(/\D/g, '').slice(0, 13))}
+                        description={platformPromptpayId ? (platformPromptpayId.length === 10 ? 'เบอร์โทรศัพท์' : platformPromptpayId.length === 13 ? 'เลขบัตรประชาชน' : '') : 'ปล่อยว่างเพื่อปิด Platform Fee'}
+                        classNames={{ inputWrapper: 'bg-white border border-gray-200' }}
+                      />
+                      <Input
+                        label="ชื่อบัญชี"
+                        placeholder="SkillScout"
+                        value={platformAccountName}
+                        onValueChange={setPlatformAccountName}
+                        classNames={{ inputWrapper: 'bg-white border border-gray-200' }}
+                      />
+                      <Input
+                        label="Fee % (0–30)"
+                        placeholder="5"
+                        value={platformFeePercent}
+                        onValueChange={(v) => setPlatformFeePercent(v.replace(/[^0-9.]/g, ''))}
+                        endContent={<span className="text-gray-400 text-sm">%</span>}
+                        classNames={{ inputWrapper: 'bg-white border border-gray-200' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Site Settings */}
+                <div className="rounded-2xl border-2 border-gray-200 bg-white p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold flex items-center gap-2">
+                        <FiMonitor className="text-gray-400" />
+                        ตั้งค่าเว็บไซต์
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-0.5">จำนวนผู้เข้าชมและการแสดงผล</p>
+                    </div>
+                    <Button
+                      className="bg-[#F2B33D] text-white font-semibold"
+                      size="sm"
+                      onPress={saveSiteSettings}
+                      isLoading={siteSaving}
+                      startContent={!siteSaving && <FiSave size={14} />}
+                    >
+                      บันทึก
+                    </Button>
+                  </div>
+                  <div className="max-w-xs">
+                    <Input
+                      label="Visitor Offset (ตัวเลขเริ่มต้น)"
+                      placeholder="59"
+                      value={visitorOffset}
+                      onValueChange={(v) => setVisitorOffset(v.replace(/\D/g, ''))}
+                      description="ตัวเลขที่บวกเพิ่มกับจำนวนผู้เข้าชมจริง เพื่อให้ตัวเลขดูสมจริง"
+                      classNames={{ inputWrapper: 'bg-white border border-gray-200' }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </Tab>
           </Tabs>
         </Card>
       </div>
+
+      {/* Payout Confirm Modal */}
+      <Modal isOpen={!!payoutConfirm} onClose={() => { setPayoutConfirm(null); setPayoutNote(''); }} size="sm"
+        classNames={{ base: 'bg-white rounded-3xl', header: 'border-b border-gray-100 px-5 py-4', body: 'p-5', footer: 'border-t border-gray-100 px-5 py-4 bg-gray-50' }}>
+        <ModalContent>
+          <ModalHeader><h3 className="text-base font-bold text-gray-900">ยืนยันการโอนเงิน</h3></ModalHeader>
+          <ModalBody>
+            {payoutConfirm && (
+              <div className="space-y-4">
+                <div className="bg-green-50 rounded-2xl p-4 text-center">
+                  <p className="text-xs text-gray-500 mb-1">จำนวนเงินที่โอน</p>
+                  <p className="text-3xl font-black text-green-600">฿{(payoutConfirm.organizerNet ?? 0).toLocaleString()}</p>
+                  <p className="text-xs text-gray-400 mt-1">หัก {payoutConfirm.platformFeePercent}% platform fee (฿{(payoutConfirm.platformFee ?? 0).toLocaleString()})</p>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between"><span className="text-gray-500">โอนให้</span><span className="font-semibold">{payoutConfirm.organizerAccountName || '—'}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">PromptPay</span><span className="font-mono">{payoutConfirm.organizerPromptpay || '—'}</span></div>
+                </div>
+                <Input label="หมายเหตุ (ไม่บังคับ)" placeholder="เช่น โอนผ่าน SCB" value={payoutNote} onValueChange={setPayoutNote}
+                  classNames={{ inputWrapper: 'bg-gray-50 border-none' }} />
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" className="text-gray-500" onPress={() => { setPayoutConfirm(null); setPayoutNote(''); }}>ยกเลิก</Button>
+            <Button className="bg-green-500 text-white font-semibold" onPress={handleMarkPaidOut} isLoading={payoutMarking} startContent={!payoutMarking && <FiCheck size={16} />}>ยืนยันโอนแล้ว</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Career Add/Edit Modal */}
       <Modal isOpen={isCareerModalOpen} onClose={onCareerModalClose} size="4xl" scrollBehavior="inside">
@@ -1488,6 +1906,41 @@ export default function AdminDashboard() {
               startContent={<FiCheck />}
             >
               อนุมัติค่าย
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Delete Camp Modal */}
+      <Modal isOpen={isDeleteCampModalOpen} onClose={onDeleteCampModalClose}>
+        <ModalContent>
+          <ModalHeader>
+            <h3 className="text-xl font-bold text-red-600 flex items-center gap-2">
+              <FiAlertTriangle />
+              ลบค่าย
+            </h3>
+          </ModalHeader>
+          <ModalBody>
+            {selectedCamp && (
+              <div className="space-y-4">
+                <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border-2 border-red-200">
+                  <p className="font-semibold text-lg">{selectedCamp.name}</p>
+                  <p className="text-sm text-gray-600 mt-1">โดย: {selectedCamp.organizerName}</p>
+                  <p className="text-xs text-gray-500">{selectedCamp.organizerEmail}</p>
+                </div>
+                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                    <strong>คำเตือน:</strong> การลบค่ายจะลบข้อมูลทั้งหมดออกจากระบบและไม่สามารถกู้คืนได้
+                    {selectedCamp.enrolled > 0 && ` (มีผู้สมัคร ${selectedCamp.enrolled} คน)`}
+                  </p>
+                </div>
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onDeleteCampModalClose}>ยกเลิก</Button>
+            <Button color="danger" startContent={<FiTrash2 />} onPress={confirmDeleteCamp}>
+              ลบค่าย
             </Button>
           </ModalFooter>
         </ModalContent>

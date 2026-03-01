@@ -160,10 +160,10 @@ export default function ProfileModal({ isOpen, onClose, user, onUpdate }: Profil
                       key={tab.key}
                       onClick={() => setActiveTab(tab.key)}
                       className={`flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-bold rounded-t-xl transition-all ${active
-                          ? tab.danger ? 'bg-white text-red-500' : 'bg-white text-[#2C2C2C]'
-                          : tab.danger
-                            ? 'text-red-400/70 hover:bg-white/10 hover:text-red-400'
-                            : 'text-white/50 hover:bg-white/10 hover:text-white'
+                        ? tab.danger ? 'bg-white text-red-500' : 'bg-white text-[#2C2C2C]'
+                        : tab.danger
+                          ? 'text-red-400/70 hover:bg-white/10 hover:text-red-400'
+                          : 'text-white/50 hover:bg-white/10 hover:text-white'
                         }`}
                     >
                       <Icon size={13} />{tab.label}

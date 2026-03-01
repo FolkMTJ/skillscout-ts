@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { HollandCareerModel } from '@/lib/db/models';
 import { IT_CAREERS } from '@/data/path-finder/careers';
+import { isAdminRole } from '@/lib/auth-check';
 import { RIASECCode } from '@/data/riasec';
 
 /**
@@ -14,7 +15,7 @@ import { RIASECCode } from '@/data/riasec';
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user?.role !== 'admin') {
+    if (!session || !isAdminRole(session.user?.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -41,7 +42,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user?.role !== 'admin') {
+    if (!session || !isAdminRole(session.user?.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

@@ -6,9 +6,6 @@ import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn, FaGithub, FaEnvelope
 import { BsFillPeopleFill } from "react-icons/bs";
 import { FiActivity } from "react-icons/fi";
 
-// offset เพื่อให้ตัวเลขเริ่มต้นสวยงาม
-const VISITOR_OFFSET = 59;
-
 // สร้าง sessionId ใหม่ทุก tab/session (sessionStorage หายเมื่อปิด tab)
 function getOrCreateSessionId(): string {
   if (typeof window === 'undefined') return '';
@@ -34,8 +31,9 @@ export default function Footer() {
 
 const FooterBody = () => {
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
+  const [visitorOffset, setVisitorOffset] = useState(59);
 
-  const trackAndFetchVisitors = useCallback(async () => {
+  const trackAndFetchVisitors = useCallback(async (offset: number) => {
     const sessionId = getOrCreateSessionId();
     if (!sessionId) return;
 
@@ -47,7 +45,7 @@ const FooterBody = () => {
         const res = await fetch('/api/visitors');
         if (res.ok) {
           const data = await res.json() as { total: number };
-          setVisitorCount(data.total + VISITOR_OFFSET);
+          setVisitorCount(data.total + offset);
         }
       } catch { /* silent */ }
       return;
@@ -62,7 +60,7 @@ const FooterBody = () => {
       });
       if (res.ok) {
         const data = await res.json() as { total: number };
-        setVisitorCount(data.total + VISITOR_OFFSET);
+        setVisitorCount(data.total + offset);
         sessionStorage.setItem('skillscout_counted', '1');
       }
     } catch {
@@ -70,14 +68,23 @@ const FooterBody = () => {
         const res = await fetch('/api/visitors');
         if (res.ok) {
           const data = await res.json() as { total: number };
-          setVisitorCount(data.total + VISITOR_OFFSET);
+          setVisitorCount(data.total + offset);
         }
       } catch { /* silent */ }
     }
   }, []);
 
   useEffect(() => {
-    trackAndFetchVisitors();
+    // ดึง visitorOffset จาก admin settings ก่อน แล้วค่อย track
+    fetch('/api/admin/settings')
+      .then(r => r.ok ? r.json() : null)
+      .then((data: { visitorOffset?: number } | null) => {
+        const offset = data?.visitorOffset ?? 59;
+        setVisitorOffset(offset);
+        trackAndFetchVisitors(offset);
+      })
+      .catch(() => trackAndFetchVisitors(visitorOffset));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trackAndFetchVisitors]);
 
   const quickLinks = [

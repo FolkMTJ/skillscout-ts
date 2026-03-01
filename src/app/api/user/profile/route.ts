@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { UserModel } from '@/lib/db/models';
+import { isAdminRole } from '@/lib/auth-check';
 
 // GET - ดึงข้อมูลโปรไฟล์
 export async function GET() {
@@ -138,8 +139,8 @@ export async function DELETE() {
       );
     }
 
-    // ป้องกันไม่ให้ลบ admin account
-    if (user.role === 'admin') {
+    // ป้องกันไม่ให้ลบ admin/super_admin account
+    if (isAdminRole(user.role)) {
       return NextResponse.json(
         { error: 'ไม่สามารถลบบัญชี Admin ได้' },
         { status: 403 }

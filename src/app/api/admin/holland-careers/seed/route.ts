@@ -5,11 +5,12 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCollection } from '@/lib/mongodb';
 import { IT_CAREERS } from '@/data/path-finder/careers';
+import { isAdminRole } from '@/lib/auth-check';
 
 export async function POST() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user?.role !== 'admin') {
+    if (!session || !isAdminRole(session.user?.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
