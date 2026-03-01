@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { Button, Chip } from '@heroui/react';
-import { FiCalendar, FiMapPin, FiCheckCircle, FiClock, FiStar, FiSearch, FiArrowRight } from 'react-icons/fi';
+import { FiCalendar, FiMapPin, FiCheckCircle, FiClock, FiStar, FiSearch, FiArrowRight, FiXCircle } from 'react-icons/fi';
 import { FaBookmark } from 'react-icons/fa';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -31,12 +31,12 @@ interface Registration {
 }
 
 const STATUS_MAP: Record<string, { label: string; color: 'warning' | 'primary' | 'success' | 'danger' | 'default'; dot: string }> = {
-  pending:   { label: 'รอตรวจสอบ',    color: 'warning', dot: 'bg-yellow-400' },
-  approved:  { label: 'อนุมัติแล้ว',  color: 'primary', dot: 'bg-blue-500' },
-  confirmed: { label: 'ยืนยันแล้ว',   color: 'success', dot: 'bg-green-500' },
-  attended:  { label: 'จบไปแล้ว',    color: 'default', dot: 'bg-gray-400' },
-  rejected:  { label: 'ไม่อนุมัติ',   color: 'danger',  dot: 'bg-red-500' },
-  cancelled: { label: 'ยกเลิก',       color: 'danger',  dot: 'bg-red-400' },
+  pending: { label: 'รอตรวจสอบ', color: 'warning', dot: 'bg-yellow-400' },
+  approved: { label: 'อนุมัติแล้ว', color: 'primary', dot: 'bg-blue-500' },
+  confirmed: { label: 'ยืนยันแล้ว', color: 'success', dot: 'bg-green-500' },
+  attended: { label: 'จบไปแล้ว', color: 'default', dot: 'bg-gray-400' },
+  rejected: { label: 'ไม่อนุมัติ', color: 'danger', dot: 'bg-red-500' },
+  cancelled: { label: 'ยกเลิก', color: 'danger', dot: 'bg-red-400' },
 };
 
 function isCampDatePast(campDate?: string): boolean {
@@ -55,7 +55,7 @@ function getDisplayStatus(reg: Registration): string {
   return reg.status;
 }
 
-type TabKey = 'all' | 'upcoming' | 'completed' | 'pending';
+type TabKey = 'all' | 'upcoming' | 'completed' | 'pending' | 'cancelled';
 
 export default function MyCampsPage() {
   const { data: session, status } = useSession();
@@ -93,26 +93,19 @@ export default function MyCampsPage() {
     else if (status === 'unauthenticated') setLoading(false);
   }, [status, fetchRegistrations]);
 
-  const handleConfirmAttendance = async (registrationId: string, campName: string) => {
-    if (!confirm(`ยืนยันการเข้าร่วมค่าย "${campName}" หรือไม่?`)) return;
-    try {
-      const response = await fetch(`/api/registrations/${registrationId}/confirm`, { method: 'POST' });
-      if (!response.ok) throw new Error('Failed to confirm');
-      toast.success('ยืนยันการเข้าร่วมสำเร็จ!');
-      fetchRegistrations();
-    } catch { toast.error('เกิดข้อผิดพลาดในการยืนยัน'); }
-  };
+
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-    { key: 'all',       label: 'ทั้งหมด',          icon: <FaBookmark size={13} /> },
-    { key: 'pending',   label: 'รอตรวจสอบ',        icon: <FiClock size={13} /> },
-    { key: 'upcoming',  label: 'กำลังจะมาถึง',     icon: <FiCalendar size={13} /> },
-    { key: 'completed', label: 'จบไปแล้ว',         icon: <FiCheckCircle size={13} /> },
+    { key: 'all', label: 'ทั้งหมด', icon: <FaBookmark size={13} /> },
+    { key: 'pending', label: 'รอตรวจสอบ', icon: <FiClock size={13} /> },
+    { key: 'upcoming', label: 'กำลังจะมาถึง', icon: <FiCalendar size={13} /> },
+    { key: 'completed', label: 'จบไปแล้ว', icon: <FiCheckCircle size={13} /> },
+    { key: 'cancelled', label: 'ยกเลิก', icon: <FiXCircle size={13} /> },
   ];
 
   const getFiltered = () => {
     if (activeTab === 'all') return registrations;
-    if (activeTab === 'pending') return registrations.filter(r => r.status === 'pending' || r.status === 'rejected' || r.status === 'cancelled');
+    if (activeTab === 'pending') return registrations.filter(r => r.status === 'pending');
     if (activeTab === 'upcoming') return registrations.filter(r =>
       (r.status === 'approved' || r.status === 'confirmed') && !isCampDatePast(r.campDate)
     );
@@ -120,6 +113,7 @@ export default function MyCampsPage() {
       r.status === 'attended' ||
       ((r.status === 'approved' || r.status === 'confirmed') && isCampDatePast(r.campDate))
     );
+    if (activeTab === 'cancelled') return registrations.filter(r => r.status === 'rejected' || r.status === 'cancelled');
     return registrations;
   };
 
@@ -127,12 +121,13 @@ export default function MyCampsPage() {
 
   const counts = {
     all: registrations.length,
-    pending: registrations.filter(r => r.status === 'pending' || r.status === 'rejected' || r.status === 'cancelled').length,
+    pending: registrations.filter(r => r.status === 'pending').length,
     upcoming: registrations.filter(r => (r.status === 'approved' || r.status === 'confirmed') && !isCampDatePast(r.campDate)).length,
     completed: registrations.filter(r =>
       r.status === 'attended' ||
       ((r.status === 'approved' || r.status === 'confirmed') && isCampDatePast(r.campDate))
     ).length,
+    cancelled: registrations.filter(r => r.status === 'rejected' || r.status === 'cancelled').length,
   };
 
   if (status === 'loading' || loading) {
@@ -141,7 +136,7 @@ export default function MyCampsPage() {
         <HeroBanner badge="My Journey" title="MY" titleHighlight="CAMPS" subtitle="ค่ายของคุณ" showButtons={false} />
         <div className="max-w-[1536px] mx-auto px-3 md:px-6 py-6 md:py-10">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
-            {[1,2,3,4,5,6].map(i => (
+            {[1, 2, 3, 4, 5, 6].map(i => (
               <div key={i} className="bg-white rounded-2xl overflow-hidden border border-gray-100">
                 <div className="aspect-video bg-gray-200" />
                 <div className="p-4 space-y-2">
@@ -211,17 +206,15 @@ export default function MyCampsPage() {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${
-                  activeTab === tab.key
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${activeTab === tab.key
                     ? 'bg-[#F2B33D] text-white shadow-sm'
                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 {tab.icon}
                 {tab.label}
-                <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
-                  activeTab === tab.key ? 'bg-white/30 text-white' : 'bg-gray-100 text-gray-500'
-                }`}>
+                <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${activeTab === tab.key ? 'bg-white/30 text-white' : 'bg-gray-100 text-gray-500'
+                  }`}>
                   {counts[tab.key]}
                 </span>
               </button>
@@ -321,15 +314,7 @@ export default function MyCampsPage() {
                         ดูรายละเอียดค่าย
                       </button>
 
-                      {isUpcoming && (
-                        <button
-                          onClick={() => handleConfirmAttendance(reg._id, reg.campName || 'ค่าย')}
-                          className="w-full bg-[#F2B33D] hover:bg-[#e0a530] text-white font-bold py-2.5 px-4 rounded-xl text-sm transition-all flex items-center justify-center gap-2"
-                        >
-                          <FiCheckCircle size={14} />
-                          ยืนยันการเข้าร่วม
-                        </button>
-                      )}
+
 
                       {isCompleted && (
                         <button

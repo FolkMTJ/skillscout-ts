@@ -143,8 +143,8 @@ export async function GET(request: NextRequest) {
     // ตรวจสอบ registration status - ต้องเป็น confirmed
     console.log('🔍 Checking registration status:', registration.status);
 
-    if (registration.status !== 'confirmed' && registration.status !== 'approved') {
-      console.log('⚠️ Registration status not confirmed/approved:', registration.status);
+    if (!['confirmed', 'approved', 'attended', 'completed'].includes(registration.status)) {
+      console.log('⚠️ Registration status not allowed for ticket:', registration.status);
       return NextResponse.json(
         {
           registered: true,
@@ -154,7 +154,7 @@ export async function GET(request: NextRequest) {
           registrationStatus: registration.status,
           debugInfo: {
             status: registration.status,
-            expected: ['confirmed', 'approved']
+            expected: ['confirmed', 'approved', 'attended', 'completed']
           }
         }
       );

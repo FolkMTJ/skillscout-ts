@@ -700,8 +700,8 @@ export default function OrganizerDashboard() {
                     key={tab.key}
                     onClick={() => { setCampTab(tab.key); setCampPage(1); }}
                     className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${campTab === tab.key
-                        ? 'bg-[#F2B33D] text-white shadow-sm'
-                        : 'text-gray-500 hover:bg-gray-100'
+                      ? 'bg-[#F2B33D] text-white shadow-sm'
+                      : 'text-gray-500 hover:bg-gray-100'
                       }`}
                   >
                     {tab.label}
@@ -722,10 +722,10 @@ export default function OrganizerDashboard() {
                   const q = campSearch.trim().toLowerCase();
                   const filteredCamps = q
                     ? tabCamps.filter(c =>
-                        c.name.toLowerCase().includes(q) ||
-                        c.location?.toLowerCase().includes(q) ||
-                        (c.tags ?? []).some(t => t.toLowerCase().includes(q))
-                      )
+                      c.name.toLowerCase().includes(q) ||
+                      c.location?.toLowerCase().includes(q) ||
+                      (c.tags ?? []).some(t => t.toLowerCase().includes(q))
+                    )
                     : tabCamps;
 
                   const totalPages = Math.ceil(filteredCamps.length / CAMPS_PER_PAGE);
@@ -783,8 +783,8 @@ export default function OrganizerDashboard() {
                               key={page}
                               onClick={() => setCampPage(page)}
                               className={`w-8 h-8 rounded-lg text-sm font-bold transition-all ${campPage === page
-                                  ? 'bg-[#F2B33D] text-white shadow-sm'
-                                  : 'text-gray-600 hover:bg-gray-100'
+                                ? 'bg-[#F2B33D] text-white shadow-sm'
+                                : 'text-gray-600 hover:bg-gray-100'
                                 }`}
                             >
                               {page}

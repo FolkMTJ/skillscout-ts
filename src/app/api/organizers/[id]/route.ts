@@ -52,7 +52,7 @@ export async function GET(
         id,
         name: user.name || user.email,
         email: user.email,
-        image: user.image || null,
+        image: user.profileImage || user.image || null,
         role: user.role,
         createdAt: user.createdAt,
       },

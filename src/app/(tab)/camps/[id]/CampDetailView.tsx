@@ -110,6 +110,11 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                         if (data.canGetTicket && data.ticket) {
                             setCanGetTicket(true);
                             setTicketData(data.ticket);
+
+                            if (data.ticket.status === 'attended' || data.ticket.status === 'completed') {
+                                setHasAttended(true);
+                            }
+
                             // clear all pending state
                             setPendingPaymentId('');
                             setPendingRegistrationId('');
@@ -122,7 +127,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                             setTicketStatus(data.status || 'pending');
                             setTicketMessage(data.message || 'รอการดำเนินการ');
 
-                            if (data.status === 'attended') {
+                            if (data.status === 'attended' || data.status === 'completed') {
                                 setHasAttended(true);
                             } else if (data.status === 'pending_payment' && data.paymentId) {
                                 setPendingPaymentId(data.paymentId);
@@ -177,6 +182,9 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                     if (data.canGetTicket && data.ticket) {
                         setCanGetTicket(true);
                         setTicketData(data.ticket);
+                        if (data.ticket.status === 'attended' || data.ticket.status === 'completed') {
+                            setHasAttended(true);
+                        }
                         setPendingPaymentId('');
                         setPendingRegistrationId('');
                         setPaymentCreatedAt(null);
@@ -186,7 +194,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                         setCanGetTicket(false);
                         setTicketStatus(data.status || 'pending');
                         setTicketMessage(data.message || 'รอการดำเนินการ');
-                        if (data.status === 'attended') {
+                        if (data.status === 'attended' || data.status === 'completed') {
                             setHasAttended(true);
                         } else if (data.status === 'pending_payment' && data.paymentId) {
                             setPendingPaymentId(data.paymentId);
@@ -513,15 +521,14 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
 
                                 {/* Status Message: ทำให้ Compact ขึ้น */}
                                 {isRegistered && (
-                                    <div className={`mt-3 px-3 py-2 rounded border flex items-center gap-2 text-xs ${
-                                        canGetTicket
+                                    <div className={`mt-3 px-3 py-2 rounded border flex items-center gap-2 text-xs ${canGetTicket
                                             ? 'bg-green-50 dark:bg-green-900/20 border-green-200 text-green-700 dark:text-green-400'
                                             : portfolioStatus === 'portfolio_rejected'
                                                 ? 'bg-red-50 border-red-200 text-red-600'
                                                 : portfolioStatus === 'ready_to_pay'
                                                     ? 'bg-[#F2B33D]/10 border-[#F2B33D]/30 text-amber-700'
                                                     : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 text-yellow-700 dark:text-yellow-400'
-                                    }`}>
+                                        }`}>
                                         {canGetTicket ? <FaCheckCircle /> : <FaHourglassHalf className="animate-pulse" />}
                                         <span className="flex-1 text-xs">
                                             {canGetTicket

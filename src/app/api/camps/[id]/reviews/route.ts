@@ -29,14 +29,14 @@ export async function POST(
       );
     }
 
-    // ต้องมี registration status = attended เท่านั้น
+    // ต้องมี registration status = attended หรือ completed เท่านั้น
     const registrations = await RegistrationModel.findByUser(session.user.email);
     const attended = registrations.find(
-      r => r.campId === id && r.status === RegistrationStatus.ATTENDED
+      r => r.campId === id && (r.status === ('attended' as any) || r.status === ('completed' as any))
     );
     if (!attended) {
       return NextResponse.json(
-        { error: 'ต้องเข้าร่วมค่าย (สแกนบัตรเข้างาน) ก่อนจึงจะเขียนรีวิวได้' },
+        { error: 'ต้องเข้าร่วมค่าย (สแกนบัตรเข้างาน) หรือจบค่าย ก่อนจึงจะเขียนรีวิวได้' },
         { status: 403 }
       );
     }

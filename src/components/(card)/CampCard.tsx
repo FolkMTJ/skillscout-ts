@@ -7,6 +7,7 @@ import { Review } from "@/types/camp";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { useBookmarks } from "@/contexts/BookmarkContext";
 
 export interface CampData {
     id: string;
@@ -34,8 +35,17 @@ interface CampCardProps {
 
 export default function CampCard({ camp, variant = "compact", className = "" }: CampCardProps) {
     const { data: session } = useSession();
-    const [bookmarked, setBookmarked] = useState(camp.initialBookmarked ?? false);
+    const { bookmarkedCamps, toggleBookmark } = useBookmarks();
+
+    const isBookmarked = bookmarkedCamps.includes(camp.id) || (camp.initialBookmarked && bookmarkedCamps.length === 0);
+    const [localBookmarked, setLocalBookmarked] = useState(isBookmarked);
     const [bookmarkLoading, setBookmarkLoading] = useState(false);
+
+    React.useEffect(() => {
+        if (bookmarkedCamps.length > 0) {
+            setLocalBookmarked(bookmarkedCamps.includes(camp.id));
+        }
+    }, [bookmarkedCamps, camp.id]);
 
     const handleBookmark = async (e: React.MouseEvent) => {
         e.preventDefault();
@@ -48,14 +58,9 @@ export default function CampCard({ camp, variant = "compact", className = "" }: 
 
         setBookmarkLoading(true);
         try {
-            const res = await fetch('/api/user/bookmarks', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ campId: camp.id }),
-            });
-            const data = await res.json() as { bookmarked: boolean };
-            setBookmarked(data.bookmarked);
-            toast.success(data.bookmarked ? 'บันทึกแล้ว' : 'ยกเลิก Bookmark แล้ว');
+            const newState = await toggleBookmark(camp.id);
+            setLocalBookmarked(newState);
+            toast.success(newState ? 'บันทึกแล้ว' : 'ยกเลิก Bookmark แล้ว');
         } catch {
             toast.error('เกิดข้อผิดพลาด');
         } finally {
@@ -92,8 +97,8 @@ export default function CampCard({ camp, variant = "compact", className = "" }: 
                                 {/* หมดเขตในกี่วัน — ขวาบน */}
                                 {camp.daysLeft > 0 ? (
                                     <span className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full shadow-lg ${camp.daysLeft <= 3
-                                            ? 'bg-red-500 text-white animate-pulse'
-                                            : 'bg-white/90 text-[#1a1a1a]'
+                                        ? 'bg-red-500 text-white animate-pulse'
+                                        : 'bg-white/90 text-[#1a1a1a]'
                                         }`}>
                                         <FaClock size={10} />
                                         หมดเขตใน {camp.daysLeft} วัน
@@ -109,12 +114,12 @@ export default function CampCard({ camp, variant = "compact", className = "" }: 
                             {/* Bookmark — บนขวาซ้อนกับ daysLeft ไม่ได้ → วางใต้ row บน */}
                             <div
                                 role="button"
-                                aria-label={bookmarked ? 'ยกเลิก Bookmark' : 'Bookmark ค่าย'}
+                                aria-label={localBookmarked ? 'ยกเลิก Bookmark' : 'Bookmark ค่าย'}
                                 onClick={handleBookmark}
                                 aria-disabled={bookmarkLoading}
                                 className="absolute top-10 right-3 w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/40 transition-all z-10 cursor-pointer select-none"
                             >
-                                {bookmarked
+                                {localBookmarked
                                     ? <FaBookmark className="text-[#F2B33D] text-sm" />
                                     : <FaRegBookmark className="text-white text-sm" />
                                 }
@@ -166,12 +171,12 @@ export default function CampCard({ camp, variant = "compact", className = "" }: 
                             </span>
                             <div
                                 role="button"
-                                aria-label={bookmarked ? 'ยกเลิก Bookmark' : 'Bookmark ค่าย'}
+                                aria-label={localBookmarked ? 'ยกเลิก Bookmark' : 'Bookmark ค่าย'}
                                 onClick={handleBookmark}
                                 aria-disabled={bookmarkLoading}
                                 className="absolute top-1.5 right-1.5 md:top-3 md:right-3 w-6 h-6 md:w-8 md:h-8 bg-white/90 dark:bg-black/70 rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-all z-10 cursor-pointer select-none"
                             >
-                                {bookmarked
+                                {localBookmarked
                                     ? <FaBookmark className="text-[#F2B33D] text-[10px] md:text-sm" />
                                     : <FaRegBookmark className="text-gray-500 text-[10px] md:text-sm" />
                                 }

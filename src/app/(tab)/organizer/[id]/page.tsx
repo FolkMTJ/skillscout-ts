@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { FiArrowLeft, FiStar, FiCalendar, FiMapPin, FiUsers, FiAward } from 'react-icons/fi';
+import Pagination from '@/components/Pagination';
 
 interface OrganizerCamp {
   _id: string;
@@ -61,6 +62,7 @@ export default function OrganizerProfilePage() {
   const [data, setData] = useState<OrganizerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [currentCampPage, setCurrentCampPage] = useState(1);
 
   useEffect(() => {
     if (!id) return;
@@ -162,53 +164,66 @@ export default function OrganizerProfilePage() {
         </div>
 
         {/* Camps list */}
-        {camps.length > 0 && (
-          <div>
-            <h2 className="text-base font-bold text-[#2C2C2C] dark:text-white mb-3 flex items-center gap-2">
-              <FiAward className="text-[#F2B33D]" />
-              ค่ายที่จัดมาแล้ว
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {camps.map(camp => (
-                <button
-                  key={camp._id}
-                  onClick={() => router.push(`/camps/${camp._id}`)}
-                  className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm hover:shadow-md hover:border-[#F2B33D]/40 transition-all text-left"
-                >
-                  <div className="relative aspect-video">
-                    <Image src={camp.image} alt={camp.name} fill className="object-cover" sizes="400px" />
-                  </div>
-                  <div className="p-4">
-                    <p className="font-bold text-sm text-[#2C2C2C] dark:text-white line-clamp-2 mb-2">{camp.name}</p>
-                    <div className="space-y-1 text-xs text-gray-500 dark:text-gray-400">
-                      <div className="flex items-center gap-1.5">
-                        <FiCalendar size={11} />
-                        <span>{camp.date}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <FiMapPin size={11} />
-                        <span className="truncate">{camp.location}</span>
-                      </div>
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center gap-1">
-                          <FiUsers size={11} />
-                          <span>{camp.enrolled}/{camp.capacity} คน</span>
+        {camps.length > 0 && (() => {
+          const campsPerPage = 6;
+          const totalCampPages = Math.ceil(camps.length / campsPerPage);
+          const paginatedCamps = camps.slice((currentCampPage - 1) * campsPerPage, currentCampPage * campsPerPage);
+
+          return (
+            <div>
+              <h2 className="text-base font-bold text-[#2C2C2C] dark:text-white mb-3 flex items-center gap-2">
+                <FiAward className="text-[#F2B33D]" />
+                ค่ายที่จัดมาแล้ว
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {paginatedCamps.map(camp => (
+                  <button
+                    key={camp._id}
+                    onClick={() => router.push(`/camps/${camp._id}`)}
+                    className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm hover:shadow-md hover:border-[#F2B33D]/40 transition-all text-left"
+                  >
+                    <div className="relative aspect-video">
+                      <Image src={camp.image} alt={camp.name} fill className="object-cover" sizes="400px" />
+                    </div>
+                    <div className="p-4">
+                      <p className="font-bold text-sm text-[#2C2C2C] dark:text-white line-clamp-2 mb-2">{camp.name}</p>
+                      <div className="space-y-1 text-xs text-gray-500 dark:text-gray-400">
+                        <div className="flex items-center gap-1.5">
+                          <FiCalendar size={11} />
+                          <span>{camp.date}</span>
                         </div>
-                        {camp.avgRating > 0 && (
-                          <div className="flex items-center gap-1 text-amber-500">
-                            <FiStar size={11} className="fill-amber-500" />
-                            <span className="font-medium">{camp.avgRating.toFixed(1)}</span>
-                            <span className="text-gray-400">({camp.reviewCount})</span>
+                        <div className="flex items-center gap-1.5">
+                          <FiMapPin size={11} />
+                          <span className="truncate">{camp.location}</span>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center gap-1">
+                            <FiUsers size={11} />
+                            <span>{camp.enrolled}/{camp.capacity} คน</span>
                           </div>
-                        )}
+                          {camp.avgRating > 0 && (
+                            <div className="flex items-center gap-1 text-amber-500">
+                              <FiStar size={11} className="fill-amber-500" />
+                              <span className="font-medium">{camp.avgRating.toFixed(1)}</span>
+                              <span className="text-gray-400">({camp.reviewCount})</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                ))}
+              </div>
+              {totalCampPages > 1 && (
+                <Pagination
+                  currentPage={currentCampPage}
+                  totalPages={totalCampPages}
+                  onPageChange={setCurrentCampPage}
+                />
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Recent reviews */}
         {recentReviews.length > 0 && (
