@@ -7,7 +7,7 @@ import { BsFillPeopleFill } from "react-icons/bs";
 import { FiActivity } from "react-icons/fi";
 
 // offset เพื่อให้ตัวเลขเริ่มต้นสวยงาม
-const VISITOR_OFFSET = 567;
+const VISITOR_OFFSET = 59;
 
 // สร้าง sessionId ใหม่ทุก tab/session (sessionStorage หายเมื่อปิด tab)
 function getOrCreateSessionId(): string {

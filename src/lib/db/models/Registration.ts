@@ -109,8 +109,9 @@ export class RegistrationModel {
 
   static async checkDuplicate(userId: string, campId: string): Promise<boolean> {
     const collection = await getCollection<RegistrationDoc>(this.collectionName);
-    // 🔍 ค้นหาทั้ง userId และ userEmail
-    const filter: Filter<RegistrationDoc> = { 
+    // ไม่นับ registration ที่ cancelled (ยอมให้ register ใหม่ได้)
+    const filter: Filter<RegistrationDoc> = {
+      status: { $ne: 'cancelled' as RegistrationStatus },
       $or: [
         { userId, campId },
         { userEmail: userId, campId }

@@ -62,6 +62,12 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
     const [currentCamp, setCurrentCamp] = useState(camp);
     const [showReviewForm, setShowReviewForm] = useState(false);
 
+    // สำหรับ payment ที่ค้างอยู่
+    const [pendingPaymentId, setPendingPaymentId] = useState('');
+    const [pendingRegistrationId, setPendingRegistrationId] = useState('');
+    const [paymentCreatedAt, setPaymentCreatedAt] = useState<Date | null>(null);
+    const [timeLeft, setTimeLeft] = useState<number | null>(null); // วินาทีที่เหลือ
+
     // 🔧 FIX: ตรวจสอบการลงทะเบียนและสิทธิ์ในการรับ Ticket
     useEffect(() => {
         let isMounted = true;
@@ -90,11 +96,21 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                         if (data.canGetTicket && data.ticket) {
                             setCanGetTicket(true);
                             setTicketData(data.ticket);
+                            // clear pending state
+                            setPendingPaymentId('');
+                            setPendingRegistrationId('');
+                            setPaymentCreatedAt(null);
                         } else {
                             // ยังไม่สามารถรับ ticket ได้
                             setCanGetTicket(false);
                             setTicketStatus(data.status || 'pending');
                             setTicketMessage(data.message || 'รอการดำเนินการ');
+                            // เก็บ pending payment info สำหรับ timer และปุ่มยืนยัน
+                            if (data.status === 'pending_payment' && data.paymentId) {
+                                setPendingPaymentId(data.paymentId);
+                                setPendingRegistrationId(data.registrationId || '');
+                                setPaymentCreatedAt(new Date(data.paymentCreatedAt));
+                            }
                         }
                     }
                 }
@@ -136,10 +152,18 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                     if (data.canGetTicket && data.ticket) {
                         setCanGetTicket(true);
                         setTicketData(data.ticket);
+                        setPendingPaymentId('');
+                        setPendingRegistrationId('');
+                        setPaymentCreatedAt(null);
                     } else {
                         setCanGetTicket(false);
                         setTicketStatus(data.status || 'pending');
                         setTicketMessage(data.message || 'รอการดำเนินการ');
+                        if (data.status === 'pending_payment' && data.paymentId) {
+                            setPendingPaymentId(data.paymentId);
+                            setPendingRegistrationId(data.registrationId || '');
+                            setPaymentCreatedAt(new Date(data.paymentCreatedAt));
+                        }
                     }
                 }
             } catch (error) {
@@ -165,6 +189,56 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
             console.error('Error refreshing camp data:', error);
         }
     };
+
+    // Countdown timer — 20 นาทีหลังสร้าง payment
+    useEffect(() => {
+        if (!paymentCreatedAt) {
+            setTimeLeft(null);
+            return;
+        }
+
+        const TWENTY_MIN_MS = 20 * 60 * 1000;
+
+        const tick = () => {
+            const remaining = TWENTY_MIN_MS - (Date.now() - paymentCreatedAt.getTime());
+            if (remaining <= 0) {
+                setTimeLeft(0);
+            } else {
+                setTimeLeft(Math.floor(remaining / 1000));
+            }
+        };
+
+        tick();
+        const interval = setInterval(tick, 1000);
+        return () => clearInterval(interval);
+    }, [paymentCreatedAt]);
+
+    // Auto-cancel เมื่อหมดเวลา
+    useEffect(() => {
+        if (timeLeft !== 0 || !pendingPaymentId || !pendingRegistrationId) return;
+
+        const cancelExpired = async () => {
+            try {
+                await fetch('/api/payment/cancel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        paymentId: pendingPaymentId,
+                        registrationId: pendingRegistrationId,
+                    }),
+                });
+            } catch { /* silent */ }
+            // Reset state ให้ user register ใหม่ได้
+            setIsRegistered(false);
+            setCanGetTicket(false);
+            setPendingPaymentId('');
+            setPendingRegistrationId('');
+            setPaymentCreatedAt(null);
+            setTimeLeft(null);
+        };
+
+        cancelExpired();
+    }, [timeLeft, pendingPaymentId, pendingRegistrationId]);
 
     return (
         <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
@@ -297,14 +371,25 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                                     รับ Ticket
                                                 </Button>
                                             ) : (
-                                                <Button
-                                                    isDisabled
-                                                    className="w-full bg-yellow-500/50 font-bold text-gray-700"
-                                                    size="md"
-                                                    startContent={<FaHourglassHalf />}
-                                                >
-                                                    รอตรวจสอบ
-                                                </Button>
+                                                pendingPaymentId ? (
+                                                    <Button
+                                                        className="w-full bg-[#F2B33D] font-bold text-gray-900"
+                                                        size="md"
+                                                        startContent={<FaHourglassHalf />}
+                                                        onPress={() => setIsModalOpen(true)}
+                                                    >
+                                                        ยืนยันการชำระเงิน
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        isDisabled
+                                                        className="w-full bg-gray-200 font-bold text-gray-500"
+                                                        size="md"
+                                                        startContent={<FaHourglassHalf />}
+                                                    >
+                                                        รอการอนุมัติ
+                                                    </Button>
+                                                )
                                             )
                                         ) : session?.user?.role === 'organizer' ? (
                                             <Button
@@ -338,7 +423,9 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                         <span className="truncate flex-1">
                                             {canGetTicket
                                                 ? 'สมัครสำเร็จ: กดปุ่ม "รับ Ticket" เพื่อดาวน์โหลดบัตร'
-                                                : (ticketMessage || 'สมัครแล้ว: รอ Organizer ตรวจสอบสลิป')
+                                                : pendingPaymentId && timeLeft !== null && timeLeft > 0
+                                                    ? `กรุณายืนยันการชำระเงินภายใน ${Math.floor(timeLeft / 60)}:${String(timeLeft % 60).padStart(2, '0')} นาที`
+                                                    : (ticketMessage || 'รอการดำเนินการ')
                                             }
                                         </span>
                                     </div>
@@ -553,6 +640,8 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                 onClose={() => setIsModalOpen(false)}
                 camp={camp}
                 onRegistrationSuccess={handleRegistrationSuccess}
+                existingPaymentId={pendingPaymentId || undefined}
+                existingRegistrationId={pendingRegistrationId || undefined}
             />
 
             {ticketData && (

@@ -84,7 +84,7 @@ export default function CampFormModal({ isOpen, onClose, formData, onFormDataCha
   const { data: session } = useSession();
   const [additionalInfoInput, setAdditionalInfoInput] = useState('');
   const [organizerName, setOrganizerName] = useState('');
-  
+
   // ใช้ ref เพื่อ track ว่าเคยเพิ่ม organizer ไปแล้วหรือยัง
   const hasInitializedOrganizer = useRef(false);
 
@@ -102,7 +102,7 @@ export default function CampFormModal({ isOpen, onClose, formData, onFormDataCha
         ]
       });
     }
-    
+
     // Reset ref เมื่อปิด modal
     if (!isOpen) {
       hasInitializedOrganizer.current = false;
@@ -126,7 +126,7 @@ export default function CampFormModal({ isOpen, onClose, formData, onFormDataCha
       size="4xl" // ลดขนาดลงนิดหน่อยให้ดู compact ขึ้น
       scrollBehavior="inside"
       placement="top-center"
-      backdrop="blur"
+      backdrop="opaque"
       classNames={{
         header: "border-b border-gray-100 p-6 rounded-t-2xl",
         body: "p-6 overflow-y-auto max-h-[calc(90vh-200px)]",
@@ -312,7 +312,7 @@ export default function CampFormModal({ isOpen, onClose, formData, onFormDataCha
                       {EDUCATION_LEVELS.map(level => <SelectItem key={level}>{level}</SelectItem>)}
                     </Select>
 
-                    <div className="flex gap-4 items-center px-4 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
+                    <div className="flex gap-4 items-center px-4 border-2 border-dashed border-gray-200 rounded-xl">
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"

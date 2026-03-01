@@ -5,10 +5,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Card, Button, useDisclosure, Chip, Modal, ModalContent, ModalHeader, ModalBody, Input } from '@heroui/react';
-import { FiCalendar, FiUsers, FiCheckCircle, FiPlus, FiClock, FiUserCheck, FiCreditCard, FiZap, FiBook, FiAlertCircle, FiTag, FiSearch } from 'react-icons/fi';
+import { FiCalendar, FiUsers, FiCheckCircle, FiPlus, FiClock, FiUserCheck, FiZap, FiBook, FiAlertCircle, FiTag, FiSearch, FiDollarSign } from 'react-icons/fi';
 import { Camp, Registration, RegistrationStatus } from '@/types';
 import {
-  CampFormModal, CampDetailModal, CampCardWithImage, EmptyState
+  CampFormModal, CampCardWithImage, EmptyState
 } from '@/components/organizer';
 import PromoCodeManager from '@/components/organizer/PromoCodeManager';
 import toast from 'react-hot-toast';
@@ -28,10 +28,9 @@ export default function OrganizerDashboard() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingCamp, setEditingCamp] = useState<Camp | null>(null);
-  const [viewingCamp, setViewingCamp] = useState<Camp | null>(null);
+  const [hasPayoutInfo, setHasPayoutInfo] = useState(false);
 
   const { isOpen: isFormModalOpen, onOpen: onFormModalOpen, onClose: onFormModalClose } = useDisclosure();
-  const { isOpen: isDetailModalOpen, onOpen: onDetailModalOpen, onClose: onDetailModalClose } = useDisclosure();
   const { isOpen: isPromoModalOpen, onOpen: onPromoModalOpen, onClose: onPromoModalClose } = useDisclosure();
 
   // Tab + Pagination สำหรับ ค่ายของฉัน
@@ -51,8 +50,13 @@ export default function OrganizerDashboard() {
     if (!session?.user?.id) return;
     try {
       setLoading(true);
-      const campsRes = await fetch('/api/camps?includeAll=true');
+      const [campsRes, payoutRes] = await Promise.all([
+        fetch('/api/camps?includeAll=true'),
+        fetch('/api/organizer/payout'),
+      ]);
       if (!campsRes.ok) throw new Error('Failed to fetch camps');
+      const payoutData = await payoutRes.json().catch(() => ({}));
+      setHasPayoutInfo(!!(payoutData.success && payoutData.payoutInfo));
       const campsData = await campsRes.json();
       const allCamps = Array.isArray(campsData) ? campsData : (campsData.camps || []);
 
@@ -322,8 +326,7 @@ export default function OrganizerDashboard() {
   };
 
   const handleViewCamp = (camp: Camp) => {
-    setViewingCamp(camp);
-    onDetailModalOpen();
+    router.push(`/organizer/camps/${camp._id}`);
   };
 
   const resetForm = () => {
@@ -337,6 +340,11 @@ export default function OrganizerDashboard() {
   };
 
   const handleOpenCreateModal = () => {
+    if (!hasPayoutInfo) {
+      toast('กรุณาตั้งค่า PromptPay ก่อนสร้างค่าย', { icon: '💳', duration: 4000 });
+      router.push('/organizer/payout-settings');
+      return;
+    }
     resetForm();
     onFormModalOpen();
   };
@@ -584,11 +592,11 @@ export default function OrganizerDashboard() {
                 </Button>
                 <Button
                   variant="flat"
-                  className="h-auto py-4 flex flex-col gap-2 bg-green-50 text-green-700 hover:bg-green-100 col-span-2"
-                  onPress={() => router.push('/organizer/payments')}
+                  className="h-auto py-4 flex flex-col gap-2 bg-purple-50 text-purple-700 hover:bg-purple-100 col-span-2"
+                  onPress={() => router.push('/organizer/payout-settings')}
                 >
-                  <div className="p-2 bg-white rounded-full shadow-sm"><FiCreditCard /></div>
-                  <span className="text-xs font-semibold">ตรวจสอบการชำระเงิน</span>
+                  <div className="p-2 bg-white rounded-full shadow-sm"><FiDollarSign /></div>
+                  <span className="text-xs font-semibold">ตั้งค่า PromptPay</span>
                 </Button>
               </div>
             </Card>
@@ -799,16 +807,8 @@ export default function OrganizerDashboard() {
         isEditing={!!editingCamp}
       />
 
-      {viewingCamp && (
-        <CampDetailModal
-          isOpen={isDetailModalOpen}
-          onClose={onDetailModalClose}
-          camp={viewingCamp}
-          registrations={registrations.filter(r => r.campId === viewingCamp._id)}
-        />
-      )}
-
-      <Modal isOpen={isPromoModalOpen} onClose={onPromoModalClose} size="4xl" scrollBehavior="inside" backdrop="blur">
+      <Modal isOpen={isPromoModalOpen} onClose={onPromoModalClose} size="4xl" scrollBehavior="inside"
+        classNames={{ base: 'min-h-[500px] max-h-[85vh]', body: 'overflow-y-auto' }}>
         <ModalContent>
           <ModalHeader className="border-b border-gray-100 p-6">
             <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
@@ -818,7 +818,7 @@ export default function OrganizerDashboard() {
               จัดการรหัสโปรโมชั่น
             </h2>
           </ModalHeader>
-          <ModalBody className="p-0 bg-gray-50/50">
+          <ModalBody className="p-0">
             <div className="p-6">
               <PromoCodeManager
                 userId={session?.user?.id || ''}

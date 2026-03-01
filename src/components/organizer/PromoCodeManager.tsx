@@ -4,12 +4,6 @@
 import { useState, useEffect } from 'react';
 import {
   Button,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
   Modal,
   ModalContent,
   ModalHeader,
@@ -205,37 +199,48 @@ export default function PromoCodeManager({ userId, userRole, camps = [] }: Promo
   };
 
   const handleToggleActive = async (id: string, currentStatus: boolean) => {
+    // Optimistic update — flip immediately, no full reload
+    setPromoCodes(prev =>
+      prev.map(c => c._id === id ? { ...c, isActive: !currentStatus } : c)
+    );
     try {
       const res = await fetch(`/api/promo-codes/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: !currentStatus }),
       });
-
       if (!res.ok) throw new Error('Failed to toggle');
-
       toast.success(currentStatus ? 'ปิดการใช้งานแล้ว' : 'เปิดการใช้งานแล้ว');
-      fetchPromoCodes();
     } catch (error) {
+      // Rollback on failure
+      setPromoCodes(prev =>
+        prev.map(c => c._id === id ? { ...c, isActive: currentStatus } : c)
+      );
       console.error('Error toggling promo code:', error);
       toast.error('เกิดข้อผิดพลาด');
     }
   };
 
+  const now = new Date();
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <p className="text-gray-600 text-sm">
-            {userRole === 'admin'
-              ? 'สร้างรหัสส่วนลดที่ใช้ได้ทั้งเว็บ'
-              : 'สร้างรหัสส่วนลดสำหรับค่ายของคุณ'}
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-gray-500">
+            {userRole === 'admin' ? 'รหัสส่วนลดทั้งเว็บ' : 'รหัสส่วนลดของคุณ'}
           </p>
+          {!loading && promoCodes.length > 0 && (
+            <span className="text-xs bg-gray-100 text-gray-600 font-semibold px-2 py-0.5 rounded-full">
+              {promoCodes.length}
+            </span>
+          )}
         </div>
         <Button
-          color="warning"
-          className="font-bold"
-          startContent={<FiPlus />}
+          className="bg-[#F2B33D] text-white font-bold"
+          startContent={<FiPlus size={15} />}
+          size="sm"
           onPress={() => handleOpenModal()}
         >
           สร้างรหัสใหม่
@@ -243,110 +248,104 @@ export default function PromoCodeManager({ userId, userRole, camps = [] }: Promo
       </div>
 
       {loading ? (
-        <div className="text-center py-8 text-gray-500">กำลังโหลด...</div>
+        <div className="space-y-2">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-16 rounded-2xl bg-gray-100 animate-pulse" />
+          ))}
+        </div>
       ) : promoCodes.length === 0 ? (
-        <div className="text-center py-12">
-          <FiTag className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-          <p className="text-gray-500 mb-4">ยังไม่มีรหัสโปรโมชั่น</p>
-          <Button
-            color="warning"
-            variant="flat"
-            startContent={<FiPlus />}
-            onPress={() => handleOpenModal()}
-          >
+        <div className="text-center py-14 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+          <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+            <FiTag className="text-[#F2B33D]" size={22} />
+          </div>
+          <p className="text-gray-500 text-sm font-medium mb-3">ยังไม่มีรหัสโปรโมชั่น</p>
+          <Button size="sm" className="bg-[#F2B33D] text-white font-semibold"
+            startContent={<FiPlus size={13} />} onPress={() => handleOpenModal()}>
             สร้างรหัสแรก
           </Button>
         </div>
       ) : (
-        <Table aria-label="Promo codes table">
-          <TableHeader>
-            <TableColumn>รหัส</TableColumn>
-            <TableColumn>ประเภท</TableColumn>
-            <TableColumn>ส่วนลด</TableColumn>
-            <TableColumn>ใช้แล้ว</TableColumn>
-            <TableColumn>วันหมดอายุ</TableColumn>
-            <TableColumn>สถานะ</TableColumn>
-            <TableColumn>จัดการ</TableColumn>
-          </TableHeader>
-          <TableBody>
-            {promoCodes.map((code) => (
-              <TableRow key={code._id}>
-                <TableCell>
-                  <div>
-                    <p className="font-bold text-orange-600">{code.code}</p>
-                    {code.description && (
-                      <p className="text-xs text-gray-500">{code.description}</p>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {code.applicableCamps && code.applicableCamps.length > 0 ? (
-                    <Chip size="sm" color="primary" variant="flat">
-                      {code.applicableCamps.length} ค่าย
-                    </Chip>
-                  ) : (
-                    <Chip size="sm" color="success" variant="flat">
-                      ทั้งเว็บ
-                    </Chip>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    {code.discountType === DiscountType.PERCENTAGE ? (
-                      <>
-                        <FiPercent className="w-3 h-3" />
-                        {code.discountValue}%
-                      </>
+        <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+          {promoCodes.map((code) => {
+            const isExpired = new Date(code.validUntil) < now;
+            const usagePct = code.usageLimit
+              ? Math.min(100, Math.round((code.usedCount / code.usageLimit) * 100))
+              : 0;
+
+            return (
+              <div
+                key={code._id}
+                className={`flex items-center gap-3 rounded-2xl px-4 py-3 border transition-all ${!code.isActive || isExpired
+                  ? 'bg-gray-50 border-gray-100 opacity-60'
+                  : 'bg-white border-gray-100 hover:border-[#F2B33D]/30 hover:shadow-sm'
+                  }`}
+              >
+                {/* Left: Code info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <span className="font-black text-[#F2B33D] tracking-widest text-sm">{code.code}</span>
+                    {/* Discount badge */}
+                    <span className={`inline-flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-full ${code.discountType === DiscountType.PERCENTAGE
+                      ? 'bg-orange-100 text-orange-700'
+                      : 'bg-green-100 text-green-700'
+                      }`}>
+                      {code.discountType === DiscountType.PERCENTAGE
+                        ? <>{code.discountValue}%</>
+                        : <>฿{code.discountValue}</>
+                      }
+                    </span>
+                    {/* Scope chip */}
+                    {code.applicableCamps && code.applicableCamps.length > 0 ? (
+                      <Chip size="sm" variant="flat" color="primary" className="text-[10px] h-5">{code.applicableCamps.length} ค่าย</Chip>
                     ) : (
-                      <>฿{code.discountValue}</>
+                      <Chip size="sm" variant="flat" color="success" className="text-[10px] h-5">ทั้งเว็บ</Chip>
+                    )}
+                    {isExpired && (
+                      <Chip size="sm" variant="flat" color="danger" className="text-[10px] h-5">หมดอายุ</Chip>
                     )}
                   </div>
-                </TableCell>
-                <TableCell>
-                  {code.usedCount} / {code.usageLimit || '∞'}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1 text-sm">
-                    <FiCalendar className="w-3 h-3" />
-                    {new Date(code.validUntil).toLocaleDateString('th-TH')}
+                  <div className="flex items-center gap-3 text-xs text-gray-400">
+                    {code.description && (
+                      <span className="truncate max-w-[160px] text-gray-500">{code.description}</span>
+                    )}
+                    <span className="flex items-center gap-1">
+                      <FiCalendar size={10} />
+                      {new Date(code.validUntil).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      {code.usedCount}<span className="text-gray-300">/</span>{code.usageLimit || '∞'}
+                      {code.usageLimit && usagePct >= 80 && (
+                        <span className={`font-semibold ${usagePct >= 100 ? 'text-red-500' : 'text-orange-500'}`}>
+                          ({usagePct}%)
+                        </span>
+                      )}
+                    </span>
                   </div>
-                </TableCell>
-                <TableCell>
+                </div>
+
+                {/* Right: Toggle + Actions */}
+                <div className="flex items-center gap-1.5 shrink-0">
                   <Switch
                     size="sm"
                     isSelected={code.isActive}
                     onValueChange={() => handleToggleActive(code._id, code.isActive)}
+                    classNames={{ wrapper: 'mr-0' }}
                   />
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      isIconOnly
-                      variant="light"
-                      color="primary"
-                      onPress={() => handleOpenModal(code)}
-                    >
-                      <FiEdit2 />
-                    </Button>
-                    <Button
-                      size="sm"
-                      isIconOnly
-                      variant="light"
-                      color="danger"
-                      onPress={() => {
-                        setDeletingId(code._id);
-                        onDeleteOpen();
-                      }}
-                    >
-                      <FiTrash2 />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                  <Button isIconOnly size="sm" variant="flat"
+                    className="w-7 h-7 min-w-0 bg-gray-100 text-gray-500 hover:bg-blue-50 hover:text-blue-600"
+                    onPress={() => handleOpenModal(code)}>
+                    <FiEdit2 size={13} />
+                  </Button>
+                  <Button isIconOnly size="sm" variant="flat"
+                    className="w-7 h-7 min-w-0 bg-red-50 text-red-400 hover:bg-red-100"
+                    onPress={() => { setDeletingId(code._id); onDeleteOpen(); }}>
+                    <FiTrash2 size={13} />
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
 
       {/* Create/Edit Modal */}

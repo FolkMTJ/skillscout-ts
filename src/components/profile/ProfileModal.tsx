@@ -111,12 +111,14 @@ export default function ProfileModal({ isOpen, onClose, user, onUpdate }: Profil
   return (
     <Modal
       isOpen={isOpen} onClose={onClose} size="2xl"
-      scrollBehavior="normal" backdrop="blur" hideCloseButton
+      scrollBehavior="normal" backdrop="opaque" hideCloseButton
       classNames={{ base: 'rounded-3xl overflow-hidden shadow-2xl', wrapper: '!z-[100]' }}
-      motionProps={{ variants: {
-        enter: { y: 0, opacity: 1, transition: { duration: 0.22, ease: 'easeOut' } },
-        exit:  { y: -12, opacity: 0, transition: { duration: 0.16, ease: 'easeIn' } },
-      }}}
+      motionProps={{
+        variants: {
+          enter: { y: 0, opacity: 1, transition: { duration: 0.22, ease: 'easeOut' } },
+          exit: { y: -12, opacity: 0, transition: { duration: 0.16, ease: 'easeIn' } },
+        }
+      }}
     >
       <ModalContent>
         {(onModalClose) => (
@@ -157,13 +159,12 @@ export default function ProfileModal({ isOpen, onClose, user, onUpdate }: Profil
                     <button
                       key={tab.key}
                       onClick={() => setActiveTab(tab.key)}
-                      className={`flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-bold rounded-t-xl transition-all ${
-                        active
+                      className={`flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-bold rounded-t-xl transition-all ${active
                           ? tab.danger ? 'bg-white text-red-500' : 'bg-white text-[#2C2C2C]'
                           : tab.danger
-                          ? 'text-red-400/70 hover:bg-white/10 hover:text-red-400'
-                          : 'text-white/50 hover:bg-white/10 hover:text-white'
-                      }`}
+                            ? 'text-red-400/70 hover:bg-white/10 hover:text-red-400'
+                            : 'text-white/50 hover:bg-white/10 hover:text-white'
+                        }`}
                     >
                       <Icon size={13} />{tab.label}
                     </button>

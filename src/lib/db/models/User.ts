@@ -18,6 +18,12 @@ interface UserDoc {
   province?: string;
   district?: string;
   isBanned?: boolean;
+  payoutInfo?: {
+    promptpayId: string;
+    accountName: string;
+    createdAt: Date;
+    updatedAt: Date;
+  };
   createdAt: Date;
   updatedAt: Date;
 }

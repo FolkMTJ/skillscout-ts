@@ -21,6 +21,9 @@ interface PaymentDoc {
   slipVerified?: boolean;
   requiresManualReview?: boolean;
   slipUploadedAt?: Date;
+  slipSenderName?: string;
+  slipReceivedAmount?: number;
+  slipQrHash?: string;
   verifiedAt?: Date;
   verifiedBy?: string;
   rejectedAt?: Date;
@@ -155,6 +158,17 @@ export class PaymentModel {
       .toArray();
     
     return payments.map(doc => this.toPublic(doc));
+  }
+
+  // Check if any OTHER payment already used this slip QR hash (prevent slip reuse)
+  static async findBySlipQrHash(hash: string, excludePaymentId: string): Promise<Payment | null> {
+    const collection = await getCollection<PaymentDoc>(this.collectionName);
+    const filter: Filter<PaymentDoc> = {
+      slipQrHash: hash,
+      _id: { $ne: new ObjectId(excludePaymentId) },
+    } as Filter<PaymentDoc>;
+    const doc = await collection.findOne(filter);
+    return doc ? this.toPublic(doc) : null;
   }
 
   static async deleteById(id: string): Promise<boolean> {

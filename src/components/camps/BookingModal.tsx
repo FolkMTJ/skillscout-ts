@@ -14,7 +14,8 @@ import {
   Image,
   Progress,
 } from '@heroui/react';
-import { FiCheckCircle, FiTag, FiUpload, FiImage, FiSmartphone, FiX, FiCheck } from 'react-icons/fi';
+import { FiCheckCircle, FiTag, FiUpload, FiImage, FiSmartphone, FiX, FiCheck, FiZap } from 'react-icons/fi';
+import jsQR from 'jsqr';
 import toast from 'react-hot-toast';
 
 interface CampData {
@@ -34,9 +35,11 @@ interface BookingModalProps {
   onClose: () => void;
   camp: CampData;
   onRegistrationSuccess?: () => void;
+  existingPaymentId?: string;
+  existingRegistrationId?: string;
 }
 
-export default function BookingModal({ isOpen, onClose, camp, onRegistrationSuccess }: BookingModalProps) {
+export default function BookingModal({ isOpen, onClose, camp, onRegistrationSuccess, existingPaymentId, existingRegistrationId }: BookingModalProps) {
   const { data: session } = useSession();
 
   const [step, setStep] = useState(1);
@@ -62,6 +65,11 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
 
   const [paymentId, setPaymentId] = useState('');
   const [registrationId, setRegistrationId] = useState('');
+
+  const [slipQrPayload, setSlipQrPayload] = useState('');
+  const [qrDetected, setQrDetected] = useState(false);
+  const [rdcwSenderName, setRdcwSenderName] = useState('');
+  const [organizerName, setOrganizerName] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -103,6 +111,17 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
       fetchUserData();
     }
   }, [session, isOpen]);
+
+  // เปิด modal สำหรับการชำระเงินที่ค้างอยู่ → ข้ามไป step 2 ทันที
+  useEffect(() => {
+    if (isOpen && existingPaymentId && existingRegistrationId) {
+      setPaymentId(existingPaymentId);
+      setRegistrationId(existingRegistrationId);
+      setStep(2);
+      generateQRCode();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, existingPaymentId, existingRegistrationId]);
 
   const handleValidatePromo = async () => {
     if (!promoCode.trim()) {
@@ -253,7 +272,7 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amount: finalPrice,
-          phoneNumber: '0813259525'
+          organizerId: camp.organizerId,
         }),
       });
 
@@ -261,8 +280,9 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
 
       if (response.ok) {
         setQrCodeUrl(data.qrCode);
+        if (data.accountName) setOrganizerName(data.accountName);
       } else {
-        throw new Error('ไม่สามารถสร้าง QR Code ได้');
+        throw new Error(data.error || 'ไม่สามารถสร้าง QR Code ได้');
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'ไม่สามารถสร้าง QR Code ได้';
@@ -285,9 +305,34 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
         return;
       }
       setSlipFile(file);
+      setSlipQrPayload('');
+      setQrDetected(false);
+
       const reader = new FileReader();
       reader.onloadend = () => setSlipPreview(reader.result as string);
       reader.readAsDataURL(file);
+
+      // Try to decode QR code from slip image (client-side)
+      const objectUrl = URL.createObjectURL(file);
+      const img = document.createElement('img') as HTMLImageElement;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0);
+        const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
+        if (imageData) {
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+          if (code?.data) {
+            setSlipQrPayload(code.data);
+            setQrDetected(true);
+          }
+        }
+        URL.revokeObjectURL(objectUrl);
+      };
+      img.src = objectUrl;
+
       setError('');
     }
   };
@@ -393,6 +438,7 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           slipUrl: slipUrl,
+          slipQrPayload: slipQrPayload || undefined,
           status: 'pending'
         }),
       });
@@ -401,10 +447,33 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
         throw new Error('ไม่สามารถบันทึกข้อมูลได้');
       }
 
-      toast.success('อัปโหลดสลิปสำเร็จ!');
+      // Verify slip via RDCW — required, no manual fallback
+      const verifyRes = await fetch('/api/payment/verify-slip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentId, slipQrPayload: slipQrPayload || undefined }),
+      });
+      const verifyData = await verifyRes.json();
+
+      if (!verifyData.success) {
+        // Verification failed — show specific error, let user retry
+        const errMsg = verifyData.error || 'การตรวจสอบสลิปล้มเหลว กรุณาลองใหม่';
+        toast.error(errMsg, { duration: 6000 });
+        setError(errMsg);
+        setSlipFile(null);
+        setSlipPreview('');
+        setSlipQrPayload('');
+        setQrDetected(false);
+        setUploadProgress(0);
+        return;
+      }
+
+      if (verifyData.senderName) setRdcwSenderName(verifyData.senderName);
+
+      toast.success('ชำระเงินสำเร็จ!');
       setStep(4);
       onRegistrationSuccess?.();
-      setTimeout(() => handleClose(), 3000);
+      setTimeout(() => handleClose(), 4000);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'ไม่สามารถอัปโหลดสลิปได้';
       setError(message);
@@ -430,6 +499,10 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
       setQrCodeUrl('');
       setSlipFile(null);
       setSlipPreview('');
+      setSlipQrPayload('');
+      setQrDetected(false);
+      setRdcwSenderName('');
+      setOrganizerName('');
       setPaymentId('');
       setRegistrationId('');
       setUploadProgress(0);
@@ -445,12 +518,12 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
       size="lg"
       scrollBehavior="inside"
       isDismissable={!isSubmitting && !isUploading}
-      backdrop="blur"
+      backdrop="opaque"
       classNames={{
         base: "bg-white dark:bg-gray-900 rounded-3xl shadow-2xl",
         header: "border-b border-gray-100 dark:border-gray-800 p-6",
         body: "p-6",
-        footer: "border-t border-gray-100 dark:border-gray-800 p-6 bg-gray-50/50 dark:bg-gray-900",
+        footer: "border-t border-gray-100 dark:border-gray-800 p-6 dark:bg-gray-900",
         closeButton: "hover:bg-gray-100 active:bg-gray-200 text-gray-500",
       }}
     >
@@ -463,13 +536,21 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
             </div>
 
             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              {isFree ? 'ลงทะเบียนสำเร็จ!' : 'อัปโหลดสลิปเรียบร้อย'}
+              {isFree ? 'ลงทะเบียนสำเร็จ!' : 'ชำระเงินสำเร็จ!'}
             </h3>
-            <p className="text-gray-500 dark:text-gray-400 max-w-xs mx-auto mb-8">
+            <p className="text-gray-500 dark:text-gray-400 max-w-xs mx-auto mb-4">
               {isFree
                 ? 'ขอบคุณที่เข้าร่วมกิจกรรม เตรียมตัวให้พร้อมแล้วเจอกัน!'
-                : 'ระบบได้รับข้อมูลแล้ว กำลังตรวจสอบความถูกต้อง'}
+                : 'ระบบยืนยันการชำระเงินแล้ว เตรียมตัวสำหรับค่ายได้เลย!'}
             </p>
+
+            {/* RDCW verified detail */}
+            {!isFree && rdcwSenderName && (
+              <div className="w-full max-w-xs mx-auto mb-6 rounded-xl px-4 py-3 text-sm text-left bg-green-50 border border-green-200">
+                <p className="font-semibold text-green-700 mb-1">✓ ตรวจสอบสลิปสำเร็จ</p>
+                <p className="text-gray-600">ชื่อผู้โอน: <span className="font-medium">{rdcwSenderName}</span></p>
+              </div>
+            )}
 
             <Button
               fullWidth
@@ -628,6 +709,10 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
                         <p className="text-3xl font-black text-[#F2B33D]">฿{finalPrice.toLocaleString()}</p>
                       </div>
 
+                      {organizerName && (
+                        <p className="text-xs text-gray-500">โอนให้: <strong className="text-gray-700">{organizerName}</strong></p>
+                      )}
+
                       <div className="w-full bg-[#F2B33D]/10 rounded-xl p-4 flex items-start gap-3">
                         <FiSmartphone className="text-[#F2B33D] mt-1 shrink-0" size={18} />
                         <p className="text-sm text-gray-600 dark:text-gray-300">
@@ -652,8 +737,8 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
                     <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer" />
 
                     {slipPreview ? (
-                      <div className="relative">
-                        <Image src={slipPreview} alt="Slip" className="max-h-64 mx-auto rounded-lg shadow-sm" />
+                      <div className="relative flex justify-center">
+                        <Image src={slipPreview} alt="Slip" className="max-h-64 w-auto rounded-lg shadow-sm object-contain" />
                         <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
                           <span className="text-white font-medium flex items-center gap-2"><FiUpload /> เปลี่ยนรูป</span>
                         </div>
@@ -670,6 +755,13 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
                       </div>
                     )}
                   </div>
+
+                  {qrDetected && !isUploading && (
+                    <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 px-3 py-2 rounded-xl">
+                      <FiZap size={13} />
+                      <span>พบ QR Code ในสลิป — จะตรวจสอบอัตโนมัติ</span>
+                    </div>
+                  )}
 
                   {isUploading && (
                     <div className="space-y-2">

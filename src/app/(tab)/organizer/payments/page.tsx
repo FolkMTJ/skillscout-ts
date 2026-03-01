@@ -1,9 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Card, Button, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Tabs, Tab } from '@heroui/react';
-import { FiCheck, FiX, FiEye, FiClock, FiCheckCircle, FiCreditCard } from 'react-icons/fi';
+import {
+  Card, Button, Chip, Modal, ModalContent, ModalHeader,
+  ModalBody, ModalFooter, Tabs, Tab,
+} from '@heroui/react';
+import {
+  FiArrowLeft, FiEye, FiCheckCircle, FiCreditCard, FiUser, FiZap, FiClock,
+} from 'react-icons/fi';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 
@@ -20,191 +26,129 @@ interface Payment {
   status: string;
   slipUrl?: string;
   slipVerified?: boolean;
-  requiresManualReview?: boolean;
+  slipSenderName?: string;
+  slipReceivedAmount?: number;
   slipUploadedAt?: string;
+  verifiedBy?: string;
+  verifiedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export default function PaymentsPage() {
+  const router = useRouter();
   const { status } = useSession();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewingPayment, setViewingPayment] = useState<Payment | null>(null);
-  const [activeTab, setActiveTab] = useState('pending');
+  const [activeTab, setActiveTab] = useState('completed');
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      fetchPayments();
-    }
+    if (status === 'authenticated') fetchPayments();
   }, [status]);
 
   const fetchPayments = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/payments/organizer');
-      const data = await response.json();
-      
-      if (data.payments) {
-        setPayments(data.payments);
-      }
-    } catch (err) {
-      console.error('Error fetching payments:', err);
+      const res = await fetch('/api/payments/organizer');
+      const data = await res.json();
+      if (data.payments) setPayments(data.payments);
+    } catch {
       toast.error('ไม่สามารถโหลดข้อมูลได้');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleApprove = async (paymentId: string) => {
-    if (!confirm('ยืนยันการอนุมัติสลิปนี้หรือไม่?')) return;
-
-    try {
-      const response = await fetch(`/api/payments/${paymentId}/approve`, {
-        method: 'POST',
-      });
-
-      if (!response.ok) throw new Error('Failed to approve');
-
-      toast.success('อนุมัติสลิปสำเร็จ!');
-      setViewingPayment(null);
-      fetchPayments();
-    } catch (err) {
-      console.error('Error approving payment:', err);
-      toast.error('เกิดข้อผิดพลาดในการอนุมัติ');
-    }
-  };
-
-  const handleReject = async (paymentId: string) => {
-    const reason = prompt('กรุณาระบุเหตุผลในการปฏิเสธ:');
-    if (!reason) return;
-
-    try {
-      const response = await fetch(`/api/payments/${paymentId}/reject`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason }),
-      });
-
-      if (!response.ok) throw new Error('Failed to reject');
-
-      toast.success('ปฏิเสธสลิปสำเร็จ');
-      setViewingPayment(null);
-      fetchPayments();
-    } catch (err) {
-      console.error('Error rejecting payment:', err);
-      toast.error('เกิดข้อผิดพลาดในการปฏิเสธ');
-    }
-  };
-
-  const pendingPayments = payments.filter(p => {
-    console.log('Payment:', {
-      id: p._id,
-      requiresManualReview: p.requiresManualReview,
-      slipVerified: p.slipVerified,
-      slipUrl: p.slipUrl,
-      status: p.status
-    });
-    // รอตรวจสอบ = มี slipUrl และ status เป็น pending และยังไม่ได้ verify
-    return p.slipUrl && p.status === 'pending' && !p.slipVerified;
-  });
-  
-  // อนุมัติแล้ว = slipVerified หรือ status เป็น completed
-  const approvedPayments = payments.filter(p => p.slipVerified || p.status === 'completed');
-  
-  const allPayments = payments;
-  
-  console.log('=== PAYMENTS DEBUG ===');
-  console.log('Total payments:', payments.length);
-  console.log('Pending payments:', pendingPayments.length);
-  console.log('Approved payments:', approvedPayments.length);
-  console.log('=====================');
+  const completedPayments = payments.filter(
+    p => p.status === 'completed' || p.slipVerified
+  );
+  const pendingPayments = payments.filter(
+    p => p.status === 'pending' && !p.slipVerified
+  );
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  if (status === 'unauthenticated') {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="p-8 text-center">
-          <h2 className="text-2xl font-bold mb-4">กรุณาเข้าสู่ระบบ</h2>
-          <Button color="primary" href="/login">เข้าสู่ระบบ</Button>
-        </Card>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#F2B33D]" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-3">
-            <FiCreditCard className="text-blue-500" />
-            ตรวจสอบสลิปการชำระเงิน
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            จัดการและอนุมัติสลิปการชำระเงินของผู้สมัคร
-          </p>
+    <div className="min-h-screen bg-gray-50 pb-20">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-100 sticky top-0 z-10">
+        <div className="max-w-[1536px] mx-auto px-4 py-4 flex items-center gap-3">
+          <Button
+            isIconOnly variant="light"
+            onPress={() => router.push('/organizer')}
+            className="text-gray-600"
+          >
+            <FiArrowLeft size={20} />
+          </Button>
+          <div>
+            <h1 className="text-lg font-bold text-gray-900">การชำระเงิน</h1>
+            <p className="text-xs text-gray-500">รายการชำระเงินของผู้สมัคร</p>
+          </div>
+          <div className="ml-auto">
+            <span className="text-sm text-gray-500 font-medium">
+              ชำระแล้ว {completedPayments.length} รายการ
+            </span>
+          </div>
         </div>
+      </div>
 
+      <div className="max-w-[1536px] mx-auto px-4 py-4">
         <Tabs
           selectedKey={activeTab}
           onSelectionChange={(key) => setActiveTab(key as string)}
-          className="mb-6"
+          classNames={{
+            tabList: 'bg-white shadow-sm rounded-2xl p-1',
+            tab: 'rounded-xl',
+            cursor: 'bg-[#F2B33D]',
+          }}
         >
           <Tab
-            key="pending"
+            key="completed"
             title={
-              <div className="flex items-center gap-2">
-                <FiClock />
-                <span>รอตรวจสอบ ({pendingPayments.length})</span>
+              <div className="flex items-center gap-1.5 text-sm">
+                <FiCheckCircle size={13} />
+                <span>ชำระแล้ว ({completedPayments.length})</span>
               </div>
             }
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-              {pendingPayments.length === 0 ? (
-                <div className="col-span-full text-center py-12">
-                  <FiCheckCircle className="w-16 h-16 mx-auto text-green-500 mb-4" />
-                  <p className="text-gray-500">ไม่มีสลิปรอตรวจสอบ</p>
-                </div>
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+              {completedPayments.length === 0 ? (
+                <Card className="border-none shadow-sm bg-white p-8 text-center col-span-full">
+                  <p className="text-gray-400 text-sm">ยังไม่มีรายการชำระเงิน</p>
+                </Card>
               ) : (
-                pendingPayments.map((payment) => (
-                  <PaymentCard
-                    key={payment._id}
-                    payment={payment}
-                    onView={() => setViewingPayment(payment)}
-                  />
+                completedPayments.map(p => (
+                  <PaymentCard key={p._id} payment={p} onView={() => setViewingPayment(p)} />
                 ))
               )}
             </div>
           </Tab>
 
           <Tab
-            key="approved"
+            key="pending"
             title={
-              <div className="flex items-center gap-2">
-                <FiCheckCircle />
-                <span>อนุมัติแล้ว ({approvedPayments.length})</span>
+              <div className="flex items-center gap-1.5 text-sm">
+                <FiClock size={13} />
+                <span>รอชำระ ({pendingPayments.length})</span>
               </div>
             }
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-              {approvedPayments.length === 0 ? (
-                <div className="col-span-full text-center py-12">
-                  <p className="text-gray-500">ยังไม่มีสลิปที่อนุมัติ</p>
-                </div>
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+              {pendingPayments.length === 0 ? (
+                <Card className="border-none shadow-sm bg-white p-8 text-center col-span-full">
+                  <FiCheckCircle className="w-10 h-10 mx-auto text-green-400 mb-3" />
+                  <p className="text-gray-500 text-sm font-medium">ทุกคนชำระเงินแล้ว!</p>
+                </Card>
               ) : (
-                approvedPayments.map((payment) => (
-                  <PaymentCard
-                    key={payment._id}
-                    payment={payment}
-                    onView={() => setViewingPayment(payment)}
-                  />
+                pendingPayments.map(p => (
+                  <PaymentCard key={p._id} payment={p} onView={() => setViewingPayment(p)} />
                 ))
               )}
             </div>
@@ -212,20 +156,18 @@ export default function PaymentsPage() {
 
           <Tab
             key="all"
-            title={
-              <div className="flex items-center gap-2">
-                <span>ทั้งหมด ({allPayments.length})</span>
-              </div>
-            }
+            title={<span className="text-sm">ทั้งหมด ({payments.length})</span>}
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-              {allPayments.map((payment) => (
-                <PaymentCard
-                  key={payment._id}
-                  payment={payment}
-                  onView={() => setViewingPayment(payment)}
-                />
-              ))}
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+              {payments.length === 0 ? (
+                <Card className="border-none shadow-sm bg-white p-8 text-center col-span-full">
+                  <p className="text-gray-400 text-sm">ยังไม่มีรายการ</p>
+                </Card>
+              ) : (
+                payments.map(p => (
+                  <PaymentCard key={p._id} payment={p} onView={() => setViewingPayment(p)} />
+                ))
+              )}
             </div>
           </Tab>
         </Tabs>
@@ -235,98 +177,87 @@ export default function PaymentsPage() {
       <Modal
         isOpen={!!viewingPayment}
         onClose={() => setViewingPayment(null)}
-        size="3xl"
+        size="lg"
         scrollBehavior="inside"
+        backdrop="opaque"
+        classNames={{
+          base: 'bg-white rounded-3xl',
+          header: 'border-b border-gray-100 px-6 py-4',
+          body: 'p-6',
+          footer: 'border-t border-gray-100 px-6 py-4 bg-gray-50/50',
+        }}
       >
         <ModalContent>
           <ModalHeader>
-            <h3 className="text-xl font-bold">ตรวจสอบสลิปการชำระเงิน</h3>
+            <h3 className="text-base font-bold text-gray-900">รายละเอียดการชำระเงิน</h3>
           </ModalHeader>
           <ModalBody>
             {viewingPayment && (
-              <div className="space-y-6">
-                {/* Payment Info */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500">ผู้ชำระเงิน</p>
-                    <p className="font-semibold">{viewingPayment.userName}</p>
-                    <p className="text-sm text-gray-600">{viewingPayment.userEmail}</p>
+              <div className="space-y-5">
+                {/* Info grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-gray-50 rounded-2xl p-3">
+                    <p className="text-xs text-gray-400 mb-1 flex items-center gap-1"><FiUser size={11} />ผู้ชำระเงิน</p>
+                    <p className="font-semibold text-sm text-gray-900">{viewingPayment.userName}</p>
+                    <p className="text-xs text-gray-500">{viewingPayment.userEmail}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500">ค่าย</p>
-                    <p className="font-semibold">{viewingPayment.campName}</p>
+                  <div className="bg-gray-50 rounded-2xl p-3">
+                    <p className="text-xs text-gray-400 mb-1 flex items-center gap-1"><FiCreditCard size={11} />ค่าย</p>
+                    <p className="font-semibold text-sm text-gray-900 line-clamp-2">{viewingPayment.campName}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500">ยอดเงิน</p>
-                    <p className="font-bold text-xl text-blue-600">
-                      ฿{viewingPayment.finalAmount.toLocaleString()}
-                    </p>
+                  <div className="bg-[#F2B33D]/10 rounded-2xl p-3">
+                    <p className="text-xs text-gray-400 mb-1">ยอดชำระ</p>
+                    <p className="text-2xl font-black text-[#F2B33D]">฿{viewingPayment.finalAmount.toLocaleString()}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500">อัปโหลดเมื่อ</p>
-                    <p className="font-medium">
-                      {viewingPayment.slipUploadedAt 
-                        ? new Date(viewingPayment.slipUploadedAt).toLocaleString('th-TH')
-                        : 'N/A'}
+                  <div className="bg-gray-50 rounded-2xl p-3">
+                    <p className="text-xs text-gray-400 mb-1">ชำระเมื่อ</p>
+                    <p className="text-sm font-medium text-gray-700">
+                      {viewingPayment.verifiedAt
+                        ? new Date(viewingPayment.verifiedAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })
+                        : viewingPayment.slipUploadedAt
+                        ? new Date(viewingPayment.slipUploadedAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })
+                        : '—'}
                     </p>
                   </div>
                 </div>
 
+                {/* RDCW verification detail */}
+                {viewingPayment.slipVerified && (
+                  <div className="bg-green-50 border border-green-200 rounded-2xl p-4 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <FiZap size={14} className="text-green-600" />
+                      <p className="text-sm font-semibold text-green-700">ยืนยันโดยระบบ RDCW</p>
+                    </div>
+                    {viewingPayment.slipSenderName && (
+                      <p className="text-sm text-gray-600">ชื่อผู้โอน: <span className="font-medium">{viewingPayment.slipSenderName}</span></p>
+                    )}
+                    {viewingPayment.slipReceivedAmount !== undefined && (
+                      <p className="text-sm text-gray-600">จำนวนเงินในสลิป: <span className="font-medium">฿{viewingPayment.slipReceivedAmount.toLocaleString()}</span></p>
+                    )}
+                  </div>
+                )}
+
                 {/* Slip Image */}
                 {viewingPayment.slipUrl && (
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-                    <p className="text-sm font-semibold mb-3">สลิปการโอนเงิน:</p>
-                    <div className="relative w-full h-[500px]">
+                  <div className="rounded-2xl overflow-hidden border border-gray-100">
+                    <p className="text-xs font-semibold text-gray-500 px-4 py-3 border-b border-gray-100 bg-gray-50">
+                      สลิปการโอนเงิน
+                    </p>
+                    <div className="relative w-full" style={{ height: 420 }}>
                       <Image
                         src={viewingPayment.slipUrl}
                         alt="Payment Slip"
                         fill
-                        className="object-contain rounded-lg"
+                        className="object-contain"
                       />
                     </div>
                   </div>
                 )}
-
-                {/* Status */}
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold">สถานะ:</p>
-                  {viewingPayment.slipVerified ? (
-                    <Chip color="success" variant="flat">
-                      อนุมัติแล้ว
-                    </Chip>
-                  ) : (
-                    <Chip color="warning" variant="flat">
-                      รอตรวจสอบ
-                    </Chip>
-                  )}
-                </div>
               </div>
             )}
           </ModalBody>
           <ModalFooter>
-            {viewingPayment && !viewingPayment.slipVerified && (
-              <>
-                <Button
-                  color="danger"
-                  variant="light"
-                  onPress={() => handleReject(viewingPayment._id)}
-                  startContent={<FiX />}
-                >
-                  ปฏิเสธ
-                </Button>
-                <Button
-                  color="success"
-                  onPress={() => handleApprove(viewingPayment._id)}
-                  startContent={<FiCheck />}
-                >
-                  อนุมัติ
-                </Button>
-              </>
-            )}
-            <Button
-              variant="light"
-              onPress={() => setViewingPayment(null)}
-            >
+            <Button variant="light" className="text-gray-500" onPress={() => setViewingPayment(null)}>
               ปิด
             </Button>
           </ModalFooter>
@@ -336,66 +267,50 @@ export default function PaymentsPage() {
   );
 }
 
-// Payment Card Component
-function PaymentCard({ 
-  payment, 
-  onView 
-}: { 
-  payment: Payment; 
-  onView: () => void;
-}) {
+function PaymentCard({ payment, onView }: { payment: Payment; onView: () => void }) {
+  const isPaid = payment.status === 'completed' || payment.slipVerified;
+
   return (
-    <Card className="p-4 hover:shadow-lg transition-shadow">
-      <div className="space-y-3">
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 className="font-bold text-gray-800">{payment.userName}</h3>
-            <p className="text-sm text-gray-600">{payment.userEmail}</p>
-          </div>
-          {payment.slipVerified ? (
-            <Chip size="sm" color="success" variant="flat">
-              อนุมัติแล้ว
-            </Chip>
+    <Card className="border-none shadow-sm bg-white overflow-hidden">
+      <div className="p-4 flex items-center gap-3">
+        {/* Slip thumbnail */}
+        <div className="shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-gray-100 relative">
+          {payment.slipUrl ? (
+            <Image src={payment.slipUrl} alt="slip" fill className="object-cover" />
           ) : (
-            <Chip size="sm" color="warning" variant="flat">
-              รอตรวจสอบ
-            </Chip>
-          )}
-        </div>
-
-        <div>
-          <p className="text-xs text-gray-500">ค่าย</p>
-          <p className="text-sm font-medium">{payment.campName}</p>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs text-gray-500">ยอดเงิน</p>
-            <p className="text-lg font-bold text-blue-600">
-              ฿{payment.finalAmount.toLocaleString()}
-            </p>
-          </div>
-          {payment.slipUrl && (
-            <div className="relative w-16 h-16 rounded border">
-              <Image
-                src={payment.slipUrl}
-                alt="Slip preview"
-                fill
-                className="object-cover rounded"
-              />
+            <div className="w-full h-full flex items-center justify-center">
+              <FiCreditCard className="text-gray-300" size={20} />
             </div>
           )}
         </div>
 
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <p className="font-semibold text-sm text-gray-900 truncate">{payment.userName}</p>
+            {isPaid ? (
+              <Chip size="sm" color="success" variant="flat" className="shrink-0 h-5 text-[10px]">
+                ชำระแล้ว
+              </Chip>
+            ) : (
+              <Chip size="sm" color="default" variant="flat" className="shrink-0 h-5 text-[10px] text-gray-500">
+                รอชำระ
+              </Chip>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 truncate">{payment.campName}</p>
+          <p className="text-sm font-bold text-[#F2B33D] mt-0.5">฿{payment.finalAmount.toLocaleString()}</p>
+        </div>
+
+        {/* View button */}
         <Button
+          isIconOnly
           size="sm"
-          color="primary"
           variant="flat"
-          className="w-full"
-          startContent={<FiEye />}
+          className="bg-gray-100 text-gray-600 shrink-0"
           onPress={onView}
         >
-          ดูรายละเอียด
+          <FiEye size={15} />
         </Button>
       </div>
     </Card>

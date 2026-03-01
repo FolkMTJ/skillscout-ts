@@ -55,7 +55,7 @@ export default function TicketModal({ isOpen, onClose, ticket }: TicketModalProp
       onClose={onClose}
       size="sm"
       scrollBehavior="normal"
-      backdrop="blur"
+      backdrop="opaque"
       classNames={{
         base: "bg-white rounded-3xl shadow-2xl overflow-hidden",
         wrapper: "items-center",

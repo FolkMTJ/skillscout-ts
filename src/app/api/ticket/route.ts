@@ -90,15 +90,18 @@ export async function GET(request: NextRequest) {
         // ไปต่อที่ generate QR (ไม่ return error)
       } else if (payment.status !== 'completed' || !payment.slipVerified) {
 
-        // ยังรอตรวจสลิป
+        // ยังไม่ชำระเงิน / สลิปยังไม่ผ่านการตรวจสอบอัตโนมัติ
         return NextResponse.json(
           {
             registered: true,
             canGetTicket: false,
-            message: 'รอ Organizer ตรวจสอบสลิป',
-            status: 'pending_approval',
+            message: 'กรุณาอัปโหลดสลิปและยืนยันการชำระเงินให้สำเร็จก่อน',
+            status: 'pending_payment',
             paymentStatus: payment.status,
-            slipVerified: payment.slipVerified
+            slipVerified: payment.slipVerified,
+            paymentId: payment._id.toString(),
+            paymentCreatedAt: payment.createdAt,
+            registrationId: registration._id.toString(),
           }
         );
       }

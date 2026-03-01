@@ -111,7 +111,7 @@ export default function OTPModal({
       isOpen={isOpen}
       onClose={handleClose}
       placement="center"
-      backdrop="blur"
+      backdrop="opaque"
       size="md"
       classNames={{
         base: "bg-white dark:bg-gray-900 border border-orange-100 dark:border-gray-800 min-h-[400px] w-full max-w-[450px] overflow-hidden",
