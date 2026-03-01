@@ -18,11 +18,11 @@ export async function GET() {
     const userId = session.user.id;
     const userEmail = session.user.email;
     const db = await getDatabase();
-    
+
     const registrationsCollection = db.collection('registrations');
 
-    // 🔍 Debug: ค้นหาทั้ง 3 แบบ
-    console.log('🔍 Searching registrations for:');
+    // Debug: ค้นหาทั้ง 3 แบบ
+    console.log('Searching registrations for:');
     console.log('  - userId as ObjectId:', userId);
     console.log('  - userId as string:', userId);
     console.log('  - userEmail:', userEmail);
@@ -38,7 +38,7 @@ export async function GET() {
       })
       .toArray();
 
-    console.log('✅ Found', registrations.length, 'registrations');
+    console.log('Found', registrations.length, 'registrations');
 
     const confirmedCount = registrations.filter(r => r.status === 'confirmed').length;
     const approvedCount = registrations.filter(r => r.status === 'approved').length;

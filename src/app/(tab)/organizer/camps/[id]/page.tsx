@@ -12,7 +12,7 @@ import {
   FiArrowLeft, FiDownload, FiSearch, FiUser, FiCheckCircle,
   FiXCircle, FiEye, FiUsers, FiDollarSign, FiEdit2, FiCheck,
   FiX, FiMapPin, FiCalendar, FiClock, FiAlertCircle, FiZap,
-  FiUserCheck, FiRefreshCw,
+  FiUserCheck, FiRefreshCw, FiFileText, FiImage,
 } from 'react-icons/fi';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
@@ -823,8 +823,25 @@ export default function CampManagePage() {
                     {viewingReg.portfolioFileUrl && (
                       <div>
                         <p className="text-xs text-gray-400 mb-1">ไฟล์แนบ</p>
-                        <a href={viewingReg.portfolioFileUrl} target="_blank" rel="noopener noreferrer"
-                          className="text-sm text-blue-600 underline">ดาวน์โหลด / ดูไฟล์</a>
+                        {(() => {
+                          const url = viewingReg.portfolioFileUrl!;
+                          const isPdf = url.includes('/raw/upload/') || url.toLowerCase().endsWith('.pdf');
+                          return isPdf ? (
+                            <a href={url} target="_blank" rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 text-sm text-red-600 underline font-medium">
+                              <FiFileText size={14} /> ดูไฟล์ PDF
+                            </a>
+                          ) : (
+                            <div className="space-y-2">
+                              <a href={url} target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 text-sm text-blue-600 underline">
+                                <FiImage size={14} /> ดูรูปภาพขนาดเต็ม
+                              </a>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={url} alt="Portfolio" className="rounded-lg max-h-48 object-contain border border-gray-200" />
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
                   </div>

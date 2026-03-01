@@ -65,9 +65,9 @@ export async function POST() {
         );
 
         approvedCount++;
-        console.log('✅ Approved registration:', reg._id.toString());
+        console.log('Approved registration:', reg._id.toString());
       } catch (error) {
-        console.error('❌ Error approving registration:', reg._id.toString(), error);
+        console.error('Error approving registration:', reg._id.toString(), error);
         errors.push({ registrationId: reg._id.toString(), error: String(error) });
       }
     }

@@ -282,17 +282,17 @@ async function seedDatabase() {
     
     const createdCamps = await Camp.insertMany(campsWithSlug);
     
-    console.log(`✅ Successfully seeded ${createdCamps.length} camps!`);
-    console.log('📊 Created camps:');
+    console.log(`Successfully seeded ${createdCamps.length} camps!`);
+    console.log('Created camps:');
     createdCamps.forEach(camp => {
       console.log(`   - ${camp.name} (${camp.slug})`);
     });
     
   } catch (error) {
-    console.error('❌ Error seeding database:', error);
+    console.error('Error seeding database:', error);
   } finally {
     await mongoose.connection.close();
-    console.log('👋 Database connection closed');
+    console.log('Database connection closed');
   }
 }
 

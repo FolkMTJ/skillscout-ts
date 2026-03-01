@@ -54,6 +54,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
     const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
 
     const [isRegistered, setIsRegistered] = useState(false);
+    const [hasAttended, setHasAttended] = useState(false);
     const [ticketData, setTicketData] = useState<TicketData | null>(null);
     const [checkingRegistration, setCheckingRegistration] = useState(true);
     const [canGetTicket, setCanGetTicket] = useState(false);
@@ -112,7 +113,9 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                             setTicketStatus(data.status || 'pending');
                             setTicketMessage(data.message || 'รอการดำเนินการ');
 
-                            if (data.status === 'pending_payment' && data.paymentId) {
+                            if (data.status === 'attended') {
+                                setHasAttended(true);
+                            } else if (data.status === 'pending_payment' && data.paymentId) {
                                 setPendingPaymentId(data.paymentId);
                                 setPendingRegistrationId(data.registrationId || '');
                                 setPaymentCreatedAt(new Date(data.paymentCreatedAt));
@@ -142,7 +145,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
     }, [session?.user?.email, camp._id]);
 
     const handleRegistrationSuccess = async () => {
-        // ✅ Optimistic update: ตั้ง isRegistered ทันทีเพื่อไม่ให้ปุ่ม "สมัครเข้าร่วม" กลับมา
+        // Optimistic update: ตั้ง isRegistered ทันทีเพื่อไม่ให้ปุ่ม "สมัครเข้าร่วม" กลับมา
         setIsRegistered(true);
 
         // รอ 1.5 วิ ให้ DB write เสร็จ (async operations: registration + payment + status PATCH)
@@ -174,7 +177,9 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                         setCanGetTicket(false);
                         setTicketStatus(data.status || 'pending');
                         setTicketMessage(data.message || 'รอการดำเนินการ');
-                        if (data.status === 'pending_payment' && data.paymentId) {
+                        if (data.status === 'attended') {
+                            setHasAttended(true);
+                        } else if (data.status === 'pending_payment' && data.paymentId) {
                             setPendingPaymentId(data.paymentId);
                             setPendingRegistrationId(data.registrationId || '');
                             setPaymentCreatedAt(new Date(data.paymentCreatedAt));
@@ -678,7 +683,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                 </div>
                             </div>
 
-                            {session?.user?.name && isRegistered ? (
+                            {session?.user?.name && hasAttended ? (
                                 <Button
                                     className="bg-[#F2B33D] text-gray-900 font-bold shadow-md mt-2 h-10"
                                     fullWidth
@@ -694,13 +699,13 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                     radius="md"
                                     isDisabled
                                 >
-                                    {!session ? 'เข้าสู่ระบบเพื่อเขียนรีวิว' : 'สมัครค่ายเพื่อเขียนรีวิว'}
+                                    {!session ? 'เข้าสู่ระบบเพื่อเขียนรีวิว' : 'เข้าร่วมค่ายเพื่อเขียนรีวิว'}
                                 </Button>
                             )}
                         </div>
 
                         <div className="lg:col-span-2 space-y-6">
-                            {showReviewForm && session?.user?.name && isRegistered && (
+                            {showReviewForm && session?.user?.name && hasAttended && (
                                 <ReviewForm
                                     campId={currentCamp._id}
                                     campName={currentCamp.name}

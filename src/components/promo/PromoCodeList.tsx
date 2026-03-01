@@ -58,7 +58,7 @@ export default React.memo(function PromoCodeList({ userRole, organizerCamps = []
 
       if (response.ok) {
         setPromoCodes(data.promoCodes || data || []);
-        console.log('✅ Fetched', (data.promoCodes || data || []).length, 'promo codes');
+        console.log('Fetched', (data.promoCodes || data || []).length, 'promo codes');
       } else {
         toast.error('ไม่สามารถโหลดข้อมูลได้');
         hasFetchedRef.current = false; // reset ถ้า error

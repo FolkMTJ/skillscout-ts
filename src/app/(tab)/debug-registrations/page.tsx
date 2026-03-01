@@ -187,7 +187,7 @@ function StatusChip({ status }: { status: string }) {
     attended: {
       color: 'success',
       icon: <FiCheckCircle />,
-      label: '✅ เข้าร่วมแล้ว'
+      label: 'เข้าร่วมแล้ว'
     },
     confirmed: {
       color: 'primary',

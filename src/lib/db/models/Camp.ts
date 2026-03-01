@@ -190,41 +190,83 @@ export class CampModel {
     return this.toPublic(camp);
   }
 
-  static async findAll(options?: { featured?: boolean }): Promise<Camp[]> {
+  private static activeFilter(): Filter<CampDoc> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return {
+      status: 'active',
+      registrationDeadline: { $gte: today },
+      $expr: { $lt: [{ $ifNull: ['$enrolled', 0] }, { $ifNull: ['$capacity', '$participantCount'] }] },
+    } as unknown as Filter<CampDoc>;
+  }
+
+  static async findAll(options?: { featured?: boolean; activeOnly?: boolean }): Promise<Camp[]> {
     const collection = await getCollection<CampDoc>(this.collectionName);
-    const filter: Filter<CampDoc> = (options?.featured ? { featured: true } : {}) as Filter<CampDoc>;
-    
+    let filter: Filter<CampDoc>;
+    if (options?.activeOnly) {
+      filter = options?.featured
+        ? { ...this.activeFilter(), featured: true } as unknown as Filter<CampDoc>
+        : this.activeFilter();
+    } else {
+      filter = (options?.featured ? { featured: true } : {}) as Filter<CampDoc>;
+    }
+
     const camps = await collection
       .find(filter)
       .sort({ createdAt: -1 })
       .toArray();
-    
+
     return camps.map(doc => this.toPublic(doc));
   }
 
-  static async findByCategory(category: string): Promise<Camp[]> {
+  static async findByCategory(category: string, options?: { activeOnly?: boolean }): Promise<Camp[]> {
     const collection = await getCollection<CampDoc>(this.collectionName);
-    const filter: Filter<CampDoc> = { category } as Filter<CampDoc>;
-    
+    const base = options?.activeOnly ? this.activeFilter() : {};
+    const filter: Filter<CampDoc> = { ...base, category } as unknown as Filter<CampDoc>;
+
     const camps = await collection
       .find(filter)
       .sort({ createdAt: -1 })
       .toArray();
-    
+
     return camps.map(doc => this.toPublic(doc));
   }
 
-  static async search(query: string): Promise<Camp[]> {
+  static async search(query: string, options?: { activeOnly?: boolean }): Promise<Camp[]> {
     const collection = await getCollection<CampDoc>(this.collectionName);
+    const base = options?.activeOnly ? this.activeFilter() : {};
     const filter: Filter<CampDoc> = {
+      ...base,
       $or: [
         { name: { $regex: query, $options: 'i' } },
         { description: { $regex: query, $options: 'i' } },
         { category: { $regex: query, $options: 'i' } },
       ],
-    } as Filter<CampDoc>;
-    
+    } as unknown as Filter<CampDoc>;
+
     const camps = await collection.find(filter).toArray();
+    return camps.map(doc => this.toPublic(doc));
+  }
+
+  /** ค่ายที่ deadline ใกล้ที่สุด (active + not full) */
+  static async findUrgent(limit: number = 6): Promise<Camp[]> {
+    const collection = await getCollection<CampDoc>(this.collectionName);
+    const camps = await collection
+      .find(this.activeFilter())
+      .sort({ registrationDeadline: 1 })
+      .limit(limit)
+      .toArray();
+    return camps.map(doc => this.toPublic(doc));
+  }
+
+  /** ค่าย trending (views สูงสุด, active + not full) */
+  static async findTrending(limit: number = 6): Promise<Camp[]> {
+    const collection = await getCollection<CampDoc>(this.collectionName);
+    const camps = await collection
+      .find(this.activeFilter())
+      .sort({ views: -1, avgRating: -1 })
+      .limit(limit)
+      .toArray();
     return camps.map(doc => this.toPublic(doc));
   }
 

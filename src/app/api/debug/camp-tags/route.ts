@@ -37,7 +37,7 @@ export async function GET() {
       })
       .toArray();
 
-    console.log('✅ Found', registrations.length, 'confirmed/approved registrations');
+    console.log('Found', registrations.length, 'confirmed/approved registrations');
 
     // ดึงข้อมูลค่าย
     const campIds = registrations.map(r => {
@@ -53,13 +53,13 @@ export async function GET() {
       }
     }).filter(id => id !== null);
 
-    console.log('🔍 Searching for camps:', campIds.map(id => id?.toString()));
+    console.log('Searching for camps:', campIds.map(id => id?.toString()));
 
     const camps = await campsCollection
       .find({ _id: { $in: campIds } })
       .toArray();
 
-    console.log('✅ Found camps:', camps.length);
+    console.log('Found camps:', camps.length);
     console.log('Camp names:', camps.map(c => c.name));
 
     return NextResponse.json({

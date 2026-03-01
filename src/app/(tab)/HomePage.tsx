@@ -89,42 +89,20 @@ export default function HomePage() {
       try {
         setLoading(true);
 
-        // Fetch all camps
-        const response = await fetch('/api/camps');
-        if (!response.ok) throw new Error('Failed to fetch camps');
+        // Fetch only what we need — server does filtering + sorting + limiting
+        const [urgentRes, trendingRes] = await Promise.all([
+          fetch('/api/camps?type=urgent&limit=6'),
+          fetch('/api/camps?type=trending&limit=6'),
+        ]);
 
-        const camps: Camp[] = await response.json();
-
-        // Filter out full camps (where enrolled >= capacity)
-        const availableCamps = camps.filter(camp => {
-          const capacity = camp.capacity || camp.participantCount || 0;
-          const enrolled = camp.enrolled || 0;
-          return enrolled < capacity;
-        });
-
-        // Sort by deadline (closest first) for urgent camps
-        const urgent = [...availableCamps]
-          .filter(camp => camp.deadline || camp.registrationDeadline) // Only camps with deadline
-          .sort((a, b) => {
-            const dateA = new Date(a.registrationDeadline || a.deadline).getTime();
-            const dateB = new Date(b.registrationDeadline || b.deadline).getTime();
-            return dateA - dateB;
-          })
-          .slice(0, 6)
-          .map(campToCampData);
-
-        // For trending, sort by views (highest first)
-        const trending = [...availableCamps]
-          .sort((a, b) => {
-            const viewsA = a.views || 0;
-            const viewsB = b.views || 0;
-            return viewsB - viewsA;
-          })
-          .slice(0, 6)
-          .map(campToCampData);
-
-        setUrgentCamps(urgent);
-        setTrendingCamps(trending);
+        if (urgentRes.ok) {
+          const urgentData: Camp[] = await urgentRes.json();
+          setUrgentCamps(urgentData.map(campToCampData));
+        }
+        if (trendingRes.ok) {
+          const trendingData: Camp[] = await trendingRes.json();
+          setTrendingCamps(trendingData.map(campToCampData));
+        }
       } catch (error) {
         console.error('Error fetching camps:', error);
       } finally {

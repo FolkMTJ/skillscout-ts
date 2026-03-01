@@ -1,7 +1,10 @@
 // src/app/api/camps/[id]/reviews/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { CampModel } from '@/lib/db/models/Camp';
-import { Review } from '@/types';
+import { RegistrationModel } from '@/lib/db/models/Registration';
+import { RegistrationStatus, Review } from '@/types';
 
 interface RouteParams {
   params: Promise<{
@@ -16,6 +19,28 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
+
+    // ต้อง login ก่อน
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: 'กรุณาเข้าสู่ระบบก่อนเขียนรีวิว' },
+        { status: 401 }
+      );
+    }
+
+    // ต้องมี registration status = attended เท่านั้น
+    const registrations = await RegistrationModel.findByUser(session.user.email);
+    const attended = registrations.find(
+      r => r.campId === id && r.status === RegistrationStatus.ATTENDED
+    );
+    if (!attended) {
+      return NextResponse.json(
+        { error: 'ต้องเข้าร่วมค่าย (สแกนบัตรเข้างาน) ก่อนจึงจะเขียนรีวิวได้' },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
 
     // Validate required fields

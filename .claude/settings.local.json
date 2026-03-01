@@ -5,7 +5,9 @@
       "Bash(ls \"d:/skillscout-ts/src/app/\\(tab\\)/allcamps/\")",
       "Bash(cat \"d:/skillscout-ts/src/app/\\(tab\\)/allcamps/AllCampsContent.tsx\")",
       "Bash(ls \"d:/skillscout-ts/src/components/\\(card\\)/\")",
-      "Bash(ls /d/skillscout-ts/src/app/\\\\\\(tab\\\\\\)/organizer/)"
+      "Bash(ls /d/skillscout-ts/src/app/\\\\\\(tab\\\\\\)/organizer/)",
+      "Bash(npm install html5-qrcode)",
+      "Bash(grep -n \"access control\\\\|auth\\\\|session\" /d/skillscout-ts/src/app/api/camps/[id]/reviews/route.ts)"
     ]
   }
 }

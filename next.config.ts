@@ -4,7 +4,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: true, // ✅ เปิดให้ skip TypeScript errors
+    ignoreBuildErrors: true, // เปิดให้ skip TypeScript errors
   },
   images: {
     remotePatterns: [

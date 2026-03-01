@@ -84,7 +84,7 @@ export async function sendPortfolioApprovalEmail(
   const mailOptions = {
     from: `"SkillScout" <${process.env.EMAIL_USER}>`,
     to: email,
-    subject: `✅ Portfolio ผ่านการตรวจสอบ — ${campName}`,
+    subject: `Portfolio ผ่านการตรวจสอบ — ${campName}`,
     html: `
 <!DOCTYPE html>
 <html>
@@ -104,16 +104,16 @@ export async function sendPortfolioApprovalEmail(
     <div class="container">
       <div class="header">
         <h1>SkillScout</h1>
-        <p>Portfolio ผ่านการตรวจสอบแล้ว! 🎉</p>
+        <p>Portfolio ผ่านการตรวจสอบแล้ว!</p>
       </div>
       <div class="content">
         <p>สวัสดี <strong>${userName}</strong>,</p>
         <p>ยินดีด้วย! Portfolio ของคุณสำหรับค่าย <strong>${campName}</strong> ผ่านการตรวจสอบจาก Organizer แล้ว</p>
         <div class="highlight">
           ${isPaid
-            ? '<p style="margin:0">👉 <strong>ขั้นตอนต่อไป:</strong> กลับไปที่หน้าค่ายเพื่อ<strong>ชำระเงิน</strong>และรับ Ticket ของคุณ</p>'
-            : '<p style="margin:0">👉 <strong>ขั้นตอนต่อไป:</strong> กลับไปที่หน้าค่ายเพื่อรับ<strong>Ticket</strong> ฟรีของคุณ</p>'
-          }
+        ? '<p style="margin:0"> <strong>ขั้นตอนต่อไป:</strong> กลับไปที่หน้าค่ายเพื่อ<strong>ชำระเงิน</strong>และรับ Ticket ของคุณ</p>'
+        : '<p style="margin:0"> <strong>ขั้นตอนต่อไป:</strong> กลับไปที่หน้าค่ายเพื่อรับ<strong>Ticket</strong> ฟรีของคุณ</p>'
+      }
         </div>
         <div style="text-align:center">
           <a href="${campUrl}" class="btn">ไปที่หน้าค่าย →</a>

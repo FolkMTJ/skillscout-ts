@@ -1,8 +1,8 @@
 // src/app/api/payment/verify-slip/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'crypto';
-import { PaymentModel } from '@/lib/db/models';
-import { PaymentStatus } from '@/types';
+import { PaymentModel, RegistrationModel } from '@/lib/db/models';
+import { PaymentStatus, RegistrationStatus } from '@/types';
 
 const RDCW_API = 'https://suba.rdcw.co.th/v1/inquiry';
 
@@ -21,22 +21,6 @@ interface RdcwData {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-
-function normalizeName(name: string): string {
-  const prefixes = ['นาย', 'นางสาว', 'น.ส.', 'นาง', 'ด.ช.', 'ด.ญ.', 'Mr.', 'Mrs.', 'Ms.', 'Miss'];
-  let s = name.trim();
-  for (const p of prefixes) {
-    if (s.startsWith(p)) { s = s.slice(p.length).trim(); break; }
-  }
-  return s.replace(/\s+/g, '').toLowerCase();
-}
-
-function namesMatch(slipName: string, paymentName: string): boolean {
-  if (!slipName || !paymentName) return true;
-  const a = normalizeName(slipName);
-  const b = normalizeName(paymentName);
-  return a.includes(b) || b.includes(a);
-}
 
 // Parse YYYYMMDD or DD/MM/YYYY — handles Buddhist Era (BE = CE + 543)
 function parseSlipDateTime(dateStr: string, timeStr: string): Date | null {
@@ -139,13 +123,21 @@ export async function POST(request: NextRequest) {
       if (!res.ok) throw new Error(`RDCW HTTP ${res.status}`);
       const rdcw = await res.json();
       console.log('[RDCW raw response]', JSON.stringify(rdcw, null, 2));
-      if (!rdcw.success || !rdcw.data) throw new Error('RDCW returned no data');
+      if (!rdcw.valid || !rdcw.data) {
+        const rdcwMsg = rdcw.message || rdcw.error || rdcw.reason || '';
+        return NextResponse.json({
+          success: false,
+          error: rdcwMsg
+            ? `RDCW: ${rdcwMsg}`
+            : 'QR Code ในสลิปไม่ถูกต้องหรือหมดอายุ กรุณาใช้สลิปที่ถูกต้อง',
+        });
+      }
       rdcwData = rdcw.data;
     } catch (err) {
       console.error('RDCW error:', err);
       return NextResponse.json({
         success: false,
-        error: 'ไม่สามารถตรวจสอบสลิปได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง',
+        error: 'ไม่สามารถเชื่อมต่อระบบตรวจสอบสลิปได้ กรุณาลองใหม่อีกครั้ง',
       });
     }
 
@@ -190,15 +182,7 @@ export async function POST(request: NextRequest) {
       console.warn('[RDCW] Cannot parse slip date/time:', { dateStr, timeStr });
     }
 
-    // ── 4. Sender name ───────────────────────────────────────────────────────
-    if (senderName && !namesMatch(senderName, payment.userName ?? '')) {
-      return NextResponse.json({
-        success: false,
-        error: `ชื่อผู้โอน "${senderName}" ไม่ตรงกับชื่อผู้จอง "${payment.userName}" กรุณาโอนด้วยชื่อบัญชีของผู้จองเท่านั้น`,
-      });
-    }
-
-    // ── ✅ All checks passed ─────────────────────────────────────────────────
+    // ── All checks passed ─────────────────────────────────────────────────
     await PaymentModel.updateStatus(paymentId, PaymentStatus.COMPLETED, {
       slipVerified: true,
       requiresManualReview: false,
@@ -209,6 +193,14 @@ export async function POST(request: NextRequest) {
       verifiedAt: new Date(),
       verifiedBy: 'rdcw-auto',
     });
+
+    // อัปเดต registration status → confirmed เพื่อให้ปุ่มรับ Ticket โชว์
+    await RegistrationModel.updateStatus(
+      payment.registrationId,
+      RegistrationStatus.CONFIRMED,
+      'rdcw-auto',
+      'ชำระเงินสำเร็จ (ยืนยันอัตโนมัติ)'
+    );
 
     return NextResponse.json({
       success: true,

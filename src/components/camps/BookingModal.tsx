@@ -134,15 +134,49 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, existingPaymentId, existingRegistrationId]);
 
-  // ready_to_pay: portfolio approved, no payment yet → go to step 2 to show QR
+  // ready_to_pay: portfolio approved, no payment yet → go to step 1 to allow promo code
   useEffect(() => {
     if (isOpen && existingRegistrationId && !existingPaymentId) {
       setRegistrationId(existingRegistrationId);
-      setStep(2);
-      generateQRCode();
+      if (session?.user) {
+        setFormData({
+          name: session.user.name || '',
+          email: session.user.email || '',
+          phone: '',
+        });
+      }
+      setStep(1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, existingRegistrationId, existingPaymentId]);
+
+  // Auto-apply saved promo code when modal opens
+  useEffect(() => {
+    if (!isOpen || isPortfolioMode || basePrice === 0 || promoApplied) return;
+    const saved = localStorage.getItem('skillscout_promo');
+    if (!saved) return;
+
+    setPromoCode(saved);
+    fetch('/api/payment/validate-promo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: saved, amount: basePrice, campId: camp._id }),
+    })
+      .then(r => r.json())
+      .then(result => {
+        if (result.valid) {
+          setDiscount(result.discount);
+          setPromoApplied(true);
+          setPromoMessage(`ส่วนลด ฿${result.discount.toLocaleString()}`);
+        } else {
+          // โค้ดหมดอายุหรือใช้ไม่ได้กับค่ายนี้ → ล้างออก
+          localStorage.removeItem('skillscout_promo');
+          setPromoCode('');
+        }
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const handleValidatePromo = async () => {
     if (!promoCode.trim()) {
@@ -170,6 +204,7 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
         setDiscount(result.discount);
         setPromoApplied(true);
         setPromoMessage(`ส่วนลด ฿${result.discount.toLocaleString()}`);
+        localStorage.setItem('skillscout_promo', promoCode.trim().toUpperCase());
         toast.success(`ใช้โค้ดสำเร็จ! ลด ฿${result.discount.toLocaleString()}`);
       } else {
         setDiscount(0);
@@ -191,6 +226,7 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
     setPromoApplied(false);
     setDiscount(0);
     setPromoMessage('');
+    localStorage.removeItem('skillscout_promo');
     toast.success('ยกเลิกโค้ดส่วนลด');
   };
 
@@ -221,19 +257,27 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
     setError('');
 
     try {
-      // Optional file upload
+      // Optional file upload (image or PDF)
       let fileUrl = '';
       if (portfolioFile) {
+        const isPdf = portfolioFile.type === 'application/pdf';
+        const resourceType = isPdf ? 'raw' : 'image';
         const fd = new FormData();
         fd.append('file', portfolioFile);
         fd.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'skillscout');
         const uploadRes = await fetch(
-          `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/auto/upload`,
+          `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`,
           { method: 'POST', body: fd }
         );
         if (uploadRes.ok) {
           const uploadData = await uploadRes.json();
           fileUrl = uploadData.secure_url;
+        } else {
+          const errData = await uploadRes.json().catch(() => ({}));
+          console.error('Portfolio file upload failed:', errData);
+          toast.error('อัปโหลดไฟล์ไม่สำเร็จ กรุณาลองใหม่หรือเลือกไฟล์อื่น');
+          setIsSubmitting(false);
+          return;
         }
       }
 
@@ -444,8 +488,9 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
             userName: formData.name || session?.user?.name,
             organizerId: camp.organizerId || 'default-organizer',
             amount: basePrice,
-            discount: 0,
-            finalAmount: basePrice,
+            discount: discount,
+            finalAmount: finalPrice,
+            promoCode: promoApplied ? promoCode : undefined,
           }),
         });
         if (!paymentResponse.ok) throw new Error('ไม่สามารถสร้างรายการชำระเงินได้');
@@ -729,8 +774,8 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
                     </div>
                   </div>
 
-                  {/* Inputs */}
-                  <div className="space-y-4">
+                  {/* Inputs — ซ่อนเมื่อ ready_to_pay (ลงทะเบียนแล้ว รอชำระเงิน) */}
+                  {!registrationId && <div className="space-y-4">
                     <Input
                       label="ชื่อ-นามสกุล"
                       placeholder="กรอกชื่อจริง"
@@ -765,7 +810,7 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
                         classNames={{ inputWrapper: "border-gray-200 focus-within:!border-[#F2B33D]" }}
                       />
                     </div>
-                  </div>
+                  </div>}
 
                   {/* Portfolio Section */}
                   {isPortfolioMode && (

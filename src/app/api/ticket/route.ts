@@ -105,9 +105,9 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      // ✅ ถ้าใช้ส่วนลด 100% (finalAmount = 0) → ให้ ticket ทันที ไม่ต้องรอ approve
+      // ถ้าใช้ส่วนลด 100% (finalAmount = 0) → ให้ ticket ทันที ไม่ต้องรอ approve
       if (payment.finalAmount === 0) {
-        console.log('✅ Discount 100% applied - auto-approve and skip verification');
+        console.log('Discount 100% applied - auto-approve and skip verification');
         // Auto-approve registration ถ้ายังเป็น pending (กรณีที่ PATCH ยังไม่เสร็จ)
         if (registration.status === 'pending') {
           await RegistrationModel.updateStatus(
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
             'system',
             'Auto-approved: ใช้ส่วนลด 100% ราคาสุทธิ ฿0'
           );
-          console.log('✅ Auto-approved registration for 100% discount');
+          console.log('Auto-approved registration for 100% discount');
         }
         // Skip ทั้ง payment check และ registration check → ให้ ticket ทันที
         // ไปต่อที่ generate QR (ไม่ return error)
@@ -160,8 +160,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('✅ Registration is confirmed/approved');
-    console.log('✅ All checks passed - can get ticket');
+    console.log('Registration is confirmed/approved');
+    console.log('All checks passed - can get ticket');
 
     // Generate verification URL (สแกนแล้วเปิดหน้า verify)
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;

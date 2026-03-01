@@ -46,8 +46,8 @@ export async function GET() {
     const registrationsCollection = db.collection('registrations') as Collection<Registration>;
     const campsCollection = db.collection('camps') as Collection<Camp>;
 
-    // 🔍 ค้นหาทั้ง ObjectId, string userId, และ email
-    // ⚠️ เฉพาะค่ายที่เข้าร่วมจริงแล้ว (attended) เท่านั้น
+    //  ค้นหาทั้ง ObjectId, string userId, และ email
+    //  เฉพาะค่ายที่เข้าร่วมจริงแล้ว (attended) เท่านั้น
     const registrations = await registrationsCollection
       .find({
         $or: [
@@ -55,7 +55,7 @@ export async function GET() {
           { userId: userId } as never,
           { userEmail: userEmail } as never
         ],
-        status: 'attended' // ✅ เฉพาะที่เข้าร่วมแล้วเท่านั้น
+        status: 'attended' //  เฉพาะที่เข้าร่วมแล้วเท่านั้น
       })
       .toArray();
 

@@ -95,6 +95,16 @@ interface PayoutPayment {
   campName?: string;
 }
 
+interface PayoutGroup {
+  organizerId: string;
+  organizerAccountName: string;
+  organizerPromptpay: string;
+  totalNet: number;
+  totalPlatformFee: number;
+  totalFinalAmount: number;
+  payments: PayoutPayment[];
+}
+
 interface Camp {
   _id: string;
   name: string;
@@ -146,11 +156,11 @@ export default function AdminDashboard() {
     totalPlatformFee: number; totalOrganizerNet: number;
     pendingTotal: number; paidOutTotal: number; pendingCount: number; paidOutCount: number;
   } | null>(null);
-  const [payoutPending, setPayoutPending] = useState<PayoutPayment[]>([]);
+  const [payoutGroups, setPayoutGroups] = useState<PayoutGroup[]>([]);
   const [payoutHistory, setPayoutHistory] = useState<PayoutPayment[]>([]);
   const [payoutLoading, setPayoutLoading] = useState(false);
   const [payoutSubTab, setPayoutSubTab] = useState('pending');
-  const [payoutConfirm, setPayoutConfirm] = useState<PayoutPayment | null>(null);
+  const [payoutGroupConfirm, setPayoutGroupConfirm] = useState<PayoutGroup | null>(null);
   const [payoutNote, setPayoutNote] = useState('');
   const [payoutMarking, setPayoutMarking] = useState(false);
 
@@ -234,24 +244,26 @@ export default function AdminDashboard() {
       if (!res.ok) return;
       const data = await res.json();
       setPayoutSummary(data.summary);
-      setPayoutPending(data.pending || []);
+      setPayoutGroups(data.pendingGrouped || []);
       setPayoutHistory(data.history || []);
     } catch { /* ignore */ }
     finally { setPayoutLoading(false); }
   };
 
   const handleMarkPaidOut = async () => {
-    if (!payoutConfirm) return;
+    if (!payoutGroupConfirm) return;
     setPayoutMarking(true);
     try {
+      const paymentIds = payoutGroupConfirm.payments.map(p => p._id);
       const res = await fetch('/api/admin/payouts', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paymentId: payoutConfirm._id, note: payoutNote }),
+        body: JSON.stringify({ paymentIds, note: payoutNote }),
       });
       if (!res.ok) throw new Error('Failed');
-      toast.success(`โอนเงินให้ ${payoutConfirm.organizerAccountName || 'Organizer'} สำเร็จ`);
-      setPayoutConfirm(null);
+      const n = paymentIds.length;
+      toast.success(`โอนเงินให้ ${payoutGroupConfirm.organizerAccountName || 'Organizer'} สำเร็จ (${n} รายการ)`);
+      setPayoutGroupConfirm(null);
       setPayoutNote('');
       await fetchPayouts();
     } catch { toast.error('เกิดข้อผิดพลาด'); }
@@ -775,7 +787,7 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-        {/* Stats Cards - ✅ แก้ไขใช้ StatCard component */}
+        {/* Stats Cards - แก้ไขใช้ StatCard component */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <StatCard
             title="ผู้ใช้ทั้งหมด"
@@ -1271,9 +1283,9 @@ export default function AdminDashboard() {
               <div className="flex items-center gap-1.5">
                 <FiDollarSign size={13} />
                 <span>Payouts</span>
-                {payoutPending.length > 0 && (
+                {payoutGroups.length > 0 && (
                   <span className="w-4 h-4 bg-orange-500 text-white text-[9px] rounded-full flex items-center justify-center font-bold">
-                    {payoutPending.length}
+                    {payoutGroups.length}
                   </span>
                 )}
               </div>
@@ -1293,9 +1305,9 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-2 mb-1">
                           <FiClock size={14} className={payoutSubTab === 'pending' ? 'text-[#F2B33D]' : 'text-gray-400'} />
                           <span className="text-xs font-medium text-gray-500">รอโอน</span>
-                          {payoutPending.length > 0 && (
+                          {payoutGroups.length > 0 && (
                             <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-full">
-                              {payoutSummary?.pendingCount ?? payoutPending.length} รายการ
+                              {payoutSummary?.pendingCount ?? payoutGroups.reduce((s, g) => s + g.payments.length, 0)} รายการ
                             </span>
                           )}
                         </div>
@@ -1337,44 +1349,60 @@ export default function AdminDashboard() {
                       </p>
                     )}
 
-                    {/* Pending */}
+                    {/* Pending — grouped by organizer */}
                     {payoutSubTab === 'pending' && (
                       <div className="space-y-3">
-                        {payoutPending.length === 0 ? (
+                        {payoutGroups.length === 0 ? (
                           <div className="rounded-2xl bg-white border border-gray-100 text-center flex flex-col items-center justify-center" style={{ minHeight: 400 }}>
                             <FiCheckCircle className="w-10 h-10 text-green-400 mb-3" />
                             <p className="text-gray-500 text-sm font-medium">ไม่มีรายการรอโอน</p>
                           </div>
-                        ) : payoutPending.map(p => (
-                          <div key={p._id} className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <div className="w-8 h-8 rounded-full bg-[#F2B33D]/10 flex items-center justify-center shrink-0">
-                                    <FiUser size={14} className="text-[#F2B33D]" />
+                        ) : payoutGroups.map(g => (
+                          <div key={g.organizerId} className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
+                            {/* Header: organizer | total amount + button */}
+                            <div className="flex items-center justify-between gap-3 mb-3">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="w-9 h-9 rounded-full bg-[#F2B33D]/10 flex items-center justify-center shrink-0">
+                                  <FiUser size={15} className="text-[#F2B33D]" />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <p className="font-bold text-sm text-gray-900 truncate">{g.organizerAccountName || 'Organizer'}</p>
+                                    <span className="px-2 py-0.5 bg-orange-100 text-orange-600 text-[10px] font-bold rounded-full shrink-0">รอโอน</span>
                                   </div>
-                                  <div>
-                                    <p className="font-semibold text-sm text-gray-900">{p.organizerAccountName || 'Organizer'}</p>
-                                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                                      <FiSmartphone size={10} />
-                                      <span className="font-mono">{p.organizerPromptpay || '—'}</span>
-                                    </div>
+                                  <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+                                    <FiSmartphone size={10} />
+                                    <span className="font-mono">{g.organizerPromptpay || '—'}</span>
                                   </div>
                                 </div>
-                                <div className="bg-gray-50 rounded-xl p-3 space-y-1.5 text-xs">
-                                  <div className="flex justify-between text-gray-500"><span>ผู้จ่าย</span><span className="font-medium text-gray-700">{p.userName}</span></div>
-                                  <div className="flex justify-between text-gray-500"><span>ยอดรับมา</span><span className="font-semibold text-gray-800">฿{p.finalAmount.toLocaleString()}</span></div>
-                                  <div className="flex justify-between text-gray-500"><span>Platform fee ({p.platformFeePercent}%)</span><span className="text-[#F2B33D] font-semibold">-฿{(p.platformFee ?? 0).toLocaleString()}</span></div>
-                                  <div className="flex justify-between border-t border-gray-200 pt-1.5"><span className="font-semibold text-gray-700">ต้องโอนให้ Organizer</span><span className="font-black text-green-600 text-sm">฿{(p.organizerNet ?? 0).toLocaleString()}</span></div>
-                                </div>
-                                <p className="text-[10px] text-gray-400 mt-2">ชำระเมื่อ {fmtDate(p.createdAt)}</p>
                               </div>
-                              <div className="shrink-0 flex flex-col items-end gap-2">
-                                <span className="px-2 py-0.5 bg-orange-100 text-orange-600 text-[10px] font-bold rounded-full">รอโอน</span>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <p className="font-black text-green-600 text-base">฿{g.totalNet.toLocaleString()}</p>
                                 <Button size="sm" className="bg-green-500 text-white font-semibold text-xs"
-                                  onPress={() => { setPayoutConfirm(p); setPayoutNote(''); }}
+                                  onPress={() => { setPayoutGroupConfirm(g); setPayoutNote(''); }}
                                   startContent={<FiCheck size={13} />}>โอนแล้ว</Button>
                               </div>
+                            </div>
+                            {/* Payment rows */}
+                            <div className="bg-gray-50 rounded-xl overflow-hidden text-xs">
+                              <div className="px-3 py-2 border-b border-gray-100 flex justify-between">
+                                <span className="font-semibold text-gray-500">{g.payments.length} รายการ · รับรวม ฿{g.totalFinalAmount.toLocaleString()}</span>
+                                <span className="text-[#F2B33D] font-semibold">Platform ฿{g.totalPlatformFee.toLocaleString()}</span>
+                              </div>
+                              {g.payments.map((p, i) => (
+                                <div key={p._id} className={`px-3 py-2 flex items-center justify-between ${i < g.payments.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className="text-gray-400 shrink-0">{i + 1}.</span>
+                                    <span className="font-medium text-gray-700 truncate">{p.userName || '—'}</span>
+                                  </div>
+                                  <div className="flex items-center gap-3 shrink-0 text-gray-500">
+                                    <span>{new Date(p.createdAt).toLocaleString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                                    <span className="font-semibold text-gray-800 w-14 text-right">฿{p.finalAmount.toLocaleString()}</span>
+                                    <span className="text-[#F2B33D] w-10 text-right">-฿{(p.platformFee ?? 0).toLocaleString()}</span>
+                                    <span className="font-bold text-green-600 w-12 text-right">฿{(p.organizerNet ?? 0).toLocaleString()}</span>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
                           </div>
                         ))}
@@ -1592,21 +1620,33 @@ export default function AdminDashboard() {
       </div>
 
       {/* Payout Confirm Modal */}
-      <Modal isOpen={!!payoutConfirm} onClose={() => { setPayoutConfirm(null); setPayoutNote(''); }} size="sm"
+      <Modal isOpen={!!payoutGroupConfirm} onClose={() => { setPayoutGroupConfirm(null); setPayoutNote(''); }} size="sm"
         classNames={{ base: 'bg-white rounded-3xl', header: 'border-b border-gray-100 px-5 py-4', body: 'p-5', footer: 'border-t border-gray-100 px-5 py-4 bg-gray-50' }}>
         <ModalContent>
           <ModalHeader><h3 className="text-base font-bold text-gray-900">ยืนยันการโอนเงิน</h3></ModalHeader>
           <ModalBody>
-            {payoutConfirm && (
+            {payoutGroupConfirm && (
               <div className="space-y-4">
                 <div className="bg-green-50 rounded-2xl p-4 text-center">
                   <p className="text-xs text-gray-500 mb-1">จำนวนเงินที่โอน</p>
-                  <p className="text-3xl font-black text-green-600">฿{(payoutConfirm.organizerNet ?? 0).toLocaleString()}</p>
-                  <p className="text-xs text-gray-400 mt-1">หัก {payoutConfirm.platformFeePercent}% platform fee (฿{(payoutConfirm.platformFee ?? 0).toLocaleString()})</p>
+                  <p className="text-3xl font-black text-green-600">฿{payoutGroupConfirm.totalNet.toLocaleString()}</p>
+                  <p className="text-xs text-gray-400 mt-1">จาก {payoutGroupConfirm.payments.length} รายการ · Platform ฿{payoutGroupConfirm.totalPlatformFee.toLocaleString()}</p>
                 </div>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-gray-500">โอนให้</span><span className="font-semibold">{payoutConfirm.organizerAccountName || '—'}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">PromptPay</span><span className="font-mono">{payoutConfirm.organizerPromptpay || '—'}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">โอนให้</span><span className="font-semibold">{payoutGroupConfirm.organizerAccountName || '—'}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">PromptPay</span><span className="font-mono">{payoutGroupConfirm.organizerPromptpay || '—'}</span></div>
+                </div>
+                {/* รายละเอียดผู้จ่าย */}
+                <div className="bg-gray-50 rounded-xl overflow-hidden text-xs">
+                  {payoutGroupConfirm.payments.map((p, i) => (
+                    <div key={p._id} className={`px-3 py-2 flex justify-between ${i < payoutGroupConfirm.payments.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                      <span className="text-gray-600 truncate max-w-[130px]">{p.userName || '—'}</span>
+                      <div className="flex items-center gap-2 shrink-0 text-gray-500">
+                        <span>{new Date(p.createdAt).toLocaleString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className="font-semibold text-green-600">฿{(p.organizerNet ?? 0).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
                 <Input label="หมายเหตุ (ไม่บังคับ)" placeholder="เช่น โอนผ่าน SCB" value={payoutNote} onValueChange={setPayoutNote}
                   classNames={{ inputWrapper: 'bg-gray-50 border-none' }} />
@@ -1614,7 +1654,7 @@ export default function AdminDashboard() {
             )}
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" className="text-gray-500" onPress={() => { setPayoutConfirm(null); setPayoutNote(''); }}>ยกเลิก</Button>
+            <Button variant="light" className="text-gray-500" onPress={() => { setPayoutGroupConfirm(null); setPayoutNote(''); }}>ยกเลิก</Button>
             <Button className="bg-green-500 text-white font-semibold" onPress={handleMarkPaidOut} isLoading={payoutMarking} startContent={!payoutMarking && <FiCheck size={16} />}>ยืนยันโอนแล้ว</Button>
           </ModalFooter>
         </ModalContent>

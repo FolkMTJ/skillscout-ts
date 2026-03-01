@@ -1,61 +1,46 @@
 // src/app/api/camps/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { CampModel } from '@/lib/db/models/Camp';
-import { Camp } from '@/types';
 import { createCampSchema } from '@/lib/validation/schemas';
 import { sanitizeString } from '@/lib/utils/sanitize';
 import { rateLimit, getRateLimitKey } from '@/lib/middleware/rateLimit';
+import { ensureIndexes } from '@/lib/db/ensureIndexes';
 
 // GET /api/camps
+// Params: category, featured, search, includeAll, type (urgent|trending), limit
 export async function GET(request: NextRequest) {
+  await ensureIndexes();
+
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
     const featured = searchParams.get('featured');
     const search = searchParams.get('search');
     const includeAll = searchParams.get('includeAll');
+    const type = searchParams.get('type'); // 'urgent' | 'trending'
+    const limitParam = searchParams.get('limit');
+    const limit = limitParam ? parseInt(limitParam) : undefined;
 
     let camps;
 
-    if (search) {
-      camps = await CampModel.search(search);
+    if (type === 'urgent') {
+      // ค่ายที่ deadline ใกล้ที่สุด กรองใน DB ทันที
+      camps = await CampModel.findUrgent(limit ?? 6);
+    } else if (type === 'trending') {
+      // ค่ายที่ views สูงสุด กรองใน DB ทันที
+      camps = await CampModel.findTrending(limit ?? 6);
+    } else if (search) {
+      camps = await CampModel.search(search, { activeOnly: !includeAll });
     } else if (category) {
-      camps = await CampModel.findByCategory(category);
+      camps = await CampModel.findByCategory(category, { activeOnly: !includeAll });
     } else if (featured === 'true') {
       camps = await CampModel.getFeatured();
     } else {
-      camps = await CampModel.findAll();
+      camps = await CampModel.findAll({ activeOnly: !includeAll });
     }
 
-    // 🔧 FIX BUG 6: กรองค่ายที่หมดเขตและเต็มแล้ว
-    if (!includeAll) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      camps = camps.filter((camp: Camp) => {
-        // กรอง status ที่ไม่ใช่ active (showcase_hidden ก็ถูกกรองออก)
-        if (camp.status !== 'active') {
-          return false;
-        }
-
-        // กรองค่ายที่หมดเขตรับสมัครแล้ว
-        if (camp.registrationDeadline) {
-          const deadline = new Date(camp.registrationDeadline);
-          deadline.setHours(0, 0, 0, 0);
-          if (deadline < today) {
-            return false;
-          }
-        }
-
-        // กรองค่ายที่เต็มแล้ว (enrolled >= capacity)
-        const capacity = camp.capacity || camp.participantCount || 0;
-        const enrolled = camp.enrolled || 0;
-        if (enrolled >= capacity) {
-          return false;
-        }
-
-        return true;
-      });
+    if (limit && type !== 'urgent' && type !== 'trending') {
+      camps = camps.slice(0, limit);
     }
 
     return NextResponse.json(camps);

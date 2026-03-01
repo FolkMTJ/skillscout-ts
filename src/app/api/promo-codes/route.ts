@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
       session.user.id
     );
 
-    console.log('✅ Promo code created successfully:', promoCode);
+    console.log('Promo code created successfully:', promoCode);
 
     return NextResponse.json(promoCode, { status: 201 });
   } catch (error) {

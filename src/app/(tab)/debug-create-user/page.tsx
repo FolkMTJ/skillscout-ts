@@ -138,7 +138,7 @@ export default function CreateTestUserPage() {
 
                 {/* Registrations */}
                 <div className="bg-white p-4 rounded border-2 border-green-300 mb-4">
-                  <h3 className="font-bold mb-3 text-green-900">✅ Registrations:</h3>
+                  <h3 className="font-bold mb-3 text-green-900">Registrations:</h3>
                   <p className="mb-2">สร้าง/อัปเดต <strong>{result.registrations.created}</strong> รายการ</p>
                   {result.registrations.details.length > 0 && (
                     <ul className="space-y-1 text-sm">

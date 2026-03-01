@@ -1,12 +1,31 @@
 // src/app/api/ticket/verify/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { RegistrationModel } from '@/lib/db/models/Registration';
 import { CampModel } from '@/lib/db/models/Camp';
 import { RegistrationStatus } from '@/types';
 
+const ALLOWED_ROLES = ['admin', 'super_admin', 'organizer'];
+
 // GET /api/ticket/verify?id=xxx - Verify and check-in by scanning QR
 export async function GET(request: NextRequest) {
   try {
+    // ต้อง login และต้องเป็น admin/super_admin/organizer เท่านั้น
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json(
+        { success: false, message: 'กรุณาเข้าสู่ระบบก่อนสแกนบัตร' },
+        { status: 401 }
+      );
+    }
+    if (!ALLOWED_ROLES.includes(session.user.role || '')) {
+      return NextResponse.json(
+        { success: false, message: 'ไม่มีสิทธิ์สแกนบัตร — เฉพาะ Admin และ Organizer เท่านั้น' },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const registrationId = searchParams.get('id');
 
@@ -92,7 +111,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if registration is approved/confirmed
-    // ✅ รองรับทั้ง APPROVED, CONFIRMED, และ PENDING
+    // รองรับทั้ง APPROVED, CONFIRMED, และ PENDING
     const validStatuses = [
       RegistrationStatus.APPROVED,
       RegistrationStatus.CONFIRMED,
