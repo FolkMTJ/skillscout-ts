@@ -69,30 +69,13 @@ export default function OrganizerDashboard() {
         ? allCamps
         : allCamps.filter((c: Camp) => c.organizerId === session.user.id);
 
-      console.log('=== ORGANIZER DASHBOARD ===');
-      console.log('Total camps loaded:', myCamps.length);
-      console.log('Camps with status:', myCamps.map((c: Camp) => ({ name: c.name, status: c.status || 'NO STATUS' })));
-      console.log('==========================');
-
       setCamps(myCamps);
 
       if (myCamps.length > 0) {
-        const regPromises = myCamps.map((camp: Camp) =>
-          fetch(`/api/registrations?campId=${camp._id}`)
-            .then(r => r.json())
-            .then(data => {
-              console.log(`Registrations for camp ${camp._id}:`, data);
-              return data;
-            })
-            .catch(err => {
-              console.error(`Error fetching registrations for camp ${camp._id}:`, err);
-              return { registrations: [] };
-            })
-        );
-        const regResults = await Promise.all(regPromises);
-        const allRegs = regResults.flatMap(r => r.registrations || []);
-        console.log('Total registrations loaded:', allRegs.length);
-        setRegistrations(allRegs);
+        const campIds = myCamps.map((c: Camp) => c._id).join(',');
+        const regRes = await fetch(`/api/registrations?campIds=${campIds}`);
+        const regData = await regRes.json().catch(() => ({ registrations: [] }));
+        setRegistrations(regData.registrations || []);
       }
     } catch {
       toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
@@ -370,8 +353,8 @@ export default function OrganizerDashboard() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
-        <div className="max-w-[1536px] mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+        <div className="max-w-[1536px] mx-auto px-4">
           {/* Header Skeleton */}
           <div className="mb-8 animate-pulse">
             <div className="h-10 bg-gray-200 rounded w-96 mb-2"></div>

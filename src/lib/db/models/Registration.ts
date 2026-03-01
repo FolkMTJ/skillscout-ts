@@ -92,7 +92,18 @@ export class RegistrationModel {
       .find(filter)
       .sort({ appliedAt: -1 })
       .toArray();
-    
+
+    return registrations.map(doc => this.toPublic(doc));
+  }
+
+  static async findByCamps(campIds: string[]): Promise<Registration[]> {
+    if (campIds.length === 0) return [];
+    const collection = await getCollection<RegistrationDoc>(this.collectionName);
+    const filter: Filter<RegistrationDoc> = { campId: { $in: campIds } } as Filter<RegistrationDoc>;
+    const registrations = await collection
+      .find(filter)
+      .sort({ appliedAt: -1 })
+      .toArray();
     return registrations.map(doc => this.toPublic(doc));
   }
 

@@ -223,12 +223,15 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const campId = searchParams.get('campId');
+    const campIds = searchParams.get('campIds');
     const userId = searchParams.get('userId');
     const status = searchParams.get('status');
 
     let registrations;
 
-    if (campId) {
+    if (campIds) {
+      registrations = await RegistrationModel.findByCamps(campIds.split(',').filter(Boolean));
+    } else if (campId) {
       registrations = await RegistrationModel.findByCamp(campId);
     } else if (userId) {
       registrations = await RegistrationModel.findByUser(userId);

@@ -24,9 +24,10 @@ import {
   Input,
   Textarea,
 } from '@heroui/react';
-import { FiUsers, FiCalendar, FiShield, FiTrash2, FiEye, FiSearch, FiAlertCircle, FiXCircle, FiAlertTriangle, FiCheck, FiX, FiPlus, FiEdit2, FiBookOpen, FiToggleLeft, FiToggleRight, FiSave, FiMonitor, FiRefreshCw, FiTrendingUp, FiDollarSign, FiClock, FiCheckCircle, FiUser, FiSmartphone } from 'react-icons/fi';
+import { FiUsers, FiCalendar, FiShield, FiTrash2, FiEye, FiSearch, FiAlertCircle, FiXCircle, FiAlertTriangle, FiCheck, FiX, FiPlus, FiEdit2, FiBookOpen, FiToggleLeft, FiToggleRight, FiSave, FiMonitor, FiRefreshCw, FiTrendingUp, FiDollarSign, FiClock, FiCheckCircle, FiUser, FiSmartphone, FiUpload, FiImage, FiZap } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { StatCard } from '@/components/common';
+import jsQR from 'jsqr';
 
 interface RoadmapStepForm {
   level: 'beginner' | 'intermediate' | 'advanced';
@@ -146,6 +147,7 @@ export default function AdminDashboard() {
   const [platformFeePercent, setPlatformFeePercent] = useState('5');
   const [platformSaving, setPlatformSaving] = useState(false);
   const [platformEnabled, setPlatformEnabled] = useState(false);
+  const [platformModalOpen, setPlatformModalOpen] = useState(false);
 
   // Site settings state
   const [visitorOffset, setVisitorOffset] = useState('59');
@@ -163,6 +165,14 @@ export default function AdminDashboard() {
   const [payoutGroupConfirm, setPayoutGroupConfirm] = useState<PayoutGroup | null>(null);
   const [payoutNote, setPayoutNote] = useState('');
   const [payoutMarking, setPayoutMarking] = useState(false);
+  // Slip scan states
+  const [slipGroup, setSlipGroup] = useState<PayoutGroup | null>(null);
+  const [slipFile, setSlipFile] = useState<File | null>(null);
+  const [slipPreview, setSlipPreview] = useState('');
+  const [slipQrPayload, setSlipQrPayload] = useState('');
+  const [slipQrDetected, setSlipQrDetected] = useState(false);
+  const [slipNote, setSlipNote] = useState('');
+  const [slipVerifying, setSlipVerifying] = useState(false);
 
   const fetchShowcaseSettings = async () => {
     try {
@@ -270,6 +280,71 @@ export default function AdminDashboard() {
     finally { setPayoutMarking(false); }
   };
 
+  const resetSlipModal = () => {
+    setSlipGroup(null);
+    setSlipFile(null);
+    setSlipPreview('');
+    setSlipQrPayload('');
+    setSlipQrDetected(false);
+    setSlipNote('');
+  };
+
+  const handleSlipFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error('กรุณาเลือกไฟล์รูปภาพ'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('ไฟล์ใหญ่เกิน 5MB'); return; }
+    setSlipFile(file);
+    setSlipQrPayload('');
+    setSlipQrDetected(false);
+
+    const reader = new FileReader();
+    reader.onloadend = () => setSlipPreview(reader.result as string);
+    reader.readAsDataURL(file);
+
+    // Detect QR from slip image (client-side)
+    const objectUrl = URL.createObjectURL(file);
+    const img = document.createElement('img') as HTMLImageElement;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0);
+      const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
+      if (imageData) {
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        if (code?.data) { setSlipQrPayload(code.data); setSlipQrDetected(true); }
+      }
+      URL.revokeObjectURL(objectUrl);
+    };
+    img.src = objectUrl;
+  };
+
+  const handleVerifyPayoutSlip = async () => {
+    if (!slipGroup || !slipFile) return;
+    if (!slipQrPayload) { toast.error('ไม่พบ QR Code ในสลิป กรุณาลองสลิปอื่น'); return; }
+    setSlipVerifying(true);
+    try {
+      const paymentIds = slipGroup.payments.map(p => p._id);
+      const res = await fetch('/api/admin/payouts/verify-slip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentIds, slipQrPayload, note: slipNote }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        toast.error(data.error || 'ตรวจสอบสลิปไม่สำเร็จ', { duration: 6000 });
+        setSlipFile(null); setSlipPreview(''); setSlipQrPayload(''); setSlipQrDetected(false);
+        return;
+      }
+      toast.success(`ยืนยันโอนเงินสำเร็จ! ผู้โอน: ${data.senderName || 'Admin'} (฿${(data.receivedAmount ?? 0).toLocaleString()})`);
+      resetSlipModal();
+      await fetchPayouts();
+    } catch { toast.error('เกิดข้อผิดพลาด'); }
+    finally { setSlipVerifying(false); }
+  };
+
   const fmtMoney = (n: number) => `฿${n.toLocaleString('th-TH')}`;
   const fmtDate = (s?: string) =>
     s ? new Date(s).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) : '—';
@@ -343,10 +418,10 @@ export default function AdminDashboard() {
         router.push('/');
         return;
       }
-      fetchData();
-      fetchShowcaseSettings();
+      Promise.all([fetchData(), fetchShowcaseSettings()]);
     }
-  }, [status, session, router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, session?.user?.role]);
 
   useEffect(() => {
     if (activeTab === 'payouts') fetchPayouts();
@@ -471,14 +546,21 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
 
-      const usersRes = await fetch('/api/admin/users');
-      const usersData = await usersRes.json();
-      if (usersData.users) setUsers(usersData.users);
+      const [usersRes, campsRes, careersRes] = await Promise.all([
+        fetch('/api/admin/users'),
+        fetch('/api/camps?includeAll=true'),
+        fetch('/api/admin/holland-careers'),
+      ]);
 
-      const campsRes = await fetch('/api/camps?includeAll=true');
-      const campsData = await campsRes.json();
+      const [usersData, campsData, careersData] = await Promise.all([
+        usersRes.json(),
+        campsRes.json(),
+        careersRes.json() as Promise<{ careers?: HollandCareer[] }>,
+      ]);
+
+      if (usersData.users) setUsers(usersData.users);
       setCamps(Array.isArray(campsData) ? campsData : campsData.camps || []);
-      await fetchHollandCareers();
+      if (careersData.careers) setHollandCareers(careersData.careers);
     } catch (err) {
       console.error('Error fetching data:', err);
       toast.error('ไม่สามารถโหลดข้อมูลได้');
@@ -689,8 +771,8 @@ export default function AdminDashboard() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
-        <div className="max-w-[1536px] mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8">
+        <div className="max-w-[1536px] mx-auto px-4">
           {/* Header Skeleton */}
           <div className="mb-8 animate-pulse">
             <div className="flex items-center gap-3 mb-2">
@@ -770,8 +852,8 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
-      <div className="max-w-[1536px] mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8">
+      <div className="max-w-[1536px] mx-auto px-4">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <FiShield className={`text-3xl ${session?.user?.role === 'super_admin' ? 'text-purple-500' : 'text-[#F2B33D]'}`} />
@@ -1378,9 +1460,9 @@ export default function AdminDashboard() {
                               </div>
                               <div className="flex items-center gap-2 shrink-0">
                                 <p className="font-black text-green-600 text-base">฿{g.totalNet.toLocaleString()}</p>
-                                <Button size="sm" className="bg-green-500 text-white font-semibold text-xs"
-                                  onPress={() => { setPayoutGroupConfirm(g); setPayoutNote(''); }}
-                                  startContent={<FiCheck size={13} />}>โอนแล้ว</Button>
+                                <Button size="sm" className="bg-[#F2B33D] text-white font-semibold text-xs"
+                                  onPress={() => { setSlipGroup(g); setSlipFile(null); setSlipPreview(''); setSlipQrPayload(''); setSlipQrDetected(false); setSlipNote(''); }}
+                                  startContent={<FiZap size={13} />}>สแกน QR</Button>
                               </div>
                             </div>
                             {/* Payment rows */}
@@ -1523,62 +1605,39 @@ export default function AdminDashboard() {
                     </div>
                   )}
                 </div>
-                {/* Platform Fee Settings */}
-                <div className={`rounded-2xl border-2 p-6 transition-all ${platformEnabled ? 'border-green-300 bg-green-50/30' : 'border-gray-200 bg-white'}`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-bold flex items-center gap-2">
-                        <FiTrendingUp className={platformEnabled ? 'text-green-500' : 'text-gray-400'} />
-                        Platform Fee
-                      </h3>
-                      <p className="text-sm text-gray-500 mt-0.5">
-                        {platformEnabled
-                          ? `เปิดอยู่ — QR จะชี้มา SkillScout, หัก ${platformFeePercent}%`
-                          : 'ปิดอยู่ — QR ชี้ตรงหา Organizer (ไม่มีรายได้ platform)'}
-                      </p>
+                {/* Platform Fee Settings — summary card */}
+                <div className={`rounded-2xl border-2 p-5 transition-all ${platformEnabled ? 'border-green-300 bg-green-50/30' : 'border-gray-200 bg-white'}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${platformEnabled ? 'bg-green-100' : 'bg-gray-100'}`}>
+                        <FiTrendingUp size={18} className={platformEnabled ? 'text-green-600' : 'text-gray-400'} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-gray-900">Platform Fee</h3>
+                          {platformEnabled
+                            ? <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">เปิดใช้งาน</span>
+                            : <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-[10px] font-bold rounded-full">ปิดอยู่</span>
+                          }
+                        </div>
+                        {platformEnabled ? (
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {platformAccountName} · {platformPromptpayId} · หัก <span className="font-semibold text-green-600">{platformFeePercent}%</span>
+                          </p>
+                        ) : (
+                          <p className="text-xs text-gray-400 mt-0.5">QR ชี้ตรงหา Organizer (ไม่มีรายได้ platform)</p>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {platformEnabled && (
-                        <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">เปิดใช้งาน</span>
-                      )}
-                      <Button
-                        className="bg-[#F2B33D] text-white font-semibold"
-                        size="sm"
-                        onPress={savePlatformSettings}
-                        isLoading={platformSaving}
-                        startContent={!platformSaving && <FiSave size={14} />}
-                      >
-                        บันทึก
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <Input
-                        label="PromptPay ID (เบอร์หรือเลขบัตร)"
-                        placeholder="0812345678 — ว่างเปล่า = ปิด Platform Fee"
-                        value={platformPromptpayId}
-                        onValueChange={(v) => setPlatformPromptpayId(v.replace(/\D/g, '').slice(0, 13))}
-                        description={platformPromptpayId ? (platformPromptpayId.length === 10 ? 'เบอร์โทรศัพท์' : platformPromptpayId.length === 13 ? 'เลขบัตรประชาชน' : '') : 'ปล่อยว่างเพื่อปิด Platform Fee'}
-                        classNames={{ inputWrapper: 'bg-white border border-gray-200' }}
-                      />
-                      <Input
-                        label="ชื่อบัญชี"
-                        placeholder="SkillScout"
-                        value={platformAccountName}
-                        onValueChange={setPlatformAccountName}
-                        classNames={{ inputWrapper: 'bg-white border border-gray-200' }}
-                      />
-                      <Input
-                        label="Fee % (0–30)"
-                        placeholder="5"
-                        value={platformFeePercent}
-                        onValueChange={(v) => setPlatformFeePercent(v.replace(/[^0-9.]/g, ''))}
-                        endContent={<span className="text-gray-400 text-sm">%</span>}
-                        classNames={{ inputWrapper: 'bg-white border border-gray-200' }}
-                      />
-                    </div>
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      className="font-semibold"
+                      onPress={() => setPlatformModalOpen(true)}
+                      startContent={<FiEdit2 size={13} />}
+                    >
+                      ตั้งค่า
+                    </Button>
                   </div>
                 </div>
 
@@ -1618,6 +1677,136 @@ export default function AdminDashboard() {
           </Tabs>
         </Card>
       </div>
+
+      {/* ─── Platform Fee Settings Modal ────────────────────────────────────── */}
+      <Modal isOpen={platformModalOpen} onClose={() => setPlatformModalOpen(false)} size="sm"
+        classNames={{ base: 'bg-white rounded-3xl', header: 'border-b border-gray-100 px-5 py-4', body: 'p-5', footer: 'border-t border-gray-100 px-5 py-4 bg-gray-50' }}>
+        <ModalContent>
+          <ModalHeader>
+            <div className="flex items-center gap-2">
+              <FiTrendingUp className="text-[#F2B33D]" />
+              <h3 className="text-base font-bold text-gray-900">ตั้งค่า Platform Fee</h3>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-3">
+              <div className={`rounded-xl p-3 text-xs ${platformEnabled ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-500'}`}>
+                {platformPromptpayId
+                  ? `เปิดใช้งาน — QR จะชี้มา SkillScout, หัก ${platformFeePercent || '5'}%`
+                  : 'ปล่อย PromptPay ว่างเพื่อปิดระบบ Platform Fee'}
+              </div>
+              <Input
+                label="PromptPay ID (เบอร์หรือเลขบัตรประชาชน)"
+                placeholder="0812345678 — ว่างเปล่า = ปิด"
+                value={platformPromptpayId}
+                onValueChange={(v) => setPlatformPromptpayId(v.replace(/\D/g, '').slice(0, 13))}
+                description={
+                  platformPromptpayId.length === 10 ? 'เบอร์โทรศัพท์' :
+                  platformPromptpayId.length === 13 ? 'เลขบัตรประชาชน' : ''
+                }
+                classNames={{ inputWrapper: 'bg-gray-50 border-none' }}
+              />
+              <Input
+                label="ชื่อบัญชี (แสดงใน QR)"
+                placeholder="SkillScout"
+                value={platformAccountName}
+                onValueChange={setPlatformAccountName}
+                classNames={{ inputWrapper: 'bg-gray-50 border-none' }}
+              />
+              <Input
+                label="Fee % (0–30)"
+                placeholder="5"
+                value={platformFeePercent}
+                onValueChange={(v) => setPlatformFeePercent(v.replace(/[^0-9.]/g, ''))}
+                endContent={<span className="text-gray-400 text-sm">%</span>}
+                classNames={{ inputWrapper: 'bg-gray-50 border-none' }}
+              />
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" className="text-gray-500" onPress={() => { setPlatformModalOpen(false); fetchShowcaseSettings(); }}>ยกเลิก</Button>
+            <Button className="bg-[#F2B33D] text-white font-semibold"
+              isLoading={platformSaving}
+              startContent={!platformSaving && <FiSave size={15} />}
+              onPress={async () => { await savePlatformSettings(); setPlatformModalOpen(false); }}>
+              บันทึก
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* ─── Payout Slip Scan Modal ─────────────────────────────────────────── */}
+      <Modal isOpen={!!slipGroup} onClose={resetSlipModal} size="sm"
+        classNames={{ base: 'bg-white rounded-3xl', header: 'border-b border-gray-100 px-5 py-4', body: 'p-5', footer: 'border-t border-gray-100 px-5 py-4 bg-gray-50' }}>
+        <ModalContent>
+          <ModalHeader>
+            <div className="flex items-center gap-2">
+              <FiZap className="text-[#F2B33D]" />
+              <h3 className="text-base font-bold text-gray-900">สแกนสลิปการโอนเงิน</h3>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            {slipGroup && (
+              <div className="space-y-4">
+                {/* Summary */}
+                <div className="bg-green-50 rounded-2xl p-4 text-center">
+                  <p className="text-xs text-gray-500 mb-1">ยอดที่ต้องโอนให้ Organizer</p>
+                  <p className="text-3xl font-black text-green-600">฿{slipGroup.totalNet.toLocaleString()}</p>
+                  <p className="text-xs text-gray-400 mt-1">{slipGroup.organizerAccountName} · {slipGroup.organizerPromptpay}</p>
+                </div>
+
+                {/* Upload area */}
+                <div>
+                  <label className={`flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed cursor-pointer transition-colors ${slipPreview ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-gray-50 hover:border-[#F2B33D]/60'}`}>
+                    {slipPreview ? (
+                      <div className="relative w-full">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={slipPreview} alt="slip" className="w-full rounded-2xl object-contain max-h-52" />
+                        {slipQrDetected && (
+                          <div className="absolute top-2 right-2 flex items-center gap-1 bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">
+                            <FiZap size={10} /> พบ QR Code
+                          </div>
+                        )}
+                        {!slipQrDetected && slipFile && (
+                          <div className="absolute top-2 right-2 flex items-center gap-1 bg-orange-400 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">
+                            ไม่พบ QR Code
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="py-8 flex flex-col items-center gap-2 text-gray-400">
+                        <FiImage size={32} className="text-gray-300" />
+                        <p className="text-sm font-medium">แตะเพื่อเลือกสลิป</p>
+                        <p className="text-xs">ระบบจะอ่าน QR Code อัตโนมัติ</p>
+                      </div>
+                    )}
+                    <input type="file" accept="image/*" className="hidden" onChange={handleSlipFileChange} />
+                  </label>
+                  {slipFile && (
+                    <button onClick={() => { setSlipFile(null); setSlipPreview(''); setSlipQrPayload(''); setSlipQrDetected(false); }}
+                      className="mt-1 text-xs text-gray-400 hover:text-red-400 transition-colors w-full text-right">
+                      ลบสลิป
+                    </button>
+                  )}
+                </div>
+
+                <Input label="หมายเหตุ (ไม่บังคับ)" placeholder="เช่น โอนผ่าน SCB" value={slipNote}
+                  onValueChange={setSlipNote} classNames={{ inputWrapper: 'bg-gray-50 border-none' }} />
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" className="text-gray-500" onPress={resetSlipModal}>ยกเลิก</Button>
+            <Button className="bg-[#F2B33D] text-white font-semibold"
+              isDisabled={!slipFile || !slipQrDetected}
+              isLoading={slipVerifying}
+              onPress={handleVerifyPayoutSlip}
+              startContent={!slipVerifying && <FiCheck size={16} />}>
+              ยืนยันโอนแล้ว
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Payout Confirm Modal */}
       <Modal isOpen={!!payoutGroupConfirm} onClose={() => { setPayoutGroupConfirm(null); setPayoutNote(''); }} size="sm"

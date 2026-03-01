@@ -73,6 +73,15 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
     const [portfolioStatus, setPortfolioStatus] = useState('');
     const [readyToPayRegistrationId, setReadyToPayRegistrationId] = useState('');
 
+    // Camp/deadline status
+    const now = new Date();
+    const isCampEnded = camp.endDate ? new Date(camp.endDate) < now : false;
+    const isDeadlinePassed = camp.registrationDeadline
+        ? new Date(camp.registrationDeadline) < now
+        : camp.deadline
+            ? new Date(camp.deadline) < now
+            : false;
+
     // 🔧 FIX: ตรวจสอบการลงทะเบียนและสิทธิ์ในการรับ Ticket
     useEffect(() => {
         let isMounted = true;
@@ -454,6 +463,14 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                                 >
                                                     ยืนยันการชำระเงิน
                                                 </Button>
+                                            ) : isCampEnded ? (
+                                                <Button
+                                                    isDisabled
+                                                    className="w-full bg-gray-200 font-bold text-gray-500"
+                                                    size="md"
+                                                >
+                                                    ค่ายจบแล้ว
+                                                </Button>
                                             ) : (
                                                 <Button
                                                     isDisabled
@@ -471,6 +488,14 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                                 size="md"
                                             >
                                                 ผู้จัดค่ายไม่สามารถสมัครได้
+                                            </Button>
+                                        ) : isDeadlinePassed || isCampEnded ? (
+                                            <Button
+                                                isDisabled
+                                                className="w-full bg-gray-200 dark:bg-gray-700 font-bold text-gray-500"
+                                                size="md"
+                                            >
+                                                ปิดรับสมัครแล้ว
                                             </Button>
                                         ) : (
                                             <Button

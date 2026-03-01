@@ -329,7 +329,7 @@ export default function CampManagePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
         <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#F2B33D]" />
       </div>
     );
@@ -337,7 +337,7 @@ export default function CampManagePage() {
 
   if (!camp) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-500 mb-4">ไม่พบข้อมูลค่าย</p>
           <Button onPress={() => router.push('/organizer')} variant="flat">กลับ</Button>
@@ -350,124 +350,117 @@ export default function CampManagePage() {
   const enrollPct = capacity > 0 ? Math.round(((camp.enrolled ?? 0) / capacity) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-[#F8F9FA] pb-20">
+      {/* Decorative gradient blob */}
+      <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-orange-50 to-transparent -z-10 pointer-events-none" />
 
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-20">
-        <div className="max-w-[1536px] mx-auto px-4 py-3 flex items-center gap-3">
-          <Button isIconOnly variant="light" onPress={() => router.push('/organizer')} className="text-gray-600 shrink-0">
-            <FiArrowLeft size={20} />
-          </Button>
+      <div className="max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6">
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-base font-bold text-gray-900 truncate">{camp.name}</h1>
-              {camp.status && (
-                <Chip size="sm" variant="flat"
-                  color={camp.status === 'active' ? 'success' : camp.status === 'completed' ? 'default' : 'warning'}
-                  className="text-xs shrink-0">
-                  {camp.status === 'active' ? 'เปิดรับสมัคร' : camp.status === 'completed' ? 'จบแล้ว' : camp.status}
-                </Chip>
-              )}
-              {pendingCount > 0 && (
-                <Chip size="sm" color="danger" variant="flat" className="text-xs shrink-0">
-                  {pendingCount} รอพิจารณา
-                </Chip>
-              )}
+        {/* ── Page Header ────────────────────────────────────────────────── */}
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <Button isIconOnly variant="flat" onPress={() => router.push('/organizer')}
+              className="text-gray-600 bg-white shadow-sm mt-0.5 shrink-0">
+              <FiArrowLeft size={18} />
+            </Button>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-2xl font-black text-gray-900">{camp.name}</h1>
+                {camp.status && (
+                  <Chip size="sm" variant="flat"
+                    color={camp.status === 'active' ? 'success' : camp.status === 'completed' ? 'default' : 'warning'}
+                    className="text-xs">
+                    {camp.status === 'active' ? 'เปิดรับสมัคร' : camp.status === 'completed' ? 'จบแล้ว' : camp.status}
+                  </Chip>
+                )}
+                {pendingCount > 0 && (
+                  <Chip size="sm" color="danger" variant="flat" className="text-xs">
+                    {pendingCount} รอพิจารณา
+                  </Chip>
+                )}
+              </div>
+              {camp.location && <p className="text-sm text-gray-500 mt-0.5">{camp.location}</p>}
             </div>
-            <p className="text-xs text-gray-500 truncate">{camp.location}</p>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 sm:ml-auto">
             <Tooltip content="รีเฟรชข้อมูล">
-              <Button isIconOnly size="sm" variant="flat" onPress={fetchAll} className="text-gray-500">
-                <FiRefreshCw size={14} />
+              <Button isIconOnly variant="flat" onPress={fetchAll}
+                className="bg-white shadow-sm text-gray-500">
+                <FiRefreshCw size={16} />
               </Button>
             </Tooltip>
             <Button
-              size="sm" variant="flat"
-              startContent={<FiDownload size={14} />}
+              variant="flat"
+              startContent={<FiDownload size={15} />}
               onPress={handleExport}
-              className="text-gray-700 bg-gray-100"
+              className="bg-white shadow-sm text-gray-700 font-medium"
             >
               Export CSV
             </Button>
             <Button
-              size="sm"
-              startContent={<FiEdit2 size={14} />}
+              startContent={<FiEdit2 size={15} />}
               onPress={() => router.push(`/organizer?edit=${camp._id}`)}
-              className="bg-[#F2B33D] text-white font-semibold"
+              className="bg-[#F2B33D] text-white font-bold shadow-lg shadow-orange-200"
             >
               แก้ไขค่าย
             </Button>
           </div>
         </div>
-      </div>
-
-      <div className="max-w-[1536px] mx-auto px-4 py-4 space-y-4">
 
         {/* ── Stats Row ───────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Card className="border-none shadow-sm bg-white p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#F2B33D]/10 flex items-center justify-center shrink-0">
-                <FiUsers size={18} className="text-[#F2B33D]" />
-              </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* ผู้สมัครทั้งหมด */}
+          <Card className="border-none shadow-sm bg-white overflow-hidden">
+            <div className="p-5 flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-400">ผู้สมัครทั้งหมด</p>
-                <p className="text-xl font-black text-gray-900">
+                <p className="text-sm font-medium text-gray-500 mb-1">ผู้สมัครทั้งหมด</p>
+                <h3 className="text-3xl font-bold text-gray-800">
                   {stats.total}
-                  {capacity > 0 && <span className="text-sm font-normal text-gray-400">/{capacity}</span>}
-                </p>
+                  {capacity > 0 && <span className="text-base font-normal text-gray-400 ml-1">/{capacity}</span>}
+                </h3>
               </div>
+              <FiUsers className="w-10 h-10 text-[#F2B33D]" />
             </div>
-            {capacity > 0 && (
-              <Progress value={enrollPct} size="sm" className="mt-2"
-                classNames={{ indicator: 'bg-[#F2B33D]', track: 'bg-[#F2B33D]/10' }} />
-            )}
+            <div className="h-1 w-full bg-[#F2B33D]" />
           </Card>
 
-          <Card className="border-none shadow-sm bg-white p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
-                <FiCheckCircle size={18} className="text-green-500" />
-              </div>
+          {/* ยืนยันชำระเงิน */}
+          <Card className="border-none shadow-sm bg-white overflow-hidden">
+            <div className="p-5 flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-400">ยืนยันชำระเงิน</p>
-                <p className="text-xl font-black text-gray-900">{stats.confirmed}</p>
+                <p className="text-sm font-medium text-gray-500 mb-1">ยืนยันชำระเงิน</p>
+                <h3 className="text-3xl font-bold text-gray-800">{stats.confirmed}</h3>
               </div>
+              <FiCheckCircle className="w-10 h-10 text-green-500" />
             </div>
+            <div className="h-1 w-full bg-green-500" />
           </Card>
 
-          <Card className="border-none shadow-sm bg-white p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-                <FiUserCheck size={18} className="text-blue-500" />
-              </div>
+          {/* เข้าร่วมจริง */}
+          <Card className="border-none shadow-sm bg-white overflow-hidden">
+            <div className="p-5 flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-400">เข้าร่วมจริง</p>
-                <p className="text-xl font-black text-gray-900">{stats.attended}</p>
-                {stats.confirmed > 0 && (
-                  <p className="text-[10px] text-gray-400">
-                    {Math.round((stats.attended / stats.confirmed) * 100)}% จากที่ยืนยัน
-                  </p>
-                )}
+                <p className="text-sm font-medium text-gray-500 mb-1">เข้าร่วมจริง</p>
+                <h3 className="text-3xl font-bold text-gray-800">{stats.attended}</h3>
               </div>
+              <FiUserCheck className="w-10 h-10 text-blue-500" />
             </div>
+            <div className="h-1 w-full bg-blue-500" />
           </Card>
 
-          <Card className="border-none shadow-sm bg-white p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
-                <FiDollarSign size={18} className="text-purple-500" />
-              </div>
+          {/* รายได้รวม */}
+          <Card className="border-none shadow-sm bg-white overflow-hidden">
+            <div className="p-5 flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-400">รายได้รวม</p>
-                <p className="text-xl font-black text-gray-900">
+                <p className="text-sm font-medium text-gray-500 mb-1">รายได้รวม</p>
+                <h3 className="text-3xl font-bold text-gray-800">
                   ฿{stats.revenue.toLocaleString('th-TH')}
-                </p>
+                </h3>
               </div>
+              <FiDollarSign className="w-10 h-10 text-purple-500" />
             </div>
+            <div className="h-1 w-full bg-purple-500" />
           </Card>
         </div>
 
@@ -475,32 +468,35 @@ export default function CampManagePage() {
         <Tabs
           selectedKey={activeTab}
           onSelectionChange={k => setActiveTab(k as string)}
-          classNames={{ tabList: 'bg-white shadow-sm rounded-xl p-1', cursor: 'bg-[#F2B33D]', tab: 'rounded-xl' }}
+          classNames={{
+            tabList: 'bg-white shadow-sm rounded-2xl p-1',
+            cursor: 'bg-[#F2B33D]',
+            tab: 'rounded-xl font-medium',
+            tabContent: 'group-data-[selected=true]:text-white',
+          }}
         >
           {/* ─── Registrations Tab ─────────────────────────────────────── */}
           <Tab key="registrations" title={
-            <div className="flex items-center gap-1.5 text-sm">
-              <FiUsers size={13} />
+            <div className="flex items-center gap-2">
+              <FiUsers size={15} />
               <span>ผู้สมัคร ({registrations.length})</span>
             </div>
           }>
-            <div className="space-y-3 mt-3">
+            <div className="space-y-4 mt-4">
               {/* Toolbar */}
-              <div className="bg-white rounded-2xl shadow-sm p-3 flex flex-col sm:flex-row gap-3">
+              <div className="bg-white rounded-2xl shadow-sm p-4 flex flex-col sm:flex-row gap-3">
                 <Input
                   placeholder="ค้นหา ชื่อ / อีเมล / เบอร์โทร..."
-                  startContent={<FiSearch size={15} className="text-gray-400" />}
+                  startContent={<FiSearch size={16} className="text-gray-400" />}
                   value={search}
                   onValueChange={v => { setSearch(v); setPage(1); }}
                   classNames={{ inputWrapper: 'bg-gray-50 border-none shadow-none', base: 'flex-1' }}
-                  size="sm"
                 />
                 <Select
-                  placeholder="สถานะ"
+                  placeholder="ทั้งหมด"
                   selectedKeys={new Set([statusFilter])}
                   onSelectionChange={k => { setStatusFilter([...k][0] as string); setPage(1); }}
-                  classNames={{ trigger: 'bg-gray-50 border-none shadow-none min-h-unit-8', base: 'w-full sm:w-44' }}
-                  size="sm"
+                  classNames={{ trigger: 'bg-gray-50 border-none shadow-none', base: 'w-full sm:w-44' }}
                 >
                   {STATUS_OPTIONS.map(o => <SelectItem key={o.key}>{o.label}</SelectItem>)}
                 </Select>
@@ -508,14 +504,14 @@ export default function CampManagePage() {
 
               {/* Bulk action bar */}
               {selected.size > 0 && (
-                <div className="bg-[#F2B33D]/10 border border-[#F2B33D]/30 rounded-2xl px-4 py-3 flex items-center gap-3">
-                  <span className="text-sm font-semibold text-[#B8860B]">เลือก {selected.size} คน</span>
-                  <Button size="sm" className="bg-[#F2B33D] text-white font-semibold"
-                    startContent={<FiCheck size={13} />}
+                <div className="bg-[#F2B33D]/10 border border-[#F2B33D]/30 rounded-2xl px-5 py-3 flex items-center gap-3">
+                  <span className="text-sm font-bold text-[#B8860B]">เลือก {selected.size} คน</span>
+                  <Button className="bg-[#F2B33D] text-white font-bold shadow-md shadow-orange-100"
+                    startContent={<FiCheck size={14} />}
                     onPress={handleBulkApprove} isLoading={isActioning}>
                     อนุมัติทั้งหมดที่เลือก
                   </Button>
-                  <Button size="sm" variant="flat" className="text-gray-600"
+                  <Button variant="flat" className="text-gray-600 bg-white"
                     onPress={() => setSelected(new Set())}>
                     ยกเลิก
                   </Button>
@@ -525,7 +521,7 @@ export default function CampManagePage() {
               {/* Table */}
               <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
                 {/* Table header */}
-                <div className="grid grid-cols-[2rem_1fr_1fr_7rem_7rem_6rem_3rem] gap-2 px-4 py-2.5 bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-500 items-center">
+                <div className="grid grid-cols-[2rem_1fr_1fr_8rem_8rem_7rem_4rem] gap-2 px-5 py-3 bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wide items-center">
                   <input
                     type="checkbox"
                     className="rounded"
@@ -543,15 +539,15 @@ export default function CampManagePage() {
 
                 {/* Rows */}
                 {paginated.length === 0 ? (
-                  <div className="py-16 text-center">
-                    <FiUsers className="w-10 h-10 mx-auto text-gray-200 mb-3" />
-                    <p className="text-gray-400 text-sm">ไม่พบผู้สมัคร</p>
+                  <div className="py-20 text-center">
+                    <FiUsers className="w-12 h-12 mx-auto text-gray-200 mb-3" />
+                    <p className="text-gray-400 font-medium">ไม่พบผู้สมัคร</p>
                   </div>
                 ) : (
                   paginated.map(r => (
                     <div
                       key={r._id}
-                      className={`grid grid-cols-[2rem_1fr_1fr_7rem_7rem_6rem_3rem] gap-2 px-4 py-3 border-b border-gray-50 items-center transition-colors ${selected.has(r._id) ? 'bg-[#F2B33D]/5' : ''}`}
+                      className={`grid grid-cols-[2rem_1fr_1fr_8rem_8rem_7rem_4rem] gap-2 px-5 py-3.5 border-b border-gray-50 items-center transition-colors hover:bg-gray-50/50 ${selected.has(r._id) ? 'bg-[#F2B33D]/5' : ''}`}
                     >
                       {/* Checkbox */}
                       <input
@@ -571,7 +567,7 @@ export default function CampManagePage() {
                       {/* Email/Phone */}
                       <div className="hidden md:block">
                         <p className="text-sm text-gray-600 truncate">{r.userEmail}</p>
-                        {r.userPhone && <p className="text-xs text-gray-400">{r.userPhone}</p>}
+                        {r.userPhone && <p className="text-xs text-gray-400 mt-0.5">{r.userPhone}</p>}
                       </div>
 
                       {/* Status */}
@@ -581,26 +577,26 @@ export default function CampManagePage() {
                       <div>{paymentChip(r.payment)}</div>
 
                       {/* Date */}
-                      <div className="text-xs text-gray-400">
+                      <div className="text-sm text-gray-400">
                         {new Date(r.appliedAt).toLocaleDateString('th-TH', { day: '2-digit', month: 'short' })}
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         {r.status === 'pending' && (
                           <>
                             <Tooltip content="อนุมัติ">
                               <Button isIconOnly size="sm" variant="flat"
-                                className="w-7 h-7 min-w-0 bg-green-50 text-green-600"
+                                className="w-8 h-8 min-w-0 bg-green-50 text-green-600"
                                 onPress={() => handleApprove(r._id)} isLoading={isActioning}>
-                                <FiCheck size={13} />
+                                <FiCheck size={14} />
                               </Button>
                             </Tooltip>
                             <Tooltip content="ปฏิเสธ">
                               <Button isIconOnly size="sm" variant="flat"
-                                className="w-7 h-7 min-w-0 bg-red-50 text-red-500"
+                                className="w-8 h-8 min-w-0 bg-red-50 text-red-500"
                                 onPress={() => { setRejectTarget(r._id); setRejectReason(''); }}>
-                                <FiX size={13} />
+                                <FiX size={14} />
                               </Button>
                             </Tooltip>
                           </>
@@ -608,26 +604,26 @@ export default function CampManagePage() {
                         {r.status === 'confirmed' && (
                           <Tooltip content="บันทึกการเข้าร่วม">
                             <Button isIconOnly size="sm" variant="flat"
-                              className="w-7 h-7 min-w-0 bg-blue-50 text-blue-600"
+                              className="w-8 h-8 min-w-0 bg-blue-50 text-blue-600"
                               onPress={() => handleMarkAttended(r._id)}>
-                              <FiUserCheck size={13} />
+                              <FiUserCheck size={14} />
                             </Button>
                           </Tooltip>
                         )}
                         {r.status === 'attended' && (
                           <Tooltip content="จบค่าย">
                             <Button isIconOnly size="sm" variant="flat"
-                              className="w-7 h-7 min-w-0 bg-purple-50 text-purple-600"
+                              className="w-8 h-8 min-w-0 bg-purple-50 text-purple-600"
                               onPress={() => handleMarkCompleted(r._id)}>
-                              <FiCheckCircle size={13} />
+                              <FiCheckCircle size={14} />
                             </Button>
                           </Tooltip>
                         )}
                         <Tooltip content="ดูรายละเอียด">
                           <Button isIconOnly size="sm" variant="flat"
-                            className="w-7 h-7 min-w-0 bg-gray-100 text-gray-600"
+                            className="w-8 h-8 min-w-0 bg-gray-100 text-gray-600"
                             onPress={() => setViewingReg(r)}>
-                            <FiEye size={13} />
+                            <FiEye size={14} />
                           </Button>
                         </Tooltip>
                       </div>
@@ -638,7 +634,7 @@ export default function CampManagePage() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex justify-center py-2">
+                <div className="flex justify-center py-3">
                   <Pagination total={totalPages} page={page} onChange={setPage}
                     classNames={{ cursor: 'bg-[#F2B33D] text-white' }} />
                 </div>
@@ -647,7 +643,12 @@ export default function CampManagePage() {
           </Tab>
 
           {/* ─── Overview Tab ──────────────────────────────────────────── */}
-          <Tab key="overview" title={<span className="text-sm">ภาพรวมค่าย</span>}>
+          <Tab key="overview" title={
+            <div className="flex items-center gap-2">
+              <FiAlertCircle size={15} />
+              <span>ภาพรวมค่าย</span>
+            </div>
+          }>
             <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Left: Camp image */}
               {camp.image && (

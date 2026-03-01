@@ -3,6 +3,7 @@
 import type { NavbarProps } from "@heroui/react";
 import Image from "next/image";
 // import ToggleTheme from "./ToggleTheme";
+import NextLink from "next/link";
 import {
     Navbar,
     NavbarBrand,
@@ -110,7 +111,7 @@ export default function NavBar(props: NavbarProps) {
                 <NavbarMenuToggle className="text-default-400 md:hidden" />
 
                 <NavbarBrand>
-                    <Link href="/">
+                    <Link as={NextLink} href="/">
                         <div className="text-background rounded-full flex items-center justify-center">
                             {mounted && (
                                 <Image
@@ -132,6 +133,7 @@ export default function NavBar(props: NavbarProps) {
                     {navLinks.map((link) => (
                         <NavbarItem key={link.href} isActive={pathname === link.href}>
                             <Link
+                                as={NextLink}
                                 color={pathname === link.href ? "warning" : undefined}
                                 className={pathname === link.href ? "text-[#F2B33D] font-semibold" : "text-white/80 hover:text-white"}
                                 href={link.href}
@@ -228,7 +230,7 @@ export default function NavBar(props: NavbarProps) {
                         ) : (
                             <>
                                 <Button
-                                    as={Link}
+                                    as={NextLink}
                                     href="/login"
                                     className="text-white/90 hover:text-white font-medium hover:bg-white/10"
                                     radius="full"
@@ -237,7 +239,7 @@ export default function NavBar(props: NavbarProps) {
                                     เข้าสู่ระบบ
                                 </Button>
                                 <Button
-                                    as={Link}
+                                    as={NextLink}
                                     href="/register"
                                     className="bg-[#F2B33D] text-[#2C2C2C] font-bold shadow-lg hover:shadow-xl hover:bg-[#ffc145] transition-all transform hover:-translate-y-0.5 border border-[#F2B33D]/50 hidden sm:flex"
                                     radius="full"
@@ -264,6 +266,7 @@ export default function NavBar(props: NavbarProps) {
                         {navLinks.map((link) => (
                             <NavbarMenuItem key={link.href}>
                                 <Link
+                                    as={NextLink}
                                     href={link.href}
                                     className={`block w-full py-3 px-4 rounded-xl text-base font-medium transition-colors ${pathname === link.href
                                             ? 'bg-[#F2B33D]/10 text-[#F2B33D]'
@@ -286,6 +289,7 @@ export default function NavBar(props: NavbarProps) {
                                 {(isAdmin || session.user?.role === 'organizer') ? (
                                     <NavbarMenuItem key="dashboard-menu">
                                         <Link
+                                            as={NextLink}
                                             href={isAdmin ? '/admin' : '/organizer'}
                                             className={`block w-full py-3 px-4 rounded-xl text-base font-medium transition-colors ${(pathname === '/admin' || pathname === '/organizer')
                                                     ? 'bg-[#F2B33D]/10 text-[#F2B33D]'
@@ -300,6 +304,7 @@ export default function NavBar(props: NavbarProps) {
                                 {isAdmin ? (
                                     <NavbarMenuItem key="organizer-menu">
                                         <Link
+                                            as={NextLink}
                                             href="/organizer"
                                             className="block w-full py-3 px-4 rounded-xl text-base font-medium text-white/80 hover:text-white hover:bg-white/5 transition-colors"
                                         >
@@ -311,6 +316,7 @@ export default function NavBar(props: NavbarProps) {
                                 {(session.user?.role === 'user' || isAdmin) ? (
                                     <NavbarMenuItem key="my-camps-menu">
                                         <Link
+                                            as={NextLink}
                                             href="/my-camps"
                                             className={`block w-full py-3 px-4 rounded-xl text-base font-medium transition-colors ${pathname === '/my-camps'
                                                     ? 'bg-[#F2B33D]/10 text-[#F2B33D]'
@@ -324,6 +330,7 @@ export default function NavBar(props: NavbarProps) {
                                 {(session.user?.role === 'user' || isAdmin) ? (
                                     <NavbarMenuItem key="bookmarks-menu">
                                         <Link
+                                            as={NextLink}
                                             href="/bookmarks"
                                             className={`block w-full py-3 px-4 rounded-xl text-base font-medium transition-colors ${pathname === '/bookmarks'
                                                     ? 'bg-[#F2B33D]/10 text-[#F2B33D]'
@@ -362,10 +369,10 @@ export default function NavBar(props: NavbarProps) {
                         <>
                             <div className="border-t border-white/10 my-3" />
                             <div className="flex flex-col gap-2 px-2">
-                                <Link href="/login" className="block w-full py-3 px-4 rounded-xl text-base font-medium text-white/80 hover:text-white hover:bg-white/5 transition-colors">
+                                <Link as={NextLink} href="/login" className="block w-full py-3 px-4 rounded-xl text-base font-medium text-white/80 hover:text-white hover:bg-white/5 transition-colors">
                                     เข้าสู่ระบบ
                                 </Link>
-                                <Link href="/register" className="block w-full py-3 px-4 rounded-xl text-base font-bold bg-[#F2B33D] text-[#2C2C2C] text-center">
+                                <Link as={NextLink} href="/register" className="block w-full py-3 px-4 rounded-xl text-base font-bold bg-[#F2B33D] text-[#2C2C2C] text-center">
                                     สมัครสมาชิก
                                 </Link>
                             </div>
