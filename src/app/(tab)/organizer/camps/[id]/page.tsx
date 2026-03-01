@@ -828,7 +828,7 @@ export default function CampManagePage() {
                           const url = viewingReg.portfolioFileUrl!;
                           const isPdf = url.includes('/raw/upload/') || url.toLowerCase().endsWith('.pdf');
                           return isPdf ? (
-                            <a href={url} target="_blank" rel="noopener noreferrer"
+                            <a href={`https://docs.google.com/viewer?url=${encodeURIComponent(url)}`} target="_blank" rel="noopener noreferrer"
                               className="inline-flex items-center gap-2 text-sm text-red-600 underline font-medium">
                               <FiFileText size={14} /> ดูไฟล์ PDF
                             </a>

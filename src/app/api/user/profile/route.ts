@@ -74,7 +74,7 @@ export async function PATCH(request: NextRequest) {
 
     const user = await UserModel.findByEmail(session.user.email);
 
-    if (!user) {
+    if (!user || !user._id) {
       return NextResponse.json(
         { error: 'ไม่พบข้อมูลผู้ใช้' },
         { status: 404 }
@@ -82,7 +82,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Update user profile
-    const success = await UserModel.update(user._id, {
+    const success = await UserModel.update(user._id.toString(), {
       name: name.trim(),
       phone: phone?.trim() || undefined,
       lineId: lineId?.trim() || undefined,
@@ -132,7 +132,7 @@ export async function DELETE() {
 
     const user = await UserModel.findByEmail(session.user.email);
 
-    if (!user) {
+    if (!user || !user._id) {
       return NextResponse.json(
         { error: 'ไม่พบข้อมูลผู้ใช้' },
         { status: 404 }
@@ -148,7 +148,7 @@ export async function DELETE() {
     }
 
     // ลบบัญชี
-    const success = await UserModel.delete(user._id);
+    const success = await UserModel.delete(user._id.toString());
 
     if (!success) {
       return NextResponse.json(

@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     // บันทึกผลลัพธ์
     const result = await PathFinderModel.create({
       userId: session.user.id,
-      userEmail: session.user.email,
+      userEmail: session.user.email || '',
       answers,
     });
 
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       .filter(Boolean)
       .map(career => ({
         id: career!.id,
-        name: career!.name,
+        name: career!.name || '',
         nameTh: career!.nameTh,
         description: career!.description,
         personality: career!.personality,

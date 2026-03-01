@@ -173,6 +173,7 @@ export default function AdminDashboard() {
   const [slipQrDetected, setSlipQrDetected] = useState(false);
   const [slipNote, setSlipNote] = useState('');
   const [slipVerifying, setSlipVerifying] = useState(false);
+  const [payoutQrUrl, setPayoutQrUrl] = useState('');
 
   const fetchShowcaseSettings = async () => {
     try {
@@ -287,6 +288,32 @@ export default function AdminDashboard() {
     setSlipQrPayload('');
     setSlipQrDetected(false);
     setSlipNote('');
+    setPayoutQrUrl('');
+  };
+
+  const openSlipModal = async (g: PayoutGroup) => {
+    setSlipGroup(g);
+    setSlipFile(null);
+    setSlipPreview('');
+    setSlipQrPayload('');
+    setSlipQrDetected(false);
+    setSlipNote('');
+    setPayoutQrUrl('');
+    if (g.organizerPromptpay) {
+      try {
+        const res = await fetch('/api/payment/generate-qr', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            promptpayId: g.organizerPromptpay,
+            accountName: g.organizerAccountName,
+            amount: g.totalNet,
+          }),
+        });
+        const data = await res.json();
+        if (data.qrCode) setPayoutQrUrl(data.qrCode);
+      } catch {}
+    }
   };
 
   const handleSlipFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1461,7 +1488,7 @@ export default function AdminDashboard() {
                               <div className="flex items-center gap-2 shrink-0">
                                 <p className="font-black text-green-600 text-base">฿{g.totalNet.toLocaleString()}</p>
                                 <Button size="sm" className="bg-[#F2B33D] text-white font-semibold text-xs"
-                                  onPress={() => { setSlipGroup(g); setSlipFile(null); setSlipPreview(''); setSlipQrPayload(''); setSlipQrDetected(false); setSlipNote(''); }}
+                                  onPress={() => openSlipModal(g)}
                                   startContent={<FiZap size={13} />}>สแกน QR</Button>
                               </div>
                             </div>
@@ -1736,59 +1763,81 @@ export default function AdminDashboard() {
       </Modal>
 
       {/* ─── Payout Slip Scan Modal ─────────────────────────────────────────── */}
-      <Modal isOpen={!!slipGroup} onClose={resetSlipModal} size="sm"
-        classNames={{ base: 'bg-white rounded-3xl', header: 'border-b border-gray-100 px-5 py-4', body: 'p-5', footer: 'border-t border-gray-100 px-5 py-4 bg-gray-50' }}>
+      <Modal isOpen={!!slipGroup} onClose={resetSlipModal} size="lg"
+        scrollBehavior="inside" backdrop="opaque"
+        classNames={{ base: 'bg-white rounded-3xl shadow-2xl', header: 'border-b border-gray-100 px-6 py-4', body: 'p-6', footer: 'border-t border-gray-100 px-6 py-4' }}>
         <ModalContent>
           <ModalHeader>
             <div className="flex items-center gap-2">
               <FiZap className="text-[#F2B33D]" />
-              <h3 className="text-base font-bold text-gray-900">สแกนสลิปการโอนเงิน</h3>
+              <h3 className="text-base font-bold text-gray-900">โอนเงินให้ Organizer</h3>
             </div>
           </ModalHeader>
           <ModalBody>
             {slipGroup && (
-              <div className="space-y-4">
-                {/* Summary */}
-                <div className="bg-green-50 rounded-2xl p-4 text-center">
-                  <p className="text-xs text-gray-500 mb-1">ยอดที่ต้องโอนให้ Organizer</p>
-                  <p className="text-3xl font-black text-green-600">฿{slipGroup.totalNet.toLocaleString()}</p>
-                  <p className="text-xs text-gray-400 mt-1">{slipGroup.organizerAccountName} · {slipGroup.organizerPromptpay}</p>
+              <div className="space-y-6">
+                {/* QR — same style as BookingModal step 2 */}
+                <div className="flex flex-col items-center justify-center space-y-4">
+                  {payoutQrUrl ? (
+                    <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-xl shadow-gray-200/50">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={payoutQrUrl} alt="PromptPay QR" className="w-[220px] h-[220px] rounded-xl" />
+                    </div>
+                  ) : (
+                    <div className="w-[252px] h-[252px] rounded-2xl bg-gray-100 animate-pulse flex items-center justify-center">
+                      <p className="text-sm text-gray-400">กำลังสร้าง QR...</p>
+                    </div>
+                  )}
+                  <div className="text-center">
+                    <p className="text-gray-500 text-sm mb-1">ยอดที่ต้องโอน</p>
+                    <p className="text-3xl font-black text-[#F2B33D]">฿{slipGroup.totalNet.toLocaleString()}</p>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    โอนให้: <strong className="text-gray-700">{slipGroup.organizerAccountName}</strong>
+                    {slipGroup.organizerPromptpay && <span className="font-mono ml-1 text-gray-400">· {slipGroup.organizerPromptpay}</span>}
+                  </p>
+                  <div className="w-full bg-[#F2B33D]/10 rounded-xl p-4 flex items-start gap-3">
+                    <FiSmartphone className="text-[#F2B33D] mt-1 shrink-0" size={18} />
+                    <p className="text-sm text-gray-600">
+                      สแกน QR ด้วยแอปธนาคาร แล้ว<strong>บันทึกสลิป</strong>หลักฐานการโอนเพื่ออัปโหลดด้านล่าง
+                    </p>
+                  </div>
                 </div>
 
-                {/* Upload area */}
-                <div>
-                  <label className={`flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed cursor-pointer transition-colors ${slipPreview ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-gray-50 hover:border-[#F2B33D]/60'}`}>
-                    {slipPreview ? (
-                      <div className="relative w-full">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={slipPreview} alt="slip" className="w-full rounded-2xl object-contain max-h-52" />
-                        {slipQrDetected && (
-                          <div className="absolute top-2 right-2 flex items-center gap-1 bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">
-                            <FiZap size={10} /> พบ QR Code
-                          </div>
-                        )}
-                        {!slipQrDetected && slipFile && (
-                          <div className="absolute top-2 right-2 flex items-center gap-1 bg-orange-400 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">
-                            ไม่พบ QR Code
-                          </div>
-                        )}
+                {/* Slip upload — same style as BookingModal */}
+                <div className={`relative border-2 border-dashed rounded-3xl p-8 text-center transition-all cursor-pointer group ${slipPreview ? 'border-[#F2B33D] bg-[#F2B33D]/5' : 'border-gray-300 hover:border-[#F2B33D] hover:bg-gray-50'}`}>
+                  <input type="file" accept="image/*" onChange={handleSlipFileChange} className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer" />
+                  {slipPreview ? (
+                    <div className="relative flex justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={slipPreview} alt="Slip" className="max-h-64 w-auto rounded-lg shadow-sm object-contain" />
+                      {slipQrDetected && (
+                        <div className="absolute top-2 right-2 flex items-center gap-1 bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">
+                          <FiZap size={10} /> พบ QR Code
+                        </div>
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                        <span className="text-white font-medium flex items-center gap-2"><FiUpload size={14} /> เปลี่ยนรูป</span>
                       </div>
-                    ) : (
-                      <div className="py-8 flex flex-col items-center gap-2 text-gray-400">
-                        <FiImage size={32} className="text-gray-300" />
-                        <p className="text-sm font-medium">แตะเพื่อเลือกสลิป</p>
-                        <p className="text-xs">ระบบจะอ่าน QR Code อัตโนมัติ</p>
+                    </div>
+                  ) : (
+                    <div className="py-8 flex flex-col items-center gap-3">
+                      <div className="w-16 h-16 rounded-full bg-orange-50 flex items-center justify-center text-[#F2B33D]">
+                        <FiImage size={32} />
                       </div>
-                    )}
-                    <input type="file" accept="image/*" className="hidden" onChange={handleSlipFileChange} />
-                  </label>
-                  {slipFile && (
-                    <button onClick={() => { setSlipFile(null); setSlipPreview(''); setSlipQrPayload(''); setSlipQrDetected(false); }}
-                      className="mt-1 text-xs text-gray-400 hover:text-red-400 transition-colors w-full text-right">
-                      ลบสลิป
-                    </button>
+                      <div>
+                        <p className="font-bold text-gray-700">แตะเพื่ออัปโหลดสลิป</p>
+                        <p className="text-xs text-gray-400 mt-1">รองรับไฟล์ JPG, PNG</p>
+                      </div>
+                    </div>
                   )}
                 </div>
+                {slipFile && (
+                  <button onClick={() => { setSlipFile(null); setSlipPreview(''); setSlipQrPayload(''); setSlipQrDetected(false); }}
+                    className="-mt-4 text-xs text-gray-400 hover:text-red-400 transition-colors w-full text-right">
+                    ลบสลิป
+                  </button>
+                )}
 
                 <Input label="หมายเหตุ (ไม่บังคับ)" placeholder="เช่น โอนผ่าน SCB" value={slipNote}
                   onValueChange={setSlipNote} classNames={{ inputWrapper: 'bg-gray-50 border-none' }} />
@@ -1796,8 +1845,9 @@ export default function AdminDashboard() {
             )}
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" className="text-gray-500" onPress={resetSlipModal}>ยกเลิก</Button>
-            <Button className="bg-[#F2B33D] text-white font-semibold"
+            <Button variant="light" className="text-gray-500 font-medium" onPress={resetSlipModal}>ยกเลิก</Button>
+            <Button className="bg-[#F2B33D] text-white font-bold shadow-lg shadow-[#F2B33D]/20"
+              fullWidth size="lg"
               isDisabled={!slipFile || !slipQrDetected}
               isLoading={slipVerifying}
               onPress={handleVerifyPayoutSlip}
