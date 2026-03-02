@@ -261,23 +261,41 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
       let fileUrl = '';
       if (portfolioFile) {
         const isPdf = portfolioFile.type === 'application/pdf';
-        const resourceType = isPdf ? 'raw' : 'image';
-        const fd = new FormData();
-        fd.append('file', portfolioFile);
-        fd.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'skillscout');
-        const uploadRes = await fetch(
-          `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`,
-          { method: 'POST', body: fd }
-        );
-        if (uploadRes.ok) {
-          const uploadData = await uploadRes.json();
-          fileUrl = uploadData.secure_url;
+
+        if (isPdf) {
+          // PDF: upload server-side so API credentials guarantee access_mode: public
+          const fd = new FormData();
+          fd.append('file', portfolioFile);
+          const uploadRes = await fetch('/api/upload/portfolio', { method: 'POST', body: fd });
+          if (uploadRes.ok) {
+            const uploadData = await uploadRes.json();
+            fileUrl = uploadData.secure_url;
+          } else {
+            const errData = await uploadRes.json().catch(() => ({}));
+            console.error('Portfolio PDF upload failed:', errData);
+            toast.error('อัปโหลด PDF ไม่สำเร็จ กรุณาลองใหม่');
+            setIsSubmitting(false);
+            return;
+          }
         } else {
-          const errData = await uploadRes.json().catch(() => ({}));
-          console.error('Portfolio file upload failed:', errData);
-          toast.error('อัปโหลดไฟล์ไม่สำเร็จ กรุณาลองใหม่หรือเลือกไฟล์อื่น');
-          setIsSubmitting(false);
-          return;
+          // Image: direct Cloudinary upload (images work fine with upload preset)
+          const fd = new FormData();
+          fd.append('file', portfolioFile);
+          fd.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'skillscout');
+          const uploadRes = await fetch(
+            `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+            { method: 'POST', body: fd }
+          );
+          if (uploadRes.ok) {
+            const uploadData = await uploadRes.json();
+            fileUrl = uploadData.secure_url;
+          } else {
+            const errData = await uploadRes.json().catch(() => ({}));
+            console.error('Portfolio image upload failed:', errData);
+            toast.error('อัปโหลดรูปภาพไม่สำเร็จ กรุณาลองใหม่หรือเลือกไฟล์อื่น');
+            setIsSubmitting(false);
+            return;
+          }
         }
       }
 
@@ -946,8 +964,13 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
                     </div>
                   ) : qrCodeUrl ? (
                     <>
-                      <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-xl shadow-gray-200/50 dark:shadow-none dark:bg-gray-800 dark:border-gray-700">
-                        <Image src={qrCodeUrl} alt="QR Code" width={220} height={220} className="rounded-xl" />
+                      <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-xl shadow-gray-200/50 dark:shadow-none dark:border-gray-700 w-[252px]">
+                        {/* PromptPay logo */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/promptpay-logo.png" alt="PromptPay" className="w-full object-cover" />
+                        <div className="p-4 bg-white dark:bg-gray-800 flex justify-center">
+                          <Image src={qrCodeUrl} alt="QR Code" width={200} height={200} />
+                        </div>
                       </div>
 
                       <div className="text-center">

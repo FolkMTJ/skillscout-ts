@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { RegistrationModel } from '@/lib/db/models/Registration';
 import { CampModel } from '@/lib/db/models/Camp';
+import { getCollection } from '@/lib/mongodb';
 import { RegistrationStatus } from '@/types';
 import { createRegistrationSchema } from '@/lib/validation/schemas';
 import { sanitizeEmail, sanitizePhone, sanitizeString } from '@/lib/utils/sanitize';
@@ -244,8 +245,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('Fetched registrations:', registrations?.length || 0);
-    return NextResponse.json({ registrations: registrations || [] });
+    // Enrich with user profile images (batch lookup by email)
+    const regs = registrations || [];
+    if (regs.length > 0) {
+      const emails = [...new Set(regs.map(r => r.userEmail).filter(Boolean))];
+      const usersCol = await getCollection<{ email: string; profileImage?: string }>('users');
+      const userDocs = await usersCol.find({ email: { $in: emails } }, { projection: { email: 1, profileImage: 1 } }).toArray();
+      const imageMap = new Map(userDocs.map(u => [u.email, u.profileImage]));
+      const enriched = regs.map(r => ({ ...r, userImage: imageMap.get(r.userEmail) || undefined }));
+      console.log('Fetched registrations:', enriched.length);
+      return NextResponse.json({ registrations: enriched });
+    }
+
+    console.log('Fetched registrations:', regs.length);
+    return NextResponse.json({ registrations: regs });
   } catch (error) {
     console.error('Error fetching registrations:', error);
     return NextResponse.json(

@@ -12,18 +12,21 @@ import {
   FiArrowLeft, FiDownload, FiSearch, FiUser, FiCheckCircle,
   FiXCircle, FiEye, FiUsers, FiDollarSign, FiEdit2, FiCheck,
   FiX, FiMapPin, FiCalendar, FiClock, FiAlertCircle, FiZap,
-  FiUserCheck, FiRefreshCw, FiFileText, FiImage,
+  FiUserCheck, FiRefreshCw, FiFileText, FiImage, FiTrash2,
 } from 'react-icons/fi';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
+import CampFormModal from '@/components/organizer/CampFormModal';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Camp {
   _id: string;
   name: string;
+  slug?: string;
   description?: string;
   image?: string;
+  galleryImages?: string[];
   location?: string;
   date?: string;
   startDate?: string;
@@ -31,13 +34,19 @@ interface Camp {
   registrationDeadline?: string;
   deadline?: string;
   capacity?: number;
+  participantCount?: number;
   enrolled?: number;
   fee?: number;
+  originalFee?: number;
   price?: string;
   status?: string;
   tags?: string[];
   activityFormat?: string;
   requiresPortfolio?: boolean;
+  portfolioInstructions?: string;
+  qualifications?: { level?: string; fields?: string[] };
+  additionalInfo?: string[];
+  organizers?: Array<{ name: string; imageUrl: string }>;
 }
 
 interface Registration {
@@ -47,6 +56,7 @@ interface Registration {
   userName: string;
   userEmail: string;
   userPhone?: string;
+  userImage?: string;
   status: string;
   appliedAt: string;
   reviewedAt?: string;
@@ -137,6 +147,17 @@ export default function CampManagePage() {
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [isActioning, setIsActioning] = useState(false);
+
+  // ── Edit Modal ─────────────────────────────────────────────────────────────
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    name: '', description: '', startDate: '', endDate: '', registrationDeadline: '',
+    location: '', capacity: '', fee: '', tags: [] as string[], image: '', galleryImages: [] as string[],
+    activityFormat: 'On-site', qualificationLevel: 'ทุกระดับ', qualificationDetails: '',
+    additionalInfo: [] as string[], organizers: [] as Array<{ name: string; imageUrl: string }>,
+    hasCertificate: false, allowVocational: false, requiresPortfolio: false,
+    portfolioInstructions: '', originalFee: '',
+  });
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
@@ -250,6 +271,92 @@ export default function CampManagePage() {
       fetchAll();
     } catch { toast.error('เกิดข้อผิดพลาด'); }
     finally { setIsActioning(false); }
+  };
+
+  const handleRemoveRegistration = async (regId: string, userName: string) => {
+    if (!confirm(`ลบ "${userName}" ออกจากค่ายนี้หรือไม่?\n\nการดำเนินการนี้ไม่สามารถย้อนกลับได้`)) return;
+    try {
+      const res = await fetch(`/api/registrations/${regId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+      toast.success('ลบผู้สมัครออกแล้ว');
+      setViewingReg(null);
+      fetchAll();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด');
+    }
+  };
+
+
+  const handleOpenEditModal = () => {
+    if (!camp) return;
+    const qualificationFields = camp.qualifications?.fields || [];
+    const allowVocational = qualificationFields.some(f => f.includes('อาชีวะ'));
+    const qualificationDetails = qualificationFields.filter(f => !f.includes('อาชีวะ')).join(', ');
+    const additionalInfo = camp.additionalInfo || [];
+    const hasCertificate = additionalInfo.some(info => info.includes('ประกาศนียบัตร'));
+    setEditFormData({
+      name: camp.name, description: camp.description || '',
+      startDate: camp.startDate ? new Date(camp.startDate).toISOString().split('T')[0] : '',
+      endDate: camp.endDate ? new Date(camp.endDate).toISOString().split('T')[0] : '',
+      registrationDeadline: camp.registrationDeadline ? new Date(camp.registrationDeadline).toISOString().split('T')[0] : '',
+      location: camp.location || '', capacity: (camp.capacity ?? camp.participantCount ?? 0).toString(),
+      fee: (camp.fee ?? 0).toString(), tags: camp.tags || [],
+      image: camp.image || '', galleryImages: camp.galleryImages || [],
+      activityFormat: camp.activityFormat || 'On-site',
+      qualificationLevel: camp.qualifications?.level || 'ทุกระดับ',
+      qualificationDetails, additionalInfo: additionalInfo.filter(i => !i.includes('ประกาศนียบัตร')),
+      organizers: camp.organizers || [], hasCertificate, allowVocational,
+      requiresPortfolio: camp.requiresPortfolio || false,
+      portfolioInstructions: camp.portfolioInstructions || '',
+      originalFee: camp.originalFee?.toString() || '',
+    });
+    setIsEditOpen(true);
+  };
+
+  const handleUpdateCamp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!camp) return;
+    try {
+      const slug = editFormData.name !== camp.name
+        ? editFormData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+        : camp.slug;
+      const startDate = new Date(editFormData.startDate);
+      const endDate = new Date(editFormData.endDate);
+      const registrationDeadline = new Date(editFormData.registrationDeadline);
+      const qualificationInfo = [];
+      if (editFormData.qualificationDetails) qualificationInfo.push(editFormData.qualificationDetails);
+      if (editFormData.allowVocational) qualificationInfo.push('สายอาชีวะสามารถสมัครได้');
+      const additionalInfo = [...editFormData.additionalInfo];
+      if (editFormData.hasCertificate) additionalInfo.push('มีประกาศนียบัตร');
+      const payload = {
+        name: editFormData.name, description: editFormData.description, location: editFormData.location,
+        startDate: startDate.toISOString(), endDate: endDate.toISOString(),
+        registrationDeadline: registrationDeadline.toISOString(),
+        capacity: parseInt(editFormData.capacity), fee: parseInt(editFormData.fee),
+        originalFee: editFormData.originalFee ? parseInt(editFormData.originalFee) : undefined,
+        tags: editFormData.tags, slug,
+        image: editFormData.image, galleryImages: editFormData.galleryImages,
+        activityFormat: editFormData.activityFormat,
+        date: `${startDate.toLocaleDateString('th-TH', { day: '2-digit', month: 'short' })} - ${endDate.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' })}`,
+        deadline: registrationDeadline.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }),
+        participantCount: parseInt(editFormData.capacity),
+        price: `฿${parseInt(editFormData.fee).toLocaleString()}`,
+        qualifications: { level: editFormData.qualificationLevel, fields: qualificationInfo },
+        additionalInfo, organizers: editFormData.organizers.length > 0 ? editFormData.organizers : camp.organizers,
+        requiresPortfolio: editFormData.requiresPortfolio,
+        portfolioInstructions: editFormData.requiresPortfolio ? editFormData.portfolioInstructions : undefined,
+        ...(camp.status === 'rejected' && { status: 'pending' }),
+      };
+      const res = await fetch(`/api/camps/${camp._id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+      toast.success('อัพเดทค่ายสำเร็จ!');
+      setIsEditOpen(false);
+      fetchAll();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด');
+    }
   };
 
   const handleBulkApprove = async () => {
@@ -400,7 +507,7 @@ export default function CampManagePage() {
             </Button>
             <Button
               startContent={<FiEdit2 size={15} />}
-              onPress={() => router.push(`/organizer?edit=${camp._id}`)}
+              onPress={handleOpenEditModal}
               className="bg-[#F2B33D] text-white font-bold shadow-lg shadow-orange-200"
             >
               แก้ไขค่าย
@@ -585,47 +692,41 @@ export default function CampManagePage() {
                       <div className="flex items-center gap-1.5">
                         {r.status === 'pending' && (
                           <>
-                            <Tooltip content="อนุมัติ">
-                              <Button isIconOnly size="sm" variant="flat"
-                                className="w-8 h-8 min-w-0 bg-green-50 text-green-600"
-                                onPress={() => handleApprove(r._id)} isLoading={isActioning}>
-                                <FiCheck size={14} />
-                              </Button>
-                            </Tooltip>
-                            <Tooltip content="ปฏิเสธ">
-                              <Button isIconOnly size="sm" variant="flat"
-                                className="w-8 h-8 min-w-0 bg-red-50 text-red-500"
-                                onPress={() => { setRejectTarget(r._id); setRejectReason(''); }}>
-                                <FiX size={14} />
-                              </Button>
-                            </Tooltip>
+                            <Button size="sm" variant="flat"
+                              className="bg-green-50 text-green-700 font-semibold px-3"
+                              startContent={<FiCheck size={14} />}
+                              onPress={() => handleApprove(r._id)} isLoading={isActioning}>
+                              อนุมัติ
+                            </Button>
+                            <Button size="sm" variant="flat"
+                              className="bg-red-50 text-red-500 font-semibold px-3"
+                              startContent={<FiX size={14} />}
+                              onPress={() => { setRejectTarget(r._id); setRejectReason(''); }}>
+                              ปฏิเสธ
+                            </Button>
                           </>
                         )}
                         {r.status === 'confirmed' && (
-                          <Tooltip content="บันทึกการเข้าร่วม">
-                            <Button isIconOnly size="sm" variant="flat"
-                              className="w-8 h-8 min-w-0 bg-blue-50 text-blue-600"
-                              onPress={() => handleMarkAttended(r._id)}>
-                              <FiUserCheck size={14} />
-                            </Button>
-                          </Tooltip>
+                          <Button size="sm" variant="flat"
+                            className="bg-blue-50 text-blue-600 font-semibold px-3"
+                            startContent={<FiUserCheck size={14} />}
+                            onPress={() => handleMarkAttended(r._id)}>
+                            เข้าร่วม
+                          </Button>
                         )}
                         {r.status === 'attended' && (
-                          <Tooltip content="จบค่าย">
-                            <Button isIconOnly size="sm" variant="flat"
-                              className="w-8 h-8 min-w-0 bg-purple-50 text-purple-600"
-                              onPress={() => handleMarkCompleted(r._id)}>
-                              <FiCheckCircle size={14} />
-                            </Button>
-                          </Tooltip>
-                        )}
-                        <Tooltip content="ดูรายละเอียด">
-                          <Button isIconOnly size="sm" variant="flat"
-                            className="w-8 h-8 min-w-0 bg-gray-100 text-gray-600"
-                            onPress={() => setViewingReg(r)}>
-                            <FiEye size={14} />
+                          <Button size="sm" variant="flat"
+                            className="bg-purple-50 text-purple-600 font-semibold px-3"
+                            startContent={<FiCheckCircle size={14} />}
+                            onPress={() => handleMarkCompleted(r._id)}>
+                            จบค่าย
                           </Button>
-                        </Tooltip>
+                        )}
+                        <Button isIconOnly size="sm" variant="flat"
+                          className="w-9 h-9 min-w-0 bg-gray-100 text-gray-600"
+                          onPress={() => setViewingReg(r)}>
+                          <FiEye size={16} />
+                        </Button>
                       </div>
                     </div>
                   ))
@@ -754,8 +855,12 @@ export default function CampManagePage() {
         <ModalContent>
           <ModalHeader>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#F2B33D]/10 flex items-center justify-center">
-                <FiUser size={18} className="text-[#F2B33D]" />
+              <div className="w-10 h-10 rounded-full bg-[#F2B33D]/10 flex items-center justify-center overflow-hidden shrink-0">
+                {viewingReg?.userImage ? (
+                  <Image src={viewingReg.userImage} alt={viewingReg.userName} width={40} height={40} className="w-full h-full object-cover rounded-full" />
+                ) : (
+                  <FiUser size={18} className="text-[#F2B33D]" />
+                )}
               </div>
               <div>
                 <h3 className="text-base font-bold text-gray-900">{viewingReg?.userName}</h3>
@@ -828,9 +933,12 @@ export default function CampManagePage() {
                           const url = viewingReg.portfolioFileUrl!;
                           const isPdf = url.includes('/raw/upload/') || url.toLowerCase().endsWith('.pdf');
                           return isPdf ? (
-                            <a href={`https://docs.google.com/viewer?url=${encodeURIComponent(url)}`} target="_blank" rel="noopener noreferrer"
-                              className="inline-flex items-center gap-2 text-sm text-red-600 underline font-medium">
-                              <FiFileText size={14} /> ดูไฟล์ PDF
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 text-sm text-red-600 underline font-medium hover:text-red-700">
+                              <FiFileText size={14} /> เปิด / ดาวน์โหลด PDF
                             </a>
                           ) : (
                             <div className="space-y-2">
@@ -887,10 +995,30 @@ export default function CampManagePage() {
                 จบค่าย
               </Button>
             )}
+            {session?.user && (session.user as { role?: string }).role === 'super_admin' && viewingReg && (
+              <Button
+                variant="flat"
+                className="bg-red-50 text-red-600 font-semibold mr-auto"
+                startContent={<FiTrash2 size={14} />}
+                onPress={() => handleRemoveRegistration(viewingReg._id, viewingReg.userName)}
+              >
+                ลบออกจากค่าย
+              </Button>
+            )}
             <Button variant="light" className="text-gray-500" onPress={() => setViewingReg(null)}>ปิด</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* ── Edit Camp Modal ─────────────────────────────────────────────────── */}
+      <CampFormModal
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        formData={editFormData}
+        onFormDataChange={setEditFormData}
+        onSubmit={handleUpdateCamp}
+        isEditing
+      />
 
       {/* ── Reject Reason Modal ────────────────────────────────────────────── */}
       <Modal

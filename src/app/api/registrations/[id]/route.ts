@@ -4,6 +4,8 @@ import { RegistrationModel } from '@/lib/db/models/Registration';
 import { CampModel } from '@/lib/db/models/Camp';
 import { RegistrationStatus } from '@/types';
 import { sendPortfolioApprovalEmail, sendPortfolioRejectionEmail } from '@/lib/email';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 // PATCH /api/registrations/[id] - Update registration status
 export async function PATCH(
@@ -74,5 +76,30 @@ export async function PATCH(
             { error: 'Failed to update registration' },
             { status: 500 }
         );
+    }
+}
+
+// DELETE /api/registrations/[id] - Remove registration (super_admin only)
+export async function DELETE(
+    _request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const session = await getServerSession(authOptions);
+        const role = (session?.user as { role?: string })?.role;
+        if (role !== 'super_admin') {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        const { id } = await params;
+        const deleted = await RegistrationModel.delete(id);
+        if (!deleted) {
+            return NextResponse.json({ error: 'Registration not found' }, { status: 404 });
+        }
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error('Error deleting registration:', error);
+        return NextResponse.json({ error: 'Failed to delete registration' }, { status: 500 });
     }
 }

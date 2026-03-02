@@ -15,6 +15,7 @@ export interface Registration {
   userName: string;
   userEmail: string;
   userPhone?: string;
+  userImage?: string;
   status: RegistrationStatus | 'attended';
   appliedAt: Date;
   reviewedAt?: Date;
