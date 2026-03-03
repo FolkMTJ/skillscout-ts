@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Path Finder | SkillScout",
-  description: "ทำแบบทดสอบ RIASEC เพื่อค้นหาอาชีพที่เหมาะกับบุคลิกภาพของคุณ",
+  title: "ค้นพบเส้นทางอาชีพ",
+  description: "ทำแบบทดสอบ RIASEC เพื่อค้นหาอาชีพและค่ายที่เหมาะกับบุคลิกภาพและความสนใจของคุณ",
 };
 
 export default function PathFinderLayout({

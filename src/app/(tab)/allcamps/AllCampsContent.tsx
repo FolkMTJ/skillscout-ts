@@ -5,7 +5,8 @@ import CampCard from "@/components/(card)/CampCard";
 import Pagination from "@/components/Pagination";
 import { Camp } from "@/types/camp";
 import { useSearchParams } from 'next/navigation';
-import { STANDARD_TAGS, TAG_CATEGORIES } from "@/data/tags";
+import { TAG_CATEGORIES } from "@/data/tags";
+import { Tag } from "@/components/organizer/TagSelector";
 type TagCategoryKey = keyof typeof TAG_CATEGORIES;
 type TagGroupId = TagCategoryKey | "all";
 
@@ -50,22 +51,22 @@ function campToCampData(camp: Camp) {
 
 // ─── Tag category config ───────────────────────────────────
 const TAG_CATEGORY_LABELS: Record<TagCategoryKey, { label: string; icon: string }> = {
-  frontend:  { label: 'Frontend',   icon: '' },
-  backend:   { label: 'Backend',    icon: '' },
-  data:      { label: 'Data & AI',  icon: '' },
-  design:    { label: 'Design',     icon: '' },
-  mobile:    { label: 'Mobile',     icon: '' },
-  devops:    { label: 'DevOps',     icon: '' },
-  other:     { label: 'อื่นๆ',       icon: '' },
+  frontend: { label: 'Frontend', icon: '' },
+  backend: { label: 'Backend', icon: '' },
+  data: { label: 'Data & AI', icon: '' },
+  design: { label: 'Design', icon: '' },
+  mobile: { label: 'Mobile', icon: '' },
+  devops: { label: 'DevOps', icon: '' },
+  other: { label: 'อื่นๆ', icon: '' },
 };
 const ALL_CATEGORY_KEYS = Object.keys(TAG_CATEGORY_LABELS) as TagCategoryKey[];
 
-type SortOption = 
-  | 'newest' 
-  | 'oldest' 
-  | 'deadline-near' 
-  | 'deadline-far' 
-  | 'price-high' 
+type SortOption =
+  | 'newest'
+  | 'oldest'
+  | 'deadline-near'
+  | 'deadline-far'
+  | 'price-high'
   | 'price-low'
   | 'popular';
 
@@ -78,10 +79,11 @@ export default function AllCampsContent() {
   const [allCamps, setAllCamps] = useState<Camp[]>([]);
   const [filteredCamps, setFilteredCamps] = useState<Camp[]>([]);
   const [loading, setLoading] = useState(true);
+  const [allTags, setAllTags] = useState<Tag[]>([]);
   const [searchQuery, setSearchQuery] = useState(searchFromUrl);
   const [selectedGroup, setSelectedGroup] = useState<TagGroupId>(initialGroup);
   const [showFilters, setShowFilters] = useState(false);
-  
+
   // Filter & Sort States
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>('deadline-near');
@@ -94,8 +96,8 @@ export default function AllCampsContent() {
   function isCampExpired(camp: Camp): boolean {
     if (!camp.registrationDeadline && !camp.deadline) return false;
     try {
-      const deadlineDate = camp.registrationDeadline 
-        ? new Date(camp.registrationDeadline) 
+      const deadlineDate = camp.registrationDeadline
+        ? new Date(camp.registrationDeadline)
         : new Date(camp.deadline);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -107,10 +109,15 @@ export default function AllCampsContent() {
   }
 
   useEffect(() => {
-    async function fetchCamps() {
+    async function fetchData() {
       try {
-        const res = await fetch('/api/camps');
-        const data = await res.json();
+        const [campsRes, tagsRes] = await Promise.all([
+          fetch('/api/camps'),
+          fetch('/api/tags')
+        ]);
+        const data = await campsRes.json();
+        const tagsData = await tagsRes.json();
+
         const camps: Camp[] = Array.isArray(data) ? data : data.camps || [];
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -123,13 +130,16 @@ export default function AllCampsContent() {
         });
         setAllCamps(availableCamps);
         setFilteredCamps(availableCamps);
+
+        if (tagsData.tags) setAllTags(tagsData.tags);
+
       } catch (error) {
-        console.error('Error fetching camps:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     }
-    fetchCamps();
+    fetchData();
   }, []);
 
   // Advanced Filtering & Sorting
@@ -138,7 +148,7 @@ export default function AllCampsContent() {
 
     // Filter by Tag Category (group)
     if (selectedGroup !== "all") {
-      const tagsInCategory = STANDARD_TAGS
+      const tagsInCategory = allTags
         .filter(t => t.category === selectedGroup)
         .map(t => t.id);
       result = result.filter(camp => {
@@ -150,7 +160,7 @@ export default function AllCampsContent() {
     // Filter by Search Query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      result = result.filter(camp => 
+      result = result.filter(camp =>
         camp.name.toLowerCase().includes(query) ||
         camp.description.toLowerCase().includes(query) ||
         camp.category.toLowerCase().includes(query) ||
@@ -176,11 +186,11 @@ export default function AllCampsContent() {
     result.sort((a, b) => {
       switch (sortBy) {
         case 'newest':
-          return (b.createdAt ? new Date(b.createdAt).getTime() : 0) - 
-                 (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+          return (b.createdAt ? new Date(b.createdAt).getTime() : 0) -
+            (a.createdAt ? new Date(a.createdAt).getTime() : 0);
         case 'oldest':
-          return (a.createdAt ? new Date(a.createdAt).getTime() : 0) - 
-                 (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+          return (a.createdAt ? new Date(a.createdAt).getTime() : 0) -
+            (b.createdAt ? new Date(b.createdAt).getTime() : 0);
         case 'deadline-near': {
           const getDeadline = (camp: Camp) => {
             const d = camp.registrationDeadline || camp.deadline;
@@ -240,8 +250,8 @@ export default function AllCampsContent() {
 
   // ── Tags shown in expanded panel: filtered by selectedGroup
   const visibleTags = selectedGroup === "all"
-    ? STANDARD_TAGS
-    : STANDARD_TAGS.filter(t => t.category === selectedGroup);
+    ? allTags
+    : allTags.filter(t => t.category === selectedGroup);
 
   return (
     <div className="max-w-[1536px] mx-auto px-3 md:px-6 py-6 md:py-12 mb-30">
@@ -282,11 +292,10 @@ export default function AllCampsContent() {
             {/* Filter toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all relative ${
-                showFilters || hasActiveFilters
+              className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all relative ${showFilters || hasActiveFilters
                   ? 'bg-[#F2B33D] text-white shadow-md'
                   : 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500'
-              }`}
+                }`}
             >
               <FaFilter size={13} />
               {hasActiveFilters && !showFilters && (
@@ -303,27 +312,25 @@ export default function AllCampsContent() {
               {/* ทั้งหมด */}
               <button
                 onClick={() => { setSelectedGroup("all"); setSelectedTags([]); }}
-                className={`flex-shrink-0 text-xs font-semibold px-3 py-1 rounded-full border transition-all ${
-                  selectedGroup === "all"
+                className={`flex-shrink-0 text-xs font-semibold px-3 py-1 rounded-full border transition-all ${selectedGroup === "all"
                     ? 'bg-[#F2B33D] border-[#F2B33D] text-[#1a1a1a]'
                     : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
-                }`}
+                  }`}
               >
                 ทั้งหมด
               </button>
-              {/* หมวดหมู่จาก STANDARD_TAGS */}
+              {/* หมวดหมู่จาก tags ที่ fetch มา */}
               {ALL_CATEGORY_KEYS.map((key) => {
                 const { label } = TAG_CATEGORY_LABELS[key];
-                const tagCount = STANDARD_TAGS.filter(t => t.category === key).length;
+                const tagCount = allTags.filter(t => t.category === key).length;
                 return (
                   <button
                     key={key}
                     onClick={() => { setSelectedGroup(key); setSelectedTags([]); }}
-                    className={`flex-shrink-0 flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full border transition-all ${
-                      selectedGroup === key
+                    className={`flex-shrink-0 flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full border transition-all ${selectedGroup === key
                         ? 'bg-[#F2B33D] border-[#F2B33D] text-[#1a1a1a]'
                         : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
-                    }`}
+                      }`}
                   >
                     <span>{label}</span>
                     <span className={`text-[10px] ${selectedGroup === key ? 'text-[#1a1a1a]/60' : 'text-gray-400'}`}>
@@ -346,13 +353,12 @@ export default function AllCampsContent() {
                       if (selectedTags.includes(tag.id)) setSelectedTags(selectedTags.filter(t => t !== tag.id));
                       else setSelectedTags([...selectedTags, tag.id]);
                     }}
-                    className={`flex-shrink-0 text-[10px] md:text-xs font-semibold px-2.5 py-1 rounded-full border transition-all ${
-                      selectedTags.includes(tag.id)
+                    className={`flex-shrink-0 text-[10px] md:text-xs font-semibold px-2.5 py-1 rounded-full border transition-all ${selectedTags.includes(tag.id)
                         ? 'bg-[#F97316] border-[#F97316] text-white'
                         : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-[#F97316]'
-                    }`}
+                      }`}
                   >
-                    {tag.name}
+                    {tag.nameTh}
                   </button>
                 ))}
               </div>
@@ -360,9 +366,8 @@ export default function AllCampsContent() {
           )}
 
           {/* ─── Expanded filters (price + clear) ─── */}
-          <div className={`transition-all duration-200 ease-in-out overflow-hidden ${
-            showFilters ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'
-          }`}>
+          <div className={`transition-all duration-200 ease-in-out overflow-hidden ${showFilters ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'
+            }`}>
             <div className="px-3 pb-3 space-y-3 border-t border-gray-100 dark:border-gray-800 pt-3">
 
               {/* Price range */}
@@ -420,7 +425,7 @@ export default function AllCampsContent() {
       {loading && (
         <section>
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-8 animate-pulse">
-            {[1,2,3,4,5,6].map(i => (
+            {[1, 2, 3, 4, 5, 6].map(i => (
               <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
                 <div className="aspect-video bg-gray-200" />
                 <div className="p-3 space-y-2">
@@ -437,10 +442,10 @@ export default function AllCampsContent() {
       {!loading && displayedCamps.length > 0 && (
         <section>
           <div className="flex items-center gap-3 mb-4 md:mb-8">
-  
+
             <div>
               <h2 className="text-lg md:text-2xl font-black text-gray-800 dark:text-white">
-                {selectedGroup !== "all" 
+                {selectedGroup !== "all"
                   ? TAG_CATEGORY_LABELS[selectedGroup as TagCategoryKey]?.label
                   : "ค่ายทั้งหมด"}
               </h2>

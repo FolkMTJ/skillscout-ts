@@ -1,10 +1,16 @@
 import { RIASECProfile, RIASECCode } from '@/data/riasec';
-import { getTagById } from '@/data/tags';
+
+export interface SimplifiedTag {
+  id: string;
+  name?: string;
+  nameTh?: string;
+  riasecMapping: { code: string; weight: number }[];
+}
 
 /**
  * คำนวณ RIASEC Profile จาก tags ของค่าย
  */
-export function calculateCampRIASEC(tags: string[]): RIASECProfile {
+export function calculateCampRIASEC(tags: string[], allTags: SimplifiedTag[]): RIASECProfile {
   const scores: RIASECProfile = {
     R: 0,
     I: 0,
@@ -15,11 +21,11 @@ export function calculateCampRIASEC(tags: string[]): RIASECProfile {
   };
 
   tags.forEach(tagId => {
-    const tag = getTagById(tagId);
+    const tag = allTags.find(t => t.id === tagId);
     if (!tag) return;
 
     tag.riasecMapping.forEach(mapping => {
-      scores[mapping.code] += mapping.weight * 10;
+      scores[mapping.code as RIASECCode] += mapping.weight * 10;
     });
   });
 
@@ -32,33 +38,39 @@ export function calculateCampRIASEC(tags: string[]): RIASECProfile {
   return scores;
 }
 
+// Map Review rating 1–5 → weight factor
+function ratingToWeight(rating: number): number {
+  if (rating >= 5) return 1.0;
+  if (rating >= 4) return 0.8;
+  if (rating >= 3) return 0.5;
+  if (rating >= 2) return 0.25;
+  return 0.1; // rating 1 — ยังนับอยู่เพราะเคยสัมผัสจริง
+}
+
 /**
  * คำนวณ RIASEC Profile ของ User จากค่ายที่เข้าทั้งหมด
+ * weights: คะแนน Review 1–5 ต่อค่าย (optional, default = 5 = weight 1.0 ทุกค่าย)
  */
-export function calculateUserRIASEC(campRIASECs: RIASECProfile[]): RIASECProfile {
+export function calculateUserRIASEC(campRIASECs: RIASECProfile[], weights?: number[]): RIASECProfile {
   if (campRIASECs.length === 0) {
     return { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 };
   }
 
-  const totalScores: RIASECProfile = {
-    R: 0,
-    I: 0,
-    A: 0,
-    S: 0,
-    E: 0,
-    C: 0
-  };
+  const totalScores: RIASECProfile = { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 };
+  let totalWeight = 0;
 
-  campRIASECs.forEach(profile => {
+  campRIASECs.forEach((profile, idx) => {
+    const w = weights ? ratingToWeight(weights[idx] ?? 5) : 1.0;
     Object.entries(profile).forEach(([key, value]) => {
-      totalScores[key as RIASECCode] += value;
+      totalScores[key as RIASECCode] += value * w;
     });
+    totalWeight += w;
   });
 
-  // Average
-  const count = campRIASECs.length;
+  if (totalWeight === 0) return { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 };
+
   Object.keys(totalScores).forEach(key => {
-    totalScores[key as RIASECCode] = Math.round(totalScores[key as RIASECCode] / count);
+    totalScores[key as RIASECCode] = Math.round(totalScores[key as RIASECCode] / totalWeight);
   });
 
   return totalScores;
@@ -66,51 +78,50 @@ export function calculateUserRIASEC(campRIASECs: RIASECProfile[]): RIASECProfile
 
 /**
  * คำนวณ Skill Profile จาก tags ของค่ายทั้งหมด
+ * weights: คะแนน Review 1–5 ต่อค่าย (optional, default = 1.0 ทุกค่าย)
  * แสดงเป็นสัดส่วนประสบการณ์ (%) จากค่ายทั้งหมด
  */
-export function calculateSkillProfile(campTags: string[][]): {
+export function calculateSkillProfile(campTags: string[][], weights: number[] | undefined, allTags: SimplifiedTag[]): {
   name: string;
   experienceCount: number;
   percentage: number;
   level: 'novice' | 'intermediate' | 'experienced' | 'expert';
 }[] {
-  const skillMap = new Map<string, { count: number; tag: string }>();
+  const skillMap = new Map<string, { weightedCount: number; campCount: number; tag: string }>();
 
-  // นับความถี่ของแต่ละ tag
-  campTags.flat().forEach(tagId => {
-    const current = skillMap.get(tagId) || { count: 0, tag: tagId };
-    skillMap.set(tagId, { count: current.count + 1, tag: tagId });
+  campTags.forEach((tags, idx) => {
+    const w = weights ? ratingToWeight(weights[idx] ?? 5) : 1.0;
+    tags.forEach(tagId => {
+      const current = skillMap.get(tagId) || { weightedCount: 0, campCount: 0, tag: tagId };
+      skillMap.set(tagId, {
+        weightedCount: current.weightedCount + w,
+        campCount: current.campCount + 1,
+        tag: tagId,
+      });
+    });
   });
 
-  // คำนวณผลรวมทั้งหมด
-  const totalCount = Array.from(skillMap.values()).reduce((sum, item) => sum + item.count, 0);
+  const totalWeighted = Array.from(skillMap.values()).reduce((sum, item) => sum + item.weightedCount, 0);
 
-  // แปลงเป็น array และคำนวณ percentage
   const skills = Array.from(skillMap.entries()).map(([tagId, data]) => {
-    const tag = getTagById(tagId);
+    const tag = allTags.find(t => t.id === tagId);
     const name = tag?.nameTh || tag?.name || tagId;
-    
-    // คำนวณ % จากประสบการณ์ทั้งหมด
-    const percentage = totalCount > 0 ? Math.round((data.count / totalCount) * 100) : 0;
-    
-    // กำหนด level label ตามจำนวนค่าย
+
+    const percentage = totalWeighted > 0 ? Math.round((data.weightedCount / totalWeighted) * 100) : 0;
+
+    // ใช้ campCount (จำนวนค่ายจริง) สำหรับกำหนด level label
     let level: 'novice' | 'intermediate' | 'experienced' | 'expert';
-    if (data.count === 1) {
-      level = 'novice';        // ผู้เริ่มต้น
-    } else if (data.count === 2) {
-      level = 'intermediate';  // 📚 มีพื้นฐาน
-    } else if (data.count >= 3 && data.count < 5) {
-      level = 'experienced';   // มีประสบการณ์
+    if (data.campCount === 1) {
+      level = 'novice';
+    } else if (data.campCount === 2) {
+      level = 'intermediate';
+    } else if (data.campCount >= 3 && data.campCount < 5) {
+      level = 'experienced';
     } else {
-      level = 'expert';        // ชำนาญ
+      level = 'expert';
     }
 
-    return {
-      name,
-      experienceCount: data.count,
-      percentage,
-      level
-    };
+    return { name, experienceCount: data.campCount, percentage, level };
   });
 
   return skills.sort((a, b) => b.experienceCount - a.experienceCount);

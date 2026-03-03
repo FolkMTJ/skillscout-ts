@@ -87,23 +87,25 @@ interface RegWithPayment extends Registration {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const STATUS_OPTIONS = [
-  { key: 'all',       label: 'ทั้งหมด' },
+  { key: 'all', label: 'ทั้งหมด' },
   { key: 'confirmed', label: 'ชำระเงิน' },
-  { key: 'attended',  label: 'เข้าร่วม' },
+  { key: 'attended', label: 'เข้าร่วม' },
   { key: 'completed', label: 'จบค่าย' },
-  { key: 'pending',   label: 'ยังไม่ชำระ' },
-  { key: 'rejected',  label: 'ปฏิเสธ' },
+  { key: 'absent', label: 'ขาดค่าย' },
+  { key: 'pending', label: 'ยังไม่ชำระ' },
+  { key: 'rejected', label: 'ปฏิเสธ' },
 ];
 
 function statusChip(status: string) {
   const map: Record<string, { color: 'warning' | 'primary' | 'success' | 'danger' | 'default' | 'secondary'; label: string }> = {
-    pending:   { color: 'warning',   label: 'ยังไม่ชำระ' },
-    approved:  { color: 'warning',   label: 'ยังไม่ชำระ' },
-    confirmed: { color: 'success',   label: 'ชำระเงิน' },
-    attended:  { color: 'primary',   label: 'เข้าร่วม' },
+    pending: { color: 'warning', label: 'ยังไม่ชำระ' },
+    approved: { color: 'warning', label: 'ยังไม่ชำระ' },
+    confirmed: { color: 'success', label: 'ชำระเงิน' },
+    attended: { color: 'primary', label: 'เข้าร่วม' },
     completed: { color: 'secondary', label: 'จบค่าย' },
-    rejected:  { color: 'danger',    label: 'ปฏิเสธ' },
-    cancelled: { color: 'default',   label: 'ยกเลิก' },
+    absent: { color: 'danger', label: 'ขาดค่าย' },
+    rejected: { color: 'danger', label: 'ปฏิเสธ' },
+    cancelled: { color: 'default', label: 'ยกเลิก' },
   };
   const s = map[status] ?? { color: 'default' as const, label: status };
   return <Chip size="sm" color={s.color} variant="flat" className="text-xs">{s.label}</Chip>;
@@ -193,9 +195,9 @@ export default function CampManagePage() {
 
   const stats = useMemo(() => {
     const confirmed = registrations.filter(r => ['confirmed', 'attended', 'completed'].includes(r.status)).length;
-    const pending   = registrations.filter(r => ['pending', 'approved'].includes(r.status)).length;
-    const attended  = registrations.filter(r => ['attended', 'completed'].includes(r.status)).length;
-    const revenue   = payments
+    const pending = registrations.filter(r => ['pending', 'approved'].includes(r.status)).length;
+    const attended = registrations.filter(r => ['attended', 'completed'].includes(r.status)).length;
+    const revenue = payments
       .filter(p => p.slipVerified || p.status === 'completed')
       .reduce((s, p) => s + (p.finalAmount || 0), 0);
     return { total: registrations.length, confirmed, pending, attended, revenue };
@@ -214,7 +216,7 @@ export default function CampManagePage() {
   }, [registrationsWithPayment, search, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const pendingCount = registrations.filter(r => r.status === 'pending').length;
 
@@ -364,7 +366,7 @@ export default function CampManagePage() {
     setIsActioning(true);
     let ok = 0;
     for (const rid of selected) {
-      try { await updateStatus(rid, 'approved'); ok++; } catch {}
+      try { await updateStatus(rid, 'approved'); ok++; } catch { }
     }
     toast.success(`อนุมัติ ${ok}/${selected.size} คน`);
     setSelected(new Set());

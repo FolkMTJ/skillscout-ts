@@ -3,7 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDatabase } from '@/lib/mongodb';
 import { Collection, ObjectId, Db } from 'mongodb';
-import { calculateUserRIASEC, calculateSkillProfile, calculateCampRIASEC } from '@/lib/utils/riasec-calculator';
+import { calculateUserRIASEC, calculateSkillProfile, calculateCampRIASEC, SimplifiedTag } from '@/lib/utils/riasec-calculator';
+import { TagModel } from '@/lib/db/models/Tag';
 
 interface Registration {
   _id: ObjectId;
@@ -18,6 +19,7 @@ interface Camp {
   name: string;
   tags?: string[];
   image?: string;
+  reviews?: { author: string; userId?: string; rating: number; comment: string; date: string }[];
 }
 
 interface SkillProfile {
@@ -41,7 +43,8 @@ export async function GET() {
     const userId = session.user.id;
     const userEmail = session.user.email;
     const db = await getDatabase();
-    
+    const allTags = await TagModel.findAll() as SimplifiedTag[];
+
     // ดึงข้อมูล registrations ที่ confirmed
     const registrationsCollection = db.collection('registrations') as Collection<Registration>;
     const campsCollection = db.collection('camps') as Collection<Camp>;
@@ -55,9 +58,10 @@ export async function GET() {
           { userId: userId } as never,
           { userEmail: userEmail } as never
         ],
-        status: 'attended' //  เฉพาะที่เข้าร่วมแล้วเท่านั้น
+        status: { $in: ['attended', 'completed'] } //  เข้าร่วมแล้ว หรือจบค่ายแล้ว
       })
       .toArray();
+
 
     console.log('🔍 Discovery Debug:', {
       userId,
@@ -105,13 +109,22 @@ export async function GET() {
       tags: c.tags || []
     })));
 
-    // คำนวณ Skill Profile
+    // คำนวณ Skill Profile และ RIASEC โดยใช้ rating เป็น weight
+    // ค่ายที่ user review แล้ว → ใช้ rating เป็น weight
+    // ค่ายที่ยังไม่ review → ใช้ weight เต็ม (5 = 100%)
     const campTags = camps.map(camp => camp.tags || []);
-    const skillProfile = calculateSkillProfile(campTags);
+    const campRIASECs = camps.map(camp => calculateCampRIASEC(camp.tags || [], allTags));
 
-    // คำนวณ RIASEC Profile
-    const campRIASECs = camps.map(camp => calculateCampRIASEC(camp.tags || []));
-    const riasecProfile = calculateUserRIASEC(campRIASECs);
+    // หา review rating ของ user สำหรับแต่ละค่าย
+    const ratingWeights = camps.map(camp => {
+      const userReview = (camp.reviews || []).find(
+        r => r.author === userEmail || r.userId === userId
+      );
+      return userReview ? userReview.rating : 5; // ถ้ายังไม่ review ให้ weight เต็ม
+    });
+
+    const skillProfile = calculateSkillProfile(campTags, ratingWeights, allTags);
+    const riasecProfile = calculateUserRIASEC(campRIASECs, ratingWeights);
 
     // แนะนำอาชีพตาม RIASEC Profile
     const recommendedCareers = getCareerRecommendations(riasecProfile, skillProfile);
@@ -121,7 +134,8 @@ export async function GET() {
       db,
       skillProfile,
       riasecProfile,
-      campIds
+      campIds,
+      allTags
     );
 
     return NextResponse.json({
@@ -324,12 +338,12 @@ function getCareerRecommendations(
 
     // คำนวณ skill match
     const matchedSkills = career.requiredSkills.filter(reqSkill =>
-      skillProfile.some(userSkill => 
+      skillProfile.some(userSkill =>
         userSkill.name.toLowerCase().includes(reqSkill.toLowerCase()) ||
         reqSkill.toLowerCase().includes(userSkill.name.toLowerCase())
       )
     );
-    
+
     const skillScore = career.requiredSkills.length > 0
       ? (matchedSkills.length / career.requiredSkills.length) * 100
       : 0;
@@ -353,7 +367,8 @@ async function getRecommendedCamps(
   db: Db,
   skillProfile: SkillProfile[],
   riasecProfile: { R: number; I: number; A: number; S: number; E: number; C: number },
-  attendedCampIds: ObjectId[]
+  attendedCampIds: ObjectId[],
+  allTags: SimplifiedTag[]
 ) {
   const campsCollection = db.collection('camps');
 
@@ -378,8 +393,8 @@ async function getRecommendedCamps(
   const recommended = camps
     .map((camp) => {
       const campData = camp as unknown as Camp;
-      const campRIASEC = calculateCampRIASEC(campData.tags || []);
-      
+      const campRIASEC = calculateCampRIASEC(campData.tags || [], allTags);
+
       // คำนวณความเกี่ยวข้อง
       const riasecRelevance = topRIASEC.reduce((sum, code) => {
         return sum + campRIASEC[code as keyof typeof campRIASEC];
@@ -404,7 +419,7 @@ function generateRecommendationReason(
   weakSkills: string[]
 ): string {
   // ถ้ามี tag ที่ตรงกับ weak skills
-  const matchingSkills = campTags.filter(tag => 
+  const matchingSkills = campTags.filter(tag =>
     weakSkills.some(skill => skill.toLowerCase().includes(tag.toLowerCase()))
   );
 

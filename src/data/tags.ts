@@ -322,11 +322,3 @@ export const TAG_CATEGORIES = {
   devops: 'DevOps & Infrastructure',
   other: 'Other Technologies'
 };
-
-export function getTagById(id: string): TechnicalTag | undefined {
-  return STANDARD_TAGS.find(tag => tag.id === id);
-}
-
-export function getTagsByCategory(category: string): TechnicalTag[] {
-  return STANDARD_TAGS.filter(tag => tag.category === category);
-}

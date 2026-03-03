@@ -5,7 +5,9 @@ export enum RegistrationStatus {
   REJECTED = 'rejected',
   CANCELLED = 'cancelled',
   CONFIRMED = 'confirmed',
-  ATTENDED = 'attended'
+  ATTENDED = 'attended',
+  COMPLETED = 'completed',
+  ABSENT = 'absent',
 }
 
 export interface Registration {
@@ -16,7 +18,7 @@ export interface Registration {
   userEmail: string;
   userPhone?: string;
   userImage?: string;
-  status: RegistrationStatus | 'attended';
+  status: RegistrationStatus | 'attended' | 'completed' | 'absent';
   appliedAt: Date;
   reviewedAt?: Date;
   reviewedBy?: string;

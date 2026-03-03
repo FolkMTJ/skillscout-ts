@@ -22,7 +22,9 @@ export interface Qualifications {
 
 export interface Review {
   id: string;
-  author: string;
+  author: string;       // ชื่อที่แสดงใน UI
+  authorEmail?: string; // email สำหรับ ownership check (ไม่แสดงใน UI)
+  authorImage?: string; // รูป profile
   rating: number;
   comment: string;
   date: string;

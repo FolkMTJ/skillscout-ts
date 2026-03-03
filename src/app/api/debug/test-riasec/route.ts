@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { calculateCampRIASEC, calculateUserRIASEC, calculateSkillProfile } from '@/lib/utils/riasec-calculator';
-import { getTagById } from '@/data/tags';
+import { calculateCampRIASEC, calculateUserRIASEC, calculateSkillProfile, SimplifiedTag } from '@/lib/utils/riasec-calculator';
+import { TagModel } from '@/lib/db/models/Tag';
 
 /**
  * DEBUG: ทดสอบ RIASEC calculation
@@ -9,17 +9,22 @@ export async function GET() {
   try {
     const testTags = ['devops', 'docker', 'kubernetes'];
 
+    const allTags = await TagModel.findAll() as SimplifiedTag[];
+
     // เช็คว่า tags เหล่านี้มีใน database ไหม
-    const tagDetails = testTags.map(tagId => ({
-      id: tagId,
-      found: !!getTagById(tagId),
-      data: getTagById(tagId)
-    }));
+    const tagDetails = testTags.map(tagId => {
+      const tag = allTags.find(t => t.id === tagId);
+      return {
+        id: tagId,
+        found: !!tag,
+        data: tag
+      };
+    });
 
     // คำนวณ RIASEC
-    const campRIASEC = calculateCampRIASEC(testTags);
+    const campRIASEC = calculateCampRIASEC(testTags, allTags);
     const userRIASEC = calculateUserRIASEC([campRIASEC, campRIASEC]); // simulate 2 camps
-    const skillProfile = calculateSkillProfile([testTags, testTags]);
+    const skillProfile = calculateSkillProfile([testTags, testTags], undefined, allTags);
 
     return NextResponse.json({
       testTags,

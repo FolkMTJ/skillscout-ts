@@ -27,6 +27,7 @@ import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { LogOut, Settings, LayoutDashboard, Calendar, Shield, Bookmark } from 'lucide-react';
 import ProfileModal from '@/components/profile/ProfileModal';
+import NotificationBell from '@/components/layout/NotificationBell';
 import { User } from '@/types';
 import { isAdminRole } from '@/lib/auth-check';
 
@@ -153,80 +154,83 @@ export default function NavBar(props: NavbarProps) {
                         {status === 'loading' ? (
                             <div className="w-8 h-8 rounded-full bg-default-200 animate-pulse" />
                         ) : session ? (
-                            <Dropdown placement="bottom-end">
-                                <DropdownTrigger>
-                                    <Avatar
-                                        as="button"
-                                        className="transition-transform hover:scale-110"
-                                        color="warning"
-                                        name={session.user?.name || 'User'}
-                                        size="sm"
-                                        src={userData?.profileImage || session.user?.image || undefined}
-                                        isBordered
-                                        classNames={{
-                                            base: "ring-[#F2B33D] ring-2"
-                                        }}
-                                    />
-                                </DropdownTrigger>
-                                <DropdownMenu aria-label="User Actions" variant="flat">
-                                    <DropdownItem key="profile" className="h-14 gap-2" textValue="Profile">
-                                        <p className="font-semibold">สวัสดี</p>
-                                        <p className="font-semibold">{session.user?.name}</p>
-                                        <p className="text-sm text-default-500">{session.user?.email}</p>
-                                    </DropdownItem>
-                                    {(isAdmin || session.user?.role === 'organizer') ? (
-                                        <DropdownItem
-                                            key="dashboard"
-                                            startContent={<LayoutDashboard className="w-4 h-4" />}
-                                            href={isAdmin ? '/admin' : '/organizer'}
-                                        >
-                                            {isAdmin ? 'Admin Dashboard' : 'แดชบอร์ด'}
+                            <div className="flex items-center gap-3">
+                                <NotificationBell />
+                                <Dropdown placement="bottom-end">
+                                    <DropdownTrigger>
+                                        <Avatar
+                                            as="button"
+                                            className="transition-transform hover:scale-110"
+                                            color="warning"
+                                            name={session.user?.name || 'User'}
+                                            size="sm"
+                                            src={userData?.profileImage || session.user?.image || undefined}
+                                            isBordered
+                                            classNames={{
+                                                base: "ring-[#F2B33D] ring-2"
+                                            }}
+                                        />
+                                    </DropdownTrigger>
+                                    <DropdownMenu aria-label="User Actions" variant="flat">
+                                        <DropdownItem key="profile" className="h-14 gap-2" textValue="Profile">
+                                            <p className="font-semibold">สวัสดี</p>
+                                            <p className="font-semibold">{session.user?.name}</p>
+                                            <p className="text-sm text-default-500">{session.user?.email}</p>
                                         </DropdownItem>
-                                    ) : null}
-                                    {isAdmin ? (
+                                        {(isAdmin || session.user?.role === 'organizer') ? (
+                                            <DropdownItem
+                                                key="dashboard"
+                                                startContent={<LayoutDashboard className="w-4 h-4" />}
+                                                href={isAdmin ? '/admin' : '/organizer'}
+                                            >
+                                                {isAdmin ? 'Admin Dashboard' : 'แดชบอร์ด'}
+                                            </DropdownItem>
+                                        ) : null}
+                                        {isAdmin ? (
+                                            <DropdownItem
+                                                key="organizer-dashboard"
+                                                startContent={<Shield className="w-4 h-4" />}
+                                                href="/organizer"
+                                            >
+                                                Organizer Dashboard
+                                            </DropdownItem>
+                                        ) : null}
+                                        {(session.user?.role === 'user' || isAdmin) ? (
+                                            <DropdownItem
+                                                key="my-camps"
+                                                startContent={<Calendar className="w-4 h-4" />}
+                                                href="/my-camps"
+                                            >
+                                                ค่ายของฉัน
+                                            </DropdownItem>
+                                        ) : null}
+                                        {(session.user?.role === 'user' || isAdmin) ? (
+                                            <DropdownItem
+                                                key="bookmarks"
+                                                startContent={<Bookmark className="w-4 h-4" />}
+                                                href="/bookmarks"
+                                            >
+                                                ค่ายที่บันทึกไว้
+                                            </DropdownItem>
+                                        ) : null}
                                         <DropdownItem
-                                            key="organizer-dashboard"
-                                            startContent={<Shield className="w-4 h-4" />}
-                                            href="/organizer"
+                                            key="settings"
+                                            startContent={<Settings className="w-4 h-4" />}
+                                            onPress={handleOpenProfileModal}
                                         >
-                                            Organizer Dashboard
+                                            ตั้งค่า
                                         </DropdownItem>
-                                    ) : null}
-                                    {(session.user?.role === 'user' || isAdmin) ? (
                                         <DropdownItem
-                                            key="my-camps"
-                                            startContent={<Calendar className="w-4 h-4" />}
-                                            href="/my-camps"
+                                            key="logout"
+                                            color="danger"
+                                            startContent={<LogOut className="w-4 h-4" />}
+                                            onClick={handleSignOut}
                                         >
-                                            ค่ายของฉัน
+                                            ออกจากระบบ
                                         </DropdownItem>
-                                    ) : null}
-                                    {(session.user?.role === 'user' || isAdmin) ? (
-                                        <DropdownItem
-                                            key="bookmarks"
-                                            startContent={<Bookmark className="w-4 h-4" />}
-                                            href="/bookmarks"
-                                        >
-                                            ค่ายที่บันทึกไว้
-                                        </DropdownItem>
-                                    ) : null}
-                                    <DropdownItem
-                                        key="settings"
-                                        startContent={<Settings className="w-4 h-4" />}
-                                        onPress={handleOpenProfileModal}
-                                    >
-                                        ตั้งค่า
-                                    </DropdownItem>
-                                    <DropdownItem
-                                        key="logout"
-                                        color="danger"
-                                        startContent={<LogOut className="w-4 h-4" />}
-                                        onClick={handleSignOut}
-                                    >
-                                        ออกจากระบบ
-                                    </DropdownItem>
-                                </DropdownMenu>
-                            </Dropdown>
+                                    </DropdownMenu>
+                                </Dropdown>
+                            </div>
                         ) : (
                             <>
                                 <Button
@@ -269,8 +273,8 @@ export default function NavBar(props: NavbarProps) {
                                     as={NextLink}
                                     href={link.href}
                                     className={`block w-full py-3 px-4 rounded-xl text-base font-medium transition-colors ${pathname === link.href
-                                            ? 'bg-[#F2B33D]/10 text-[#F2B33D]'
-                                            : 'text-white/80 hover:text-white hover:bg-white/5'
+                                        ? 'bg-[#F2B33D]/10 text-[#F2B33D]'
+                                        : 'text-white/80 hover:text-white hover:bg-white/5'
                                         }`}
                                 >
                                     {link.name}
@@ -292,8 +296,8 @@ export default function NavBar(props: NavbarProps) {
                                             as={NextLink}
                                             href={isAdmin ? '/admin' : '/organizer'}
                                             className={`block w-full py-3 px-4 rounded-xl text-base font-medium transition-colors ${(pathname === '/admin' || pathname === '/organizer')
-                                                    ? 'bg-[#F2B33D]/10 text-[#F2B33D]'
-                                                    : 'text-white/80 hover:text-white hover:bg-white/5'
+                                                ? 'bg-[#F2B33D]/10 text-[#F2B33D]'
+                                                : 'text-white/80 hover:text-white hover:bg-white/5'
                                                 }`}
                                         >
                                             {isAdmin ? 'Admin Dashboard' : 'แดชบอร์ด'}
@@ -319,8 +323,8 @@ export default function NavBar(props: NavbarProps) {
                                             as={NextLink}
                                             href="/my-camps"
                                             className={`block w-full py-3 px-4 rounded-xl text-base font-medium transition-colors ${pathname === '/my-camps'
-                                                    ? 'bg-[#F2B33D]/10 text-[#F2B33D]'
-                                                    : 'text-white/80 hover:text-white hover:bg-white/5'
+                                                ? 'bg-[#F2B33D]/10 text-[#F2B33D]'
+                                                : 'text-white/80 hover:text-white hover:bg-white/5'
                                                 }`}
                                         >
                                             ค่ายของฉัน
@@ -333,8 +337,8 @@ export default function NavBar(props: NavbarProps) {
                                             as={NextLink}
                                             href="/bookmarks"
                                             className={`block w-full py-3 px-4 rounded-xl text-base font-medium transition-colors ${pathname === '/bookmarks'
-                                                    ? 'bg-[#F2B33D]/10 text-[#F2B33D]'
-                                                    : 'text-white/80 hover:text-white hover:bg-white/5'
+                                                ? 'bg-[#F2B33D]/10 text-[#F2B33D]'
+                                                : 'text-white/80 hover:text-white hover:bg-white/5'
                                                 }`}
                                         >
                                             ค่ายที่บันทึกไว้

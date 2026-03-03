@@ -8,3 +8,4 @@ export { PaymentModel } from './Payment';
 export { PromoCodeModel } from './PromoCode';
 export { PathFinderModel } from './PathFinder';
 export { HollandCareerModel } from './HollandCareer';
+export { NotificationModel } from './Notification';

@@ -48,7 +48,7 @@ const InfoCard: React.FC<{ title: string; icon: React.ReactNode; children: React
 
 export default function CampDetailView({ camp }: { camp: Camp }) {
     const router = useRouter();
-    const { data: session } = useSession();
+    const { data: session, status: sessionStatus } = useSession();
     const [selectedImage, setSelectedImage] = useState(camp.galleryImages[0] || camp.image);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
@@ -62,6 +62,13 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
     const [ticketMessage, setTicketMessage] = useState('');
     const [currentCamp, setCurrentCamp] = useState(camp);
     const [showReviewForm, setShowReviewForm] = useState(false);
+
+    // review ของ user คนนี้ (ถ้ามี)
+    const userExistingReview = session?.user?.email
+        ? (currentCamp.reviews ?? []).find(
+            r => r.authorEmail === session.user!.email || r.author === session.user!.email
+        ) ?? null
+        : null;
 
     // สำหรับ payment ที่ค้างอยู่
     const [pendingPaymentId, setPendingPaymentId] = useState('');
@@ -87,6 +94,9 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
         let isMounted = true;
 
         const checkRegistration = async () => {
+            // รอ session โหลดเสร็จก่อน ป้องกันการ flash ปุ่ม "สมัครเข้าร่วม"
+            if (sessionStatus === 'loading') return;
+
             if (!session?.user?.email) {
                 if (isMounted) setCheckingRegistration(false);
                 return;
@@ -156,7 +166,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
         return () => {
             isMounted = false;
         };
-    }, [session?.user?.email, camp._id]);
+    }, [session?.user?.email, sessionStatus, camp._id]);
 
     const handleRegistrationSuccess = async () => {
         // Optimistic update: ตั้ง isRegistered ทันทีเพื่อไม่ให้ปุ่ม "สมัครเข้าร่วม" กลับมา
@@ -522,12 +532,12 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                 {/* Status Message: ทำให้ Compact ขึ้น */}
                                 {isRegistered && (
                                     <div className={`mt-3 px-3 py-2 rounded border flex items-center gap-2 text-xs ${canGetTicket
-                                            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 text-green-700 dark:text-green-400'
-                                            : portfolioStatus === 'portfolio_rejected'
-                                                ? 'bg-red-50 border-red-200 text-red-600'
-                                                : portfolioStatus === 'ready_to_pay'
-                                                    ? 'bg-[#F2B33D]/10 border-[#F2B33D]/30 text-amber-700'
-                                                    : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 text-yellow-700 dark:text-yellow-400'
+                                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 text-green-700 dark:text-green-400'
+                                        : portfolioStatus === 'portfolio_rejected'
+                                            ? 'bg-red-50 border-red-200 text-red-600'
+                                            : portfolioStatus === 'ready_to_pay'
+                                                ? 'bg-[#F2B33D]/10 border-[#F2B33D]/30 text-amber-700'
+                                                : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 text-yellow-700 dark:text-yellow-400'
                                         }`}>
                                         {canGetTicket ? <FaCheckCircle /> : <FaHourglassHalf className="animate-pulse" />}
                                         <span className="flex-1 text-xs">
@@ -722,7 +732,7 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                     radius="full"
                                     onPress={() => setShowReviewForm(!showReviewForm)}
                                 >
-                                    {showReviewForm ? 'ซ่อนฟอร์ม' : 'เขียนรีวิว'}
+                                    {showReviewForm ? 'ซ่อนฟอร์ม' : (userExistingReview ? 'แก้ไขรีวิว' : 'เขียนรีวิว')}
                                 </Button>
                             ) : (
                                 <Button
@@ -742,10 +752,16 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
                                     campId={currentCamp._id}
                                     campName={currentCamp.name}
                                     userName={session.user.name}
+                                    existingReview={userExistingReview}
                                     onReviewSubmitted={handleReviewSubmitted}
                                 />
                             )}
-                            <ReviewList reviews={currentCamp.reviews} />
+                            <ReviewList
+                                reviews={currentCamp.reviews}
+                                campId={currentCamp._id}
+                                currentUserEmail={session?.user?.email ?? undefined}
+                            />
+
                         </div>
                     </div>
                 </section>

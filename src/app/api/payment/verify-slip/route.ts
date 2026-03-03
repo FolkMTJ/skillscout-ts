@@ -2,7 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { PaymentModel, RegistrationModel } from '@/lib/db/models';
+import { NotificationModel } from '@/lib/db/models/Notification';
 import { PaymentStatus, RegistrationStatus } from '@/types';
+
 
 const RDCW_API = 'https://suba.rdcw.co.th/v1/inquiry';
 
@@ -47,7 +49,10 @@ function parseSlipDateTime(dateStr: string, timeStr: string): Date | null {
     h = parseInt(p[0] || '0'); m = parseInt(p[1] || '0'); s = parseInt(p[2] || '0');
   }
 
-  const d = new Date(year, month - 1, day, h, m, s);
+  // สลิปไทยใช้ timezone UTC+7 (Asia/Bangkok)
+  // ใช้ Date.UTC แล้วลบ 7 ชั่วโมง เพื่อ convert เป็น UTC ให้ถูกต้อง
+  const utcMs = Date.UTC(year, month - 1, day, h, m, s) - 7 * 60 * 60 * 1000;
+  const d = new Date(utcMs);
   return isNaN(d.getTime()) ? null : d;
 }
 
@@ -195,12 +200,33 @@ export async function POST(request: NextRequest) {
     });
 
     // อัปเดต registration status → confirmed เพื่อให้ปุ่มรับ Ticket โชว์
-    await RegistrationModel.updateStatus(
+    const updatedReg = await RegistrationModel.updateStatus(
       payment.registrationId,
       RegistrationStatus.CONFIRMED,
       'rdcw-auto',
       'ชำระเงินสำเร็จ (ยืนยันอัตโนมัติ)'
     );
+
+    // 🔔 แจ้งเตือน user ว่าชำระเงินสำเร็จและลงทะเบียนค่ายสำเร็จ
+    try {
+      if (updatedReg?.userId) {
+        const userId = String(updatedReg.userId);
+        const campId = String(payment.campId);
+        const alreadyNotified = await NotificationModel.exists(userId, 'camp_confirmed', campId);
+        if (!alreadyNotified) {
+          await NotificationModel.create({
+            userId,
+            type: 'camp_confirmed',
+            title: 'ลงทะเบียนค่ายสำเร็จ! 🎉',
+            message: 'การชำระเงินได้รับการยืนยันแล้ว สามารถกด "รับ Ticket" เพื่อดาวน์โหลดบัตรผ่านประตูได้เลย',
+            campId,
+            registrationId: payment.registrationId,
+          });
+        }
+      }
+    } catch (e) {
+      console.error('notification error (non-critical):', e);
+    }
 
     return NextResponse.json({
       success: true,
@@ -208,6 +234,7 @@ export async function POST(request: NextRequest) {
       receivedAmount: slipAmount,
       message: 'ตรวจสอบสลิปสำเร็จ',
     });
+
 
   } catch (error) {
     console.error('Error verifying slip:', error);

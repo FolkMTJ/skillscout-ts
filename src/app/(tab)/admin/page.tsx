@@ -24,10 +24,11 @@ import {
   Input,
   Textarea,
 } from '@heroui/react';
-import { FiUsers, FiCalendar, FiShield, FiTrash2, FiEye, FiSearch, FiAlertCircle, FiXCircle, FiAlertTriangle, FiCheck, FiX, FiPlus, FiEdit2, FiBookOpen, FiToggleLeft, FiToggleRight, FiSave, FiMonitor, FiRefreshCw, FiTrendingUp, FiDollarSign, FiClock, FiCheckCircle, FiUser, FiSmartphone, FiUpload, FiImage, FiZap } from 'react-icons/fi';
+import { FiUsers, FiCalendar, FiShield, FiTrash2, FiEye, FiSearch, FiAlertCircle, FiXCircle, FiAlertTriangle, FiCheck, FiX, FiPlus, FiEdit2, FiBookOpen, FiToggleLeft, FiToggleRight, FiSave, FiMonitor, FiRefreshCw, FiTrendingUp, FiDollarSign, FiClock, FiCheckCircle, FiUser, FiSmartphone, FiUpload, FiImage, FiZap, FiTag } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { StatCard } from '@/components/common';
 import jsQR from 'jsqr';
+import { TAG_CATEGORIES } from '@/data/tags';
 
 interface RoadmapStepForm {
   level: 'beginner' | 'intermediate' | 'advanced';
@@ -62,6 +63,17 @@ interface HollandCareer {
   demandLevel?: 'high' | 'medium' | 'low';
   isActive: boolean;
   createdAt: string;
+}
+
+interface Tag {
+  _id: string;
+  id: string;
+  name: string;
+  nameTh: string;
+  category: string;
+  riasecMapping: { code: string; weight: number }[];
+  isCore: boolean;
+  isActive: boolean;
 }
 
 interface User {
@@ -119,6 +131,15 @@ interface Camp {
   endDate?: string;
 }
 
+interface Testimonial {
+  id: number;
+  name: string;
+  camp: string;
+  text: string;
+  rating: number;
+  avatar?: string;
+}
+
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -152,6 +173,23 @@ export default function AdminDashboard() {
   // Site settings state
   const [visitorOffset, setVisitorOffset] = useState('59');
   const [siteSaving, setSiteSaving] = useState(false);
+
+  // Contact settings state
+  const [contactEmail, setContactEmail] = useState('contact@skillscout.com');
+  const [contactPhone, setContactPhone] = useState('02-xxx-xxxx');
+  const [contactSaving, setContactSaving] = useState(false);
+
+  // Social settings state
+  const [socialFacebook, setSocialFacebook] = useState('#');
+  const [socialTwitter, setSocialTwitter] = useState('#');
+  const [socialInstagram, setSocialInstagram] = useState('#');
+  const [socialLinkedin, setSocialLinkedin] = useState('#');
+  const [socialGithub, setSocialGithub] = useState('#');
+  const [socialSaving, setSocialSaving] = useState(false);
+
+  // Testimonials state
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [testimonialsSaving, setTestimonialsSaving] = useState(false);
 
   // Payouts state
   const [payoutSummary, setPayoutSummary] = useState<{
@@ -188,6 +226,21 @@ export default function AdminDashboard() {
       setPlatformEnabled(data.platformEnabled ?? false);
       // Site settings
       setVisitorOffset(String(data.visitorOffset ?? 59));
+
+      // Contact settings
+      setContactEmail(data.contactEmail ?? 'contact@skillscout.com');
+      setContactPhone(data.contactPhone ?? '02-xxx-xxxx');
+
+      // Social settings
+      setSocialFacebook(data.socialFacebook ?? '#');
+      setSocialTwitter(data.socialTwitter ?? '#');
+      setSocialInstagram(data.socialInstagram ?? '#');
+      setSocialLinkedin(data.socialLinkedin ?? '#');
+      setSocialGithub(data.socialGithub ?? '#');
+
+      // Testimonials settings
+      setTestimonials(data.testimonials ?? []);
+
       const campRes = await fetch('/api/admin/showcase');
       const campData = await campRes.json();
       setShowcaseCampCount(campData.count ?? 0);
@@ -244,9 +297,51 @@ export default function AdminDashboard() {
         body: JSON.stringify({ visitorOffset: parseInt(visitorOffset) || 0 }),
       });
       if (!res.ok) throw new Error('Failed');
-      toast.success('บันทึกตั้งค่าเว็บไซต์สำเร็จ');
+      toast.success('บันทึกยอดชดเชยสำเร็จ');
     } catch { toast.error('เกิดข้อผิดพลาด'); }
     setSiteSaving(false);
+  };
+
+  const saveContactSettings = async () => {
+    setContactSaving(true);
+    try {
+      await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contactEmail, contactPhone }),
+      });
+      toast.success('บันทึกข้อมูลติดต่อสำเร็จ');
+    } catch { toast.error('เกิดข้อผิดพลาด'); }
+    setContactSaving(false);
+  };
+
+  const saveSocialSettings = async () => {
+    setSocialSaving(true);
+    try {
+      await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          socialFacebook, socialTwitter, socialInstagram, socialLinkedin, socialGithub
+        }),
+      });
+      toast.success('บันทึกลิงก์ Social สำเร็จ');
+    } catch { toast.error('เกิดข้อผิดพลาด'); }
+    setSocialSaving(false);
+  };
+
+  const saveTestimonialsSettings = async (newTestimonials: Testimonial[]) => {
+    setTestimonialsSaving(true);
+    try {
+      await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ testimonials: newTestimonials }),
+      });
+      setTestimonials(newTestimonials);
+      toast.success('บันทึกรีวิวสำเร็จ');
+    } catch { toast.error('เกิดข้อผิดพลาด'); }
+    setTestimonialsSaving(false);
   };
 
   const fetchPayouts = async () => {
@@ -314,7 +409,7 @@ export default function AdminDashboard() {
         });
         const data = await res.json();
         if (data.qrCode) setPayoutQrUrl(data.qrCode);
-      } catch {}
+      } catch { }
     }
   };
 
@@ -441,6 +536,93 @@ export default function AdminDashboard() {
   const { isOpen: isRejectModalOpen, onOpen: onRejectModalOpen, onClose: onRejectModalClose } = useDisclosure();
   const { isOpen: isDeleteCampModalOpen, onOpen: onDeleteCampModalOpen, onClose: onDeleteCampModalClose } = useDisclosure();
 
+  // Tags state
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [tagLoading, setTagLoading] = useState(false);
+  const [tagCategoryFilter, setTagCategoryFilter] = useState<string | null>(null);
+  const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
+  const [tagForm, setTagForm] = useState({
+    name: '', nameTh: '', category: 'frontend', isCore: false,
+    mappingR: 0, mappingI: 0, mappingA: 0, mappingS: 0, mappingE: 0, mappingC: 0
+  });
+  const { isOpen: isTagModalOpen, onOpen: onTagModalOpen, onClose: onTagModalClose } = useDisclosure();
+  const { isOpen: isDeleteTagModalOpen, onOpen: onDeleteTagModalOpen, onClose: onDeleteTagModalClose } = useDisclosure();
+
+  const fetchTags = async () => {
+    try {
+      setTagLoading(true);
+      const res = await fetch('/api/admin/tags');
+      const data = await res.json() as { tags?: Tag[] };
+      if (data.tags) setTags(data.tags);
+    } catch (err) { console.error(err); }
+    finally { setTagLoading(false); }
+  };
+
+  const openAddTag = () => {
+    setSelectedTag(null);
+    setTagForm({ name: '', nameTh: '', category: 'frontend', isCore: false, mappingR: 0, mappingI: 0, mappingA: 0, mappingS: 0, mappingE: 0, mappingC: 0 });
+    onTagModalOpen();
+  };
+
+  const openEditTag = (tag: Tag) => {
+    setSelectedTag(tag);
+    setTagForm({
+      name: tag.name, nameTh: tag.nameTh, category: tag.category, isCore: tag.isCore,
+      mappingR: tag.riasecMapping.find(m => m.code === 'R')?.weight || 0,
+      mappingI: tag.riasecMapping.find(m => m.code === 'I')?.weight || 0,
+      mappingA: tag.riasecMapping.find(m => m.code === 'A')?.weight || 0,
+      mappingS: tag.riasecMapping.find(m => m.code === 'S')?.weight || 0,
+      mappingE: tag.riasecMapping.find(m => m.code === 'E')?.weight || 0,
+      mappingC: tag.riasecMapping.find(m => m.code === 'C')?.weight || 0,
+    });
+    onTagModalOpen();
+  };
+
+  const saveTag = async () => {
+    try {
+      const riasecMapping = [];
+      if (tagForm.mappingR > 0) riasecMapping.push({ code: 'R', weight: Number(tagForm.mappingR) });
+      if (tagForm.mappingI > 0) riasecMapping.push({ code: 'I', weight: Number(tagForm.mappingI) });
+      if (tagForm.mappingA > 0) riasecMapping.push({ code: 'A', weight: Number(tagForm.mappingA) });
+      if (tagForm.mappingS > 0) riasecMapping.push({ code: 'S', weight: Number(tagForm.mappingS) });
+      if (tagForm.mappingE > 0) riasecMapping.push({ code: 'E', weight: Number(tagForm.mappingE) });
+      if (tagForm.mappingC > 0) riasecMapping.push({ code: 'C', weight: Number(tagForm.mappingC) });
+
+      const payload = {
+        name: tagForm.name, nameTh: tagForm.nameTh, category: tagForm.category,
+        isCore: tagForm.isCore, riasecMapping
+      };
+
+      if (selectedTag) {
+        await fetch(`/api/admin/tags/${selectedTag._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        toast.success('แก้ไข Tag สำเร็จ');
+      } else {
+        const res = await fetch('/api/admin/tags', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (!res.ok) { const data = await res.json(); throw new Error(data.error); }
+        toast.success('เพิ่ม Tag สำเร็จ');
+      }
+      onTagModalClose();
+      fetchTags();
+    } catch (err: any) { toast.error(err.message || 'เกิดข้อผิดพลาด'); }
+  };
+
+  const toggleTagActive = async (tag: Tag) => {
+    try {
+      await fetch(`/api/admin/tags/${tag._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isActive: !tag.isActive }) });
+      fetchTags();
+    } catch { }
+  };
+
+  const confirmDeleteTag = async () => {
+    if (!selectedTag) return;
+    try {
+      await fetch(`/api/admin/tags/${selectedTag._id}`, { method: 'DELETE' });
+      toast.success('ลบ Tag สำเร็จ');
+      onDeleteTagModalClose();
+      fetchTags();
+    } catch { toast.error('เกิดข้อผิดพลาด'); }
+  };
+
   useEffect(() => {
     if (status === 'authenticated') {
       if (session?.user?.role !== 'admin' && session?.user?.role !== 'super_admin') {
@@ -449,7 +631,7 @@ export default function AdminDashboard() {
       }
       Promise.all([fetchData(), fetchShowcaseSettings()]);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, session?.user?.role]);
 
   useEffect(() => {
@@ -575,21 +757,24 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
 
-      const [usersRes, campsRes, careersRes] = await Promise.all([
+      const [usersRes, campsRes, careersRes, tagsRes] = await Promise.all([
         fetch('/api/admin/users'),
         fetch('/api/camps?includeAll=true'),
         fetch('/api/admin/holland-careers'),
+        fetch('/api/admin/tags'),
       ]);
 
-      const [usersData, campsData, careersData] = await Promise.all([
+      const [usersData, campsData, careersData, tagsData] = await Promise.all([
         usersRes.json(),
         campsRes.json(),
         careersRes.json() as Promise<{ careers?: HollandCareer[] }>,
+        tagsRes.json() as Promise<{ tags?: Tag[] }>,
       ]);
 
       if (usersData.users) setUsers(usersData.users);
       setCamps(Array.isArray(campsData) ? campsData : campsData.camps || []);
       if (careersData.careers) setHollandCareers(careersData.careers);
+      if (tagsData.tags) setTags(tagsData.tags);
     } catch (err) {
       console.error('Error fetching data:', err);
       toast.error('ไม่สามารถโหลดข้อมูลได้');
@@ -945,7 +1130,7 @@ export default function AdminDashboard() {
           >
             <Tab key="overview" title="ภาพรวม">
               <div className="py-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <button
                     onClick={() => { setActiveTab('camps'); setCampStatusFilter('pending'); }}
                     className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all text-left border-2 border-transparent hover:border-orange-200"
@@ -985,6 +1170,16 @@ export default function AdminDashboard() {
                     <p className="text-sm text-gray-500 mt-1">อาชีพ Holland</p>
                     <p className="text-xs text-[#F2B33D] mt-2 font-medium">จัดการ →</p>
                   </button>
+
+                  <button
+                    onClick={() => setActiveTab('tags')}
+                    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all text-left border-2 border-transparent hover:border-teal-200"
+                  >
+                    <FiTag className="text-teal-500 text-2xl mb-3" />
+                    <p className="text-3xl font-bold text-teal-500">{tags.length}</p>
+                    <p className="text-sm text-gray-500 mt-1">Tags ทักษะ</p>
+                    <p className="text-xs text-[#F2B33D] mt-2 font-medium">จัดการ →</p>
+                  </button>
                 </div>
               </div>
             </Tab>
@@ -1016,11 +1211,10 @@ export default function AdminDashboard() {
                           if (userSortKey === key) setUserSortDir(d => d === 'asc' ? 'desc' : 'asc');
                           else { setUserSortKey(key); setUserSortDir('asc'); }
                         }}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border-2 transition-all flex items-center gap-1 ${
-                          userSortKey === key
-                            ? 'bg-[#F2B33D] text-white border-[#F2B33D]'
-                            : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
-                        }`}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border-2 transition-all flex items-center gap-1 ${userSortKey === key
+                          ? 'bg-[#F2B33D] text-white border-[#F2B33D]'
+                          : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                          }`}
                       >
                         {label}
                         {userSortKey === key && (
@@ -1242,6 +1436,110 @@ export default function AdminDashboard() {
                       </TableBody>
                     </Table>
                   </>
+                )}
+              </div>
+            </Tab>
+
+            <Tab key="tags" title={`Tags (${tags.length})`}>
+              <div className="py-6">
+                <div className="flex justify-between items-center mb-4">
+                  <div className="flex items-center gap-3">
+                    <p className="text-sm text-gray-500">จัดการข้อมูล Tags และค่าน้ำหนัก RIASEC</p>
+                    <div className="flex gap-1 flex-wrap">
+                      {Object.entries(TAG_CATEGORIES).map(([key, name]) => (
+                        <button
+                          key={key}
+                          onClick={() => setTagCategoryFilter(tagCategoryFilter === key ? null : key)}
+                          className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${tagCategoryFilter === key
+                            ? 'bg-[#F2B33D] border-[#F2B33D] text-white shadow'
+                            : 'bg-white border-gray-200 text-gray-600 hover:border-[#F2B33D]'
+                            }`}
+                        >
+                          {name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="md"
+                      variant="flat"
+                      color="default"
+                      onPress={async () => {
+                        if (!confirm('ต้องการ Seed ข้อมูล Tags มาตรฐานใหม่หรือไม่?')) return;
+                        try {
+                          const res = await fetch('/api/admin/tags/seed', { method: 'POST' });
+                          const data = await res.json() as { message?: string };
+                          toast.success(data.message || 'Seed สำเร็จ');
+                          fetchTags();
+                        } catch { toast.error('เกิดข้อผิดพลาด'); }
+                      }}
+                    >
+                      Seed ข้อมูล
+                    </Button>
+                    <Button color="warning" startContent={<FiPlus />} onPress={openAddTag}>
+                      เพิ่ม Tag
+                    </Button>
+                  </div>
+                </div>
+                {tagLoading ? (
+                  <div className="text-center py-8 text-gray-400">กำลังโหลด...</div>
+                ) : (
+                  <Table aria-label="Tags">
+                    <TableHeader>
+                      <TableColumn>ชื่อทักษะ / Tag</TableColumn>
+                      <TableColumn>หมวดหมู่</TableColumn>
+                      <TableColumn>RIASEC Weights</TableColumn>
+                      <TableColumn>สถานะ</TableColumn>
+                      <TableColumn>จัดการ</TableColumn>
+                    </TableHeader>
+                    <TableBody>
+                      {(tagCategoryFilter ? tags.filter(t => t.category === tagCategoryFilter) : tags).map(tag => (
+                        <TableRow key={tag._id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-bold flex items-center gap-2">
+                                {tag.nameTh}
+                                {tag.isCore && <span className="bg-blue-100 text-blue-700 text-[9px] px-1.5 py-0.5 rounded-full">Core</span>}
+                              </p>
+                              <p className="text-xs text-gray-500 font-mono">{tag.id}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm">{TAG_CATEGORIES[tag.category as keyof typeof TAG_CATEGORIES] || tag.category}</span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              {tag.riasecMapping.map(m => (
+                                <span key={m.code} className="bg-gray-100 text-gray-600 text-[10px] px-1.5 py-0.5 rounded border border-gray-200" title={`Weight: ${m.weight}`}>
+                                  {m.code}:{m.weight}
+                                </span>
+                              ))}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Chip size="sm" color={tag.isActive ? 'success' : 'default'} variant="flat">
+                              {tag.isActive ? 'Active' : 'Inactive'}
+                            </Chip>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="flat" startContent={<FiEdit2 />} onPress={() => openEditTag(tag)}>แก้ไข</Button>
+                              <Button size="sm" variant="flat" color={tag.isActive ? 'warning' : 'success'}
+                                startContent={tag.isActive ? <FiToggleLeft /> : <FiToggleRight />}
+                                onPress={() => toggleTagActive(tag)}>
+                                {tag.isActive ? 'ปิด' : 'เปิด'}
+                              </Button>
+                              <Button size="sm" color="danger" variant="light" isIconOnly
+                                onPress={() => { setSelectedTag(tag); onDeleteTagModalOpen(); }}>
+                                <FiTrash2 size={16} />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 )}
               </div>
             </Tab>
@@ -1700,6 +1998,232 @@ export default function AdminDashboard() {
                       classNames={{ inputWrapper: 'bg-white border border-gray-200' }}
                     />
                   </div>
+
+                  {/* Contact Settings */}
+                  <div className="mt-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-lg font-bold flex items-center gap-2">
+                          <FiUsers className="text-gray-400" />
+                          ช่องทางการติดต่อ
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-0.5">แสดงข้อมูลติดต่อในส่วน Footer ของเว็บไซต์</p>
+                      </div>
+                      <Button
+                        className="bg-[#F2B33D] text-white font-semibold"
+                        size="sm"
+                        onPress={saveContactSettings}
+                        isLoading={contactSaving}
+                        startContent={!contactSaving && <FiSave size={14} />}
+                      >
+                        บันทึก
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Input
+                        label="อีเมลติดต่อ"
+                        placeholder="contact@skillscout.com"
+                        value={contactEmail}
+                        onValueChange={setContactEmail}
+                        classNames={{ inputWrapper: 'bg-white border border-gray-200' }}
+                      />
+                      <Input
+                        label="เบอร์โทรศัพท์"
+                        placeholder="02-xxx-xxxx"
+                        value={contactPhone}
+                        onValueChange={setContactPhone}
+                        classNames={{ inputWrapper: 'bg-white border border-gray-200' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Social Settings */}
+                  <div className="mt-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-lg font-bold flex items-center gap-2">
+                          <FiTag className="text-gray-400" />
+                          โซเชียลมีเดีย
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-0.5">ลิงก์โซเชียลมีเดียในส่วน Footer ของเว็บไซต์ (ปล่อยว่างหรือใส่ # หากไม่ต้องการแสดง)</p>
+                      </div>
+                      <Button
+                        className="bg-[#F2B33D] text-white font-semibold"
+                        size="sm"
+                        onPress={saveSocialSettings}
+                        isLoading={socialSaving}
+                        startContent={!socialSaving && <FiSave size={14} />}
+                      >
+                        บันทึก
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Input
+                        label="Facebook"
+                        placeholder="https://facebook.com/..."
+                        value={socialFacebook}
+                        onValueChange={setSocialFacebook}
+                        classNames={{ inputWrapper: 'bg-white border border-gray-200' }}
+                      />
+                      <Input
+                        label="Twitter / X"
+                        placeholder="https://twitter.com/..."
+                        value={socialTwitter}
+                        onValueChange={setSocialTwitter}
+                        classNames={{ inputWrapper: 'bg-white border border-gray-200' }}
+                      />
+                      <Input
+                        label="Instagram"
+                        placeholder="https://instagram.com/..."
+                        value={socialInstagram}
+                        onValueChange={setSocialInstagram}
+                        classNames={{ inputWrapper: 'bg-white border border-gray-200' }}
+                      />
+                      <Input
+                        label="LinkedIn"
+                        placeholder="https://linkedin.com/..."
+                        value={socialLinkedin}
+                        onValueChange={setSocialLinkedin}
+                        classNames={{ inputWrapper: 'bg-white border border-gray-200' }}
+                      />
+                      <Input
+                        label="GitHub"
+                        placeholder="https://github.com/..."
+                        value={socialGithub}
+                        onValueChange={setSocialGithub}
+                        classNames={{ inputWrapper: 'bg-white border border-gray-200' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Testimonials Settings */}
+                  <div className="mt-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-lg font-bold flex items-center gap-2">
+                          <FiBookOpen className="text-gray-400" />
+                          รีวิวหน้าแรก (Testimonials)
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-0.5">ส่วน &quot;เสียงจากผู้เข้าร่วมจริง&quot; บนหน้าแรก</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          color="success"
+                          variant="flat"
+                          size="sm"
+                          onPress={() => {
+                            const newTestimonial = {
+                              id: Date.now(),
+                              name: '',
+                              camp: '',
+                              text: '',
+                              rating: 5,
+                              avatar: ''
+                            };
+                            setTestimonials([...testimonials, newTestimonial]);
+                          }}
+                          startContent={<FiPlus size={14} />}
+                        >
+                          เพิ่มรีวิว
+                        </Button>
+                        <Button
+                          className="bg-[#F2B33D] text-white font-semibold"
+                          size="sm"
+                          onPress={() => saveTestimonialsSettings(testimonials)}
+                          isLoading={testimonialsSaving}
+                          startContent={!testimonialsSaving && <FiSave size={14} />}
+                        >
+                          บันทึก
+                        </Button>
+                      </div>
+                    </div>
+
+                    {testimonials.length === 0 ? (
+                      <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+                        <p className="text-sm">ยังไม่มีข้อมูลรีวิว</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {testimonials.map((t, index) => (
+                          <div key={t.id || index} className="p-4 border border-gray-200 rounded-xl relative group">
+                            <Button
+                              isIconOnly
+                              size="sm"
+                              color="danger"
+                              variant="light"
+                              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onPress={() => {
+                                const newArr = [...testimonials];
+                                newArr.splice(index, 1);
+                                setTestimonials(newArr);
+                              }}
+                            >
+                              <FiTrash2 size={16} />
+                            </Button>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                              <Input
+                                label="ชื่อผู้รีวิว"
+                                placeholder="นามสมมติ หรือชื่อจริง"
+                                value={t.name}
+                                onValueChange={(val) => {
+                                  const newArr = [...testimonials];
+                                  newArr[index].name = val;
+                                  setTestimonials(newArr);
+                                }}
+                                size="sm"
+                              />
+                              <Input
+                                label="ชื่อค่าย"
+                                placeholder="ค่ายที่เข้าร่วม"
+                                value={t.camp}
+                                onValueChange={(val) => {
+                                  const newArr = [...testimonials];
+                                  newArr[index].camp = val;
+                                  setTestimonials(newArr);
+                                }}
+                                size="sm"
+                              />
+                              <Input
+                                label="คะแนน (1-5)"
+                                type="number"
+                                min={1}
+                                max={5}
+                                value={t.rating?.toString() || '5'}
+                                onValueChange={(val) => {
+                                  const newArr = [...testimonials];
+                                  newArr[index].rating = parseFloat(val) || 5;
+                                  setTestimonials(newArr);
+                                }}
+                                size="sm"
+                              />
+                              <Input
+                                label="URL รูปโปรไฟล์ (ไม่บังคับ)"
+                                placeholder="https://..."
+                                value={t.avatar || ''}
+                                onValueChange={(val) => {
+                                  const newArr = [...testimonials];
+                                  newArr[index].avatar = val;
+                                  setTestimonials(newArr);
+                                }}
+                                size="sm"
+                              />
+                            </div>
+                            <Textarea
+                              label="เนื้อหารีวิว"
+                              placeholder="..."
+                              value={t.text}
+                              onValueChange={(val) => {
+                                const newArr = [...testimonials];
+                                newArr[index].text = val;
+                                setTestimonials(newArr);
+                              }}
+                              minRows={2}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </Tab>
@@ -1731,7 +2255,7 @@ export default function AdminDashboard() {
                 onValueChange={(v) => setPlatformPromptpayId(v.replace(/\D/g, '').slice(0, 13))}
                 description={
                   platformPromptpayId.length === 10 ? 'เบอร์โทรศัพท์' :
-                  platformPromptpayId.length === 13 ? 'เลขบัตรประชาชน' : ''
+                    platformPromptpayId.length === 13 ? 'เลขบัตรประชาชน' : ''
                 }
                 classNames={{ inputWrapper: 'bg-gray-50 border-none' }}
               />
@@ -2112,6 +2636,80 @@ export default function AdminDashboard() {
         </ModalContent>
       </Modal>
 
+      {/* ─── Tag Modals ─── */}
+      <Modal isOpen={isTagModalOpen} onClose={onTagModalClose} size="2xl">
+        <ModalContent>
+          <ModalHeader>
+            <div className="flex items-center gap-2">
+              <FiTag className="text-[#F2B33D]" />
+              {selectedTag ? 'แก้ไข Tag' : 'เพิ่ม Tag ใหม่'}
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="ชื่อ Tag (EN)" placeholder="React, Data Science" value={tagForm.name} onValueChange={v => setTagForm(f => ({ ...f, name: v }))} isRequired />
+                <Input label="ชื่อ Tag (TH)" placeholder="React, วิทยาศาสตร์ข้อมูล" value={tagForm.nameTh} onValueChange={v => setTagForm(f => ({ ...f, nameTh: v }))} isRequired />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-semibold text-gray-700 block mb-1">หมวดหมู่</label>
+                  <select
+                    value={tagForm.category}
+                    onChange={(e) => setTagForm(f => ({ ...f, category: e.target.value }))}
+                    className="p-2 rounded-xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-[#F2B33D] h-10 w-full"
+                  >
+                    {Object.entries(TAG_CATEGORIES).map(([val, label]) => (
+                      <option key={val} value={val}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2 mt-[28px]">
+                  <input type="checkbox" id="isCore" checked={tagForm.isCore} onChange={(e) => setTagForm(f => ({ ...f, isCore: e.target.checked }))} className="w-5 h-5 text-[#F2B33D] rounded border-gray-300 focus:ring-[#F2B33D]" />
+                  <label htmlFor="isCore" className="text-sm font-medium text-gray-700">ทำเครื่องหมายว่าเป็น Core Tag</label>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold text-gray-700 block mb-2 mt-4">ค่าน้ำหนัก RIASEC (0 - 1.0)</label>
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+                  {(['R', 'I', 'A', 'S', 'E', 'C'] as const).map(code => (
+                    <Input
+                      key={code}
+                      label={`Code ${code}`}
+                      type="number"
+                      step={0.1}
+                      min={0}
+                      max={1}
+                      value={String(tagForm[`mapping${code}`])}
+                      onValueChange={v => setTagForm(f => ({ ...f, [`mapping${code}`]: parseFloat(v) || 0 }))}
+                      size="sm"
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onTagModalClose}>ยกเลิก</Button>
+            <Button color="secondary" onPress={saveTag}>บันทึก</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal isOpen={isDeleteTagModalOpen} onClose={onDeleteTagModalClose}>
+        <ModalContent>
+          <ModalHeader className="text-red-600">ลบ Tag</ModalHeader>
+          <ModalBody>
+            คุณต้องการลบ Tag <strong>{selectedTag?.nameTh}</strong> ({selectedTag?.id}) ใช้หรือไม่? กิจกรรมที่ผูกกับแท็กนี้จะสูญเสียการคำนวณจากแท็กนี้
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onDeleteTagModalClose}>ยกเลิก</Button>
+            <Button color="danger" onPress={confirmDeleteTag}>ลบทิ้ง</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       {/* Delete Career Modal */}
       <Modal isOpen={isDeleteCareerModalOpen} onClose={onDeleteCareerModalClose}>
         <ModalContent>
@@ -2349,3 +2947,4 @@ export default function AdminDashboard() {
     </div>
   );
 }
+

@@ -80,6 +80,7 @@ export default function HomePage() {
   const router = useRouter();
   const [urgentCamps, setUrgentCamps] = useState<CampCardData[]>([]);
   const [trendingCamps, setTrendingCamps] = useState<CampCardData[]>([]);
+  const [testimonials, setTestimonials] = useState<any[]>([]); // Added testimonials state
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [hoveredCat, setHoveredCat] = useState<number | null>(null);
@@ -103,8 +104,17 @@ export default function HomePage() {
           const trendingData: Camp[] = await trendingRes.json();
           setTrendingCamps(trendingData.map(campToCampData));
         }
+
+        // Fetch testimonials from site settings
+        const settingsRes = await fetch('/api/admin/settings');
+        if (settingsRes.ok) {
+          const data = await settingsRes.json();
+          if (data?.testimonials && Array.isArray(data.testimonials)) {
+            setTestimonials(data.testimonials);
+          }
+        }
       } catch (error) {
-        console.error('Error fetching camps:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
@@ -338,72 +348,60 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {[
-              {
-                name: "ปาล์ม ธนพล",
-                role: "นักศึกษา ม.4",
-                avatar: "ป",
-                camp: "Tech Booster for Teens",
-                rating: 5,
-                text: "ได้เรียน Python จริงๆ ไม่ใช่แค่ทฤษฎี อาจารย์สอนสนุกมาก ได้เพื่อนใหม่ที่ชอบ coding เหมือนกัน แนะนำเลยครับ",
-                color: "#3B82F6",
-              },
-              {
-                name: "มิ้น พิชญา",
-                role: "นักศึกษา ม.6",
-                avatar: "ม",
-                camp: "UX Design Camp",
-                rating: 5,
-                text: "ก่อนมาค่ายไม่รู้จัก Figma เลยสักนิด หลังจบได้ทำ prototype ได้จริง พี่ๆ mentors ใจดีมาก คุ้มมากค่ะ",
-                color: "#EC4899",
-              },
-              {
-                name: "โฟร์ท วรพล",
-                role: "นักศึกษาปี 1",
-                avatar: "ฟ",
-                camp: "AI & Machine Learning Camp",
-                rating: 5,
-                text: "ผมหา camp นี้เจอผ่าน SkillScout เลย ระบบค้นหาดีมาก กรองตามทักษะได้ สมัครง่าย และค่าย AI ก็เกินคาดครับ",
-                color: "#8B5CF6",
-              },
-            ].map((review, idx) => (
-              <div
-                key={idx}
-                className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 flex flex-col gap-4 hover:shadow-md transition-shadow"
-              >
-                {/* quote icon */}
-                <FaQuoteLeft size={20} style={{ color: review.color }} className="opacity-60" />
+            {testimonials.length > 0 ? (
+              testimonials.map((review, idx) => {
+                const colors = ["#3B82F6", "#EC4899", "#8B5CF6", "#F59E0B", "#10B981"];
+                const color = colors[idx % colors.length];
 
-                {/* text */}
-                <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed flex-1">
-                  "{review.text}"
-                </p>
-
-                {/* stars */}
-                <div className="flex gap-0.5">
-                  {Array.from({ length: review.rating }).map((_, i) => (
-                    <FaStar key={i} className="text-[#F2B33D]" size={13} />
-                  ))}
-                </div>
-
-                {/* divider */}
-                <div className="h-px bg-gray-100 dark:bg-gray-700" />
-
-                {/* author */}
-                <div className="flex items-center gap-3">
+                return (
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-base flex-shrink-0"
-                    style={{ background: review.color }}
+                    key={review.id || idx}
+                    className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 flex flex-col gap-4 hover:shadow-md transition-shadow"
                   >
-                    {review.avatar}
+                    {/* quote icon */}
+                    <FaQuoteLeft size={20} style={{ color }} className="opacity-60" />
+
+                    {/* text */}
+                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed flex-1">
+                      "{review.text}"
+                    </p>
+
+                    {/* stars */}
+                    <div className="flex gap-0.5">
+                      {Array.from({ length: review.rating }).map((_, i) => (
+                        <FaStar key={i} className="text-[#F2B33D]" size={13} />
+                      ))}
+                    </div>
+
+                    {/* divider */}
+                    <div className="h-px bg-gray-100 dark:bg-gray-700" />
+
+                    {/* author */}
+                    <div className="flex items-center gap-3">
+                      {review.avatar && review.avatar.startsWith('http') ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={review.avatar} alt={review.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                      ) : (
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-base flex-shrink-0"
+                          style={{ background: color }}
+                        >
+                          {review.name ? review.name[0] : "👤"}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-bold text-sm text-[#2C2C2C] dark:text-white">{review.name}</p>
+                        <p className="text-xs text-gray-400">{review.camp}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-bold text-sm text-[#2C2C2C] dark:text-white">{review.name}</p>
-                    <p className="text-xs text-gray-400">{review.role} · {review.camp}</p>
-                  </div>
-                </div>
+                );
+              })
+            ) : (
+              <div className="col-span-3 text-center py-10 text-gray-400 text-sm">
+                ยังไม่มีรีวิว
               </div>
-            ))}
+            )}
           </div>
         </div>
       </section>

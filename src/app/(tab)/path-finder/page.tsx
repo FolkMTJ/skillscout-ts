@@ -32,17 +32,20 @@ export default function PathFinderLandingPage() {
   const [loading, setLoading] = useState(true);
 
   const checkExistingResult = useCallback(async () => {
+    let redirecting = false;
     try {
       const res = await fetch('/api/path-finder/results');
       if (res.ok) {
         setHasResult(true);
+        redirecting = true;
         router.push('/path-finder/results');
         return;
       }
     } catch {
       // no result yet — show landing page
     } finally {
-      setLoading(false);
+      // ไม่ set loading=false ถ้ากำลัง redirect ป้องกัน landing page flash
+      if (!redirecting) setLoading(false);
     }
   }, [router]);
 

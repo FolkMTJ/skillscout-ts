@@ -4,60 +4,63 @@
 import { useState } from 'react';
 import { Button, Textarea } from '@heroui/react';
 import { FaStar } from 'react-icons/fa';
+import { Review } from '@/types';
 import toast from 'react-hot-toast';
 
 interface ReviewFormProps {
   campId: string;
   campName: string;
-  onReviewSubmitted: () => void;
   userName: string;
+  existingReview?: Review | null; // ถ้ามี → edit mode
+  onReviewSubmitted: () => void;
 }
 
-export default function ReviewForm({ campId, onReviewSubmitted, userName }: ReviewFormProps) {
-  const [rating, setRating] = useState(0);
+export default function ReviewForm({
+  campId,
+  onReviewSubmitted,
+  userName,
+  existingReview,
+}: ReviewFormProps) {
+  const isEditing = !!existingReview;
+  const [rating, setRating] = useState(existingReview?.rating ?? 0);
   const [hover, setHover] = useState(0);
-  const [comment, setComment] = useState('');
+  const [comment, setComment] = useState(existingReview?.comment ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (rating === 0) {
-      toast.error('กรุณาให้คะแนน');
-      return;
-    }
-
-    if (!comment.trim()) {
-      toast.error('กรุณาเขียนความคิดเห็น');
-      return;
-    }
+    if (rating === 0) { toast.error('กรุณาให้คะแนน'); return; }
+    if (!comment.trim()) { toast.error('กรุณาเขียนความคิดเห็น'); return; }
 
     setIsSubmitting(true);
-
     try {
-      const response = await fetch(`/api/camps/${campId}/reviews`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          author: userName,
-          rating,
-          comment: comment.trim(),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to submit review');
+      if (isEditing && existingReview) {
+        // PATCH — แก้ review เดิม
+        const res = await fetch(`/api/camps/${campId}/reviews`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reviewId: existingReview.id, rating, comment: comment.trim() }),
+        });
+        if (!res.ok) throw new Error();
+        toast.success('แก้ไขรีวิวสำเร็จ!');
+      } else {
+        // POST — สร้าง review ใหม่
+        const res = await fetch(`/api/camps/${campId}/reviews`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ author: userName, rating, comment: comment.trim() }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          toast.error(err.error || 'เกิดข้อผิดพลาด');
+          return;
+        }
+        toast.success('เขียนรีวิวสำเร็จ!');
       }
-
-      toast.success('เขียนรีวิวสำเร็จ!');
-      setRating(0);
-      setComment('');
       onReviewSubmitted();
-    } catch (error) {
-      console.error('Error submitting review:', error);
-      toast.error('เกิดข้อผิดพลาดในการเขียนรีวิว');
+    } catch {
+      toast.error('เกิดข้อผิดพลาด กรุณาลองใหม่');
     } finally {
       setIsSubmitting(false);
     }
@@ -66,7 +69,7 @@ export default function ReviewForm({ campId, onReviewSubmitted, userName }: Revi
   return (
     <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-6 rounded-2xl border-2 border-gray-200 dark:border-gray-700">
       <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
-        แบ่งปันประสบการณ์ของคุณ
+        {isEditing ? 'แก้ไขรีวิวของคุณ' : 'แบ่งปันประสบการณ์ของคุณ'}
       </h3>
 
       <div className="mb-4">
@@ -85,11 +88,7 @@ export default function ReviewForm({ campId, onReviewSubmitted, userName }: Revi
             >
               <FaStar
                 size={32}
-                className={
-                  star <= (hover || rating)
-                    ? 'text-amber-400'
-                    : 'text-gray-300 dark:text-gray-600'
-                }
+                className={star <= (hover || rating) ? 'text-amber-400' : 'text-gray-300 dark:text-gray-600'}
               />
             </button>
           ))}
@@ -124,13 +123,13 @@ export default function ReviewForm({ campId, onReviewSubmitted, userName }: Revi
 
       <Button
         type="submit"
-        className="bg-gradient-to-tr from-[#F2B33D] to-[#F2B33D] text-white font-bold shadow-lg"
+        className={`${isEditing ? 'bg-[#FFF3D0] text-[#B8860B]' : 'bg-[#F2B33D] text-white'} font-bold shadow-sm`}
         size="lg"
         fullWidth
         isLoading={isSubmitting}
         isDisabled={rating === 0 || !comment.trim()}
       >
-        เขียนรีวิว
+        {isEditing ? 'บันทึกการแก้ไข' : 'เขียนรีวิว'}
       </Button>
     </form>
   );

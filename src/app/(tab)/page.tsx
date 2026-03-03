@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import HomePage from "./HomePage";
 
 export const metadata: Metadata = {
-  title: "Skill Scout",
-  description: "ค้นพบค่าย IT ที่เหมาะกับคุณ - พัฒนาทักษะสู่อาชีพในฝัน",
+  title: "หน้าแรก",
+  description: "ค้นพบค่าย IT และกิจกรรมที่เหมาะกับคุณ - พัฒนาทักษะสู่อาชีพในฝันกับ SkillScout",
 };
 
 export default function Page() {

@@ -33,6 +33,23 @@ const FooterBody = () => {
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
   const [visitorOffset, setVisitorOffset] = useState(59);
 
+  // Dynamic Contact & Social Settings State
+  const [contactEmail, setContactEmail] = useState('contact@skillscout.com');
+  const [contactPhone, setContactPhone] = useState('02-xxx-xxxx');
+  const [socials, setSocials] = useState<{
+    socialFacebook: string;
+    socialTwitter: string;
+    socialInstagram: string;
+    socialLinkedin: string;
+    socialGithub: string;
+  }>({
+    socialFacebook: '#',
+    socialTwitter: '#',
+    socialInstagram: '#',
+    socialLinkedin: '#',
+    socialGithub: '#',
+  });
+
   const trackAndFetchVisitors = useCallback(async (offset: number) => {
     const sessionId = getOrCreateSessionId();
     if (!sessionId) return;
@@ -78,13 +95,26 @@ const FooterBody = () => {
     // ดึง visitorOffset จาก admin settings ก่อน แล้วค่อย track
     fetch('/api/admin/settings')
       .then(r => r.ok ? r.json() : null)
-      .then((data: { visitorOffset?: number } | null) => {
+      .then((data: any) => {
         const offset = data?.visitorOffset ?? 59;
         setVisitorOffset(offset);
+
+        // Load contact & social
+        if (data?.contactEmail) setContactEmail(data.contactEmail);
+        if (data?.contactPhone) setContactPhone(data.contactPhone);
+
+        setSocials({
+          socialFacebook: data?.socialFacebook ?? '#',
+          socialTwitter: data?.socialTwitter ?? '#',
+          socialInstagram: data?.socialInstagram ?? '#',
+          socialLinkedin: data?.socialLinkedin ?? '#',
+          socialGithub: data?.socialGithub ?? '#',
+        });
+
         trackAndFetchVisitors(offset);
       })
       .catch(() => trackAndFetchVisitors(visitorOffset));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trackAndFetchVisitors]);
 
   const quickLinks = [
@@ -102,13 +132,13 @@ const FooterBody = () => {
     { label: 'ช่วยเหลือ', href: "https://about.skillscout.site" },
   ];
 
-  const socialLinks = [
-    { icon: FaFacebookF, href: "#", label: "Facebook", gradient: "from-blue-600 to-blue-500" },
-    { icon: FaTwitter, href: "#", label: "Twitter", gradient: "from-sky-500 to-sky-400" },
-    { icon: FaInstagram, href: "#", label: "Instagram", gradient: "from-pink-600 to-orange-500" },
-    { icon: FaLinkedinIn, href: "#", label: "LinkedIn", gradient: "from-blue-700 to-blue-600" },
-    { icon: FaGithub, href: "#", label: "GitHub", gradient: "from-gray-700 to-gray-600" },
-  ];
+  const socialLinksConfig = [
+    { icon: FaFacebookF, href: socials.socialFacebook, label: "Facebook", gradient: "from-blue-600 to-blue-500" },
+    { icon: FaTwitter, href: socials.socialTwitter, label: "Twitter", gradient: "from-sky-500 to-sky-400" },
+    { icon: FaInstagram, href: socials.socialInstagram, label: "Instagram", gradient: "from-pink-600 to-orange-500" },
+    { icon: FaLinkedinIn, href: socials.socialLinkedin, label: "LinkedIn", gradient: "from-blue-700 to-blue-600" },
+    { icon: FaGithub, href: socials.socialGithub, label: "GitHub", gradient: "from-gray-700 to-gray-600" },
+  ].filter(link => link.href && link.href !== '' && link.href !== ' ' && link.href !== '-');
 
   return (
     <div className="mx-auto max-w-[1536px] px-6 py-12">
@@ -130,13 +160,13 @@ const FooterBody = () => {
             แพลตฟอร์มค้นหาค่ายไอทีที่ใหญ่ที่สุด พัฒนาทักษะและสร้างอนาคตที่สดใสไปกับเรา
           </p>
 
-          {/* Social Media */}
           <div className="flex gap-2">
-            {socialLinks.map((social, idx) => (
+            {socialLinksConfig.map((social, idx) => (
               <Link
                 key={idx}
                 href={social.href}
                 className="group relative"
+                aria-label={social.label}
               >
                 <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${social.gradient} flex items-center justify-center text-white shadow-lg group-hover:shadow-xl transition-all group-hover:scale-110`}>
                   <social.icon size={16} />
@@ -201,7 +231,7 @@ const FooterBody = () => {
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-0.5">อีเมล</p>
-                <p>contact@skillscout.com</p>
+                <p>{contactEmail}</p>
               </div>
             </li>
             <li className="flex items-start gap-3 text-sm text-gray-300">
@@ -210,7 +240,7 @@ const FooterBody = () => {
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-0.5">โทรศัพท์</p>
-                <p>02-xxx-xxxx</p>
+                <p>{contactPhone}</p>
               </div>
             </li>
           </ul>

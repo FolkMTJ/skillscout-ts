@@ -15,6 +15,7 @@ interface CampDetails {
   image?: string;
   location?: string;
   date?: string;
+  reviews?: { author?: string; userEmail?: string }[];
 }
 
 interface Registration {
@@ -24,6 +25,7 @@ interface Registration {
   campImage?: string;
   campLocation?: string;
   campDate?: string;
+  hasReviewed?: boolean;
   status: string;
   appliedAt: string;
   updatedAt?: string;
@@ -35,8 +37,10 @@ const STATUS_MAP: Record<string, { label: string; color: 'warning' | 'primary' |
   approved: { label: 'อนุมัติแล้ว', color: 'primary', dot: 'bg-blue-500' },
   confirmed: { label: 'ยืนยันแล้ว', color: 'success', dot: 'bg-green-500' },
   attended: { label: 'จบไปแล้ว', color: 'default', dot: 'bg-gray-400' },
+  completed: { label: 'จบแล้ว', color: 'default', dot: 'bg-gray-400' },
   rejected: { label: 'ไม่อนุมัติ', color: 'danger', dot: 'bg-red-500' },
   cancelled: { label: 'ยกเลิก', color: 'danger', dot: 'bg-red-400' },
+  absent: { label: 'ขาดค่าย', color: 'danger', dot: 'bg-orange-500' },
 };
 
 function isCampDatePast(campDate?: string): boolean {
@@ -49,10 +53,36 @@ function isCampDatePast(campDate?: string): boolean {
 }
 
 function getDisplayStatus(reg: Registration): string {
+  if (reg.status === 'absent') return 'absent';
+  if (reg.status === 'completed') return 'completed';
   if ((reg.status === 'approved' || reg.status === 'confirmed' || reg.status === 'attended') && isCampDatePast(reg.campDate)) {
-    return 'attended'; // จบไปแล้ว
+    return 'attended'; // จบไปแล้ว (frontend fallback)
   }
   return reg.status;
+}
+
+// ลำดับความสำคัญของ status (สูง = ดีกว่า)
+const STATUS_PRIORITY: Record<string, number> = {
+  completed: 7,
+  attended: 6,
+  confirmed: 5,
+  approved: 4,
+  pending: 3,
+  absent: 2,
+  rejected: 1,
+  cancelled: 0,
+};
+
+/** เก็บ 1 รายการต่อ campId โดยเลือก status ที่มี priority สูงสุด */
+function deduplicateByCamp(regs: Registration[]): Registration[] {
+  const map = new Map<string, Registration>();
+  for (const r of regs) {
+    const existing = map.get(r.campId);
+    const currPriority = STATUS_PRIORITY[r.status] ?? -1;
+    const existPriority = existing ? (STATUS_PRIORITY[existing.status] ?? -1) : -Infinity;
+    if (currPriority > existPriority) map.set(r.campId, r);
+  }
+  return Array.from(map.values());
 }
 
 type TabKey = 'all' | 'upcoming' | 'completed' | 'pending' | 'cancelled';
@@ -77,12 +107,17 @@ export default function MyCampsPage() {
               const campResponse = await fetch(`/api/camps/${reg.campId}`);
               if (!campResponse.ok) return reg;
               const campData: CampDetails = await campResponse.json();
-              return { ...reg, campName: campData.name, campImage: campData.image, campLocation: campData.location, campDate: campData.date };
+              const userEmail = session?.user?.email ?? '';
+              const hasReviewed = (campData.reviews ?? []).some(
+                (r) => r.author === userEmail || r.userEmail === userEmail
+              );
+              return { ...reg, campName: campData.name, campImage: campData.image, campLocation: campData.location, campDate: campData.date, hasReviewed };
             } catch { return reg; }
           })
         );
         // Filter out registrations where camp data could not be fetched
-        setRegistrations(withCamps.filter(reg => reg.campName));
+        // Deduplicate: 1 รายการต่อ campId ทุก tab
+        setRegistrations(deduplicateByCamp(withCamps.filter(reg => reg.campName)));
       }
     } catch { toast.error('ไม่สามารถโหลดข้อมูลได้'); }
     finally { setLoading(false); }
@@ -104,30 +139,36 @@ export default function MyCampsPage() {
   ];
 
   const getFiltered = () => {
-    if (activeTab === 'all') return registrations;
+    // "ทั้งหมด" ซ่อน absent ออก
+    if (activeTab === 'all') return registrations.filter(r => r.status !== 'absent');
     if (activeTab === 'pending') return registrations.filter(r => r.status === 'pending');
     if (activeTab === 'upcoming') return registrations.filter(r =>
       (r.status === 'approved' || r.status === 'confirmed') && !isCampDatePast(r.campDate)
     );
     if (activeTab === 'completed') return registrations.filter(r =>
       r.status === 'attended' ||
+      r.status === 'completed' ||
       ((r.status === 'approved' || r.status === 'confirmed') && isCampDatePast(r.campDate))
     );
-    if (activeTab === 'cancelled') return registrations.filter(r => r.status === 'rejected' || r.status === 'cancelled');
+    // ยกเลิก: rejected, cancelled, absent
+    if (activeTab === 'cancelled') return registrations.filter(r =>
+      r.status === 'rejected' || r.status === 'cancelled' || r.status === 'absent'
+    );
     return registrations;
   };
 
   const filtered = getFiltered();
 
   const counts = {
-    all: registrations.length,
+    all: registrations.filter(r => r.status !== 'absent').length,
     pending: registrations.filter(r => r.status === 'pending').length,
     upcoming: registrations.filter(r => (r.status === 'approved' || r.status === 'confirmed') && !isCampDatePast(r.campDate)).length,
     completed: registrations.filter(r =>
       r.status === 'attended' ||
+      r.status === 'completed' ||
       ((r.status === 'approved' || r.status === 'confirmed') && isCampDatePast(r.campDate))
     ).length,
-    cancelled: registrations.filter(r => r.status === 'rejected' || r.status === 'cancelled').length,
+    cancelled: registrations.filter(r => r.status === 'rejected' || r.status === 'cancelled' || r.status === 'absent').length,
   };
 
   if (status === 'loading' || loading) {
@@ -207,8 +248,8 @@ export default function MyCampsPage() {
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${activeTab === tab.key
-                    ? 'bg-[#F2B33D] text-white shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  ? 'bg-[#F2B33D] text-white shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                   }`}
               >
                 {tab.icon}
@@ -254,7 +295,11 @@ export default function MyCampsPage() {
               const isCompleted = displayStatus === 'attended';
 
               return (
-                <div key={reg._id} className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md hover:border-[#F2B33D]/30 transition-all duration-200 group flex flex-col">
+                <div
+                  key={reg._id}
+                  onClick={() => router.push(`/camps/${reg.campId}`)}
+                  className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md hover:border-[#F2B33D]/30 transition-all duration-200 group flex flex-col cursor-pointer"
+                >
                   {/* Image */}
                   <div className="relative aspect-video overflow-hidden">
                     <Image
@@ -305,27 +350,26 @@ export default function MyCampsPage() {
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex flex-col gap-2 mt-auto pt-2 border-t border-gray-50">
-                      <button
-                        onClick={() => router.push(`/camps/${reg.campId}`)}
-                        className="w-full bg-gray-50 hover:bg-[#FFF3D0] text-[#2C2C2C] hover:text-[#F2B33D] font-semibold py-2.5 px-4 rounded-xl text-sm transition-all"
-                      >
-                        ดูรายละเอียดค่าย
-                      </button>
-
-
-
-                      {isCompleted && (
+                    {/* Action Buttons — เฉพาะปุ่ม review */}
+                    {(isCompleted || reg.status === 'completed') && (
+                      <div className="flex flex-col gap-2 mt-auto pt-2 border-t border-gray-50">
                         <button
-                          onClick={() => router.push(`/camps/${reg.campId}#reviews`)}
-                          className="w-full bg-green-50 hover:bg-green-100 text-green-700 font-bold py-2.5 px-4 rounded-xl text-sm transition-all flex items-center justify-center gap-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/camps/${reg.campId}#reviews`);
+                          }}
+                          className={`w-full font-bold py-2.5 px-4 rounded-xl text-sm transition-all flex items-center justify-center gap-2 ${reg.hasReviewed
+                              ? 'bg-[#FFF3D0] hover:bg-[#FFE8A0] text-[#B8860B] hover:text-[#9A6F00]'
+                              : 'bg-green-50 hover:bg-green-100 text-green-700'
+                            }`}
                         >
                           <FiStar size={14} />
-                          เขียนรีวิว
+                          {reg.hasReviewed ? 'แก้ไขรีวิว' : 'เขียนรีวิว'}
                         </button>
-                      )}
-                    </div>
+                      </div>
+                    )}
+
+
                   </div>
                 </div>
               );

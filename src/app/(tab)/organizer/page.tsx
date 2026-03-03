@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Card, Button, useDisclosure, Chip, Modal, ModalContent, ModalHeader, ModalBody, Input } from '@heroui/react';
+import { Card, Button, useDisclosure, Chip, Modal, ModalContent, ModalHeader, ModalBody, Input, Checkbox, ModalFooter } from '@heroui/react';
 import { FiCalendar, FiUsers, FiCheckCircle, FiPlus, FiClock, FiUserCheck, FiZap, FiBook, FiAlertCircle, FiTag, FiSearch, FiDollarSign } from 'react-icons/fi';
 import { Camp, Registration, RegistrationStatus } from '@/types';
 import {
@@ -33,6 +33,10 @@ export default function OrganizerDashboard() {
 
   const { isOpen: isFormModalOpen, onOpen: onFormModalOpen, onClose: onFormModalClose } = useDisclosure();
   const { isOpen: isPromoModalOpen, onOpen: onPromoModalOpen, onClose: onPromoModalClose } = useDisclosure();
+  const { isOpen: isFeeInfoModalOpen, onOpen: onFeeInfoModalOpen, onClose: onFeeInfoModalClose } = useDisclosure();
+
+  const [platformFeePercent, setPlatformFeePercent] = useState<number>(0);
+  const [hideFeeInfoNextTime, setHideFeeInfoNextTime] = useState(false);
 
   // Tab + Pagination + Search สำหรับ ค่ายของฉัน
   const [campTab, setCampTab] = useState<'active' | 'completed' | 'all'>('active');
@@ -54,13 +58,18 @@ export default function OrganizerDashboard() {
     if (!session?.user?.id) return;
     try {
       setLoading(true);
-      const [campsRes, payoutRes] = await Promise.all([
+      const [campsRes, payoutRes, settingsRes] = await Promise.all([
         fetch('/api/camps?includeAll=true'),
         fetch('/api/organizer/payout'),
+        fetch('/api/admin/settings'),
       ]);
       if (!campsRes.ok) throw new Error('Failed to fetch camps');
       const payoutData = await payoutRes.json().catch(() => ({}));
       setHasPayoutInfo(!!(payoutData.success && payoutData.payoutInfo));
+
+      const settingsData = await settingsRes.json().catch(() => ({}));
+      setPlatformFeePercent(settingsData.platformFeePercent || 0);
+
       const campsData = await campsRes.json();
       const allCamps = Array.isArray(campsData) ? campsData : (campsData.camps || []);
 
@@ -347,6 +356,21 @@ export default function OrganizerDashboard() {
       router.push('/organizer/payout-settings');
       return;
     }
+
+    const hideInfo = localStorage.getItem('hidePlatformFeeInfo');
+    if (hideInfo === 'true') {
+      resetForm();
+      onFormModalOpen();
+    } else {
+      onFeeInfoModalOpen();
+    }
+  };
+
+  const handleProceedCreateCamp = () => {
+    if (hideFeeInfoNextTime) {
+      localStorage.setItem('hidePlatformFeeInfo', 'true');
+    }
+    onFeeInfoModalClose();
     resetForm();
     onFormModalOpen();
   };
@@ -810,6 +834,55 @@ export default function OrganizerDashboard() {
       </div>
 
       {/* Modals */}
+      <Modal isOpen={isFeeInfoModalOpen} onClose={onFeeInfoModalClose}>
+        <ModalContent>
+          <ModalHeader className="border-b border-gray-100 flex flex-col gap-1">
+            <span className="text-xl font-bold flex items-center gap-2">
+              <FiAlertCircle className="text-[#F2B33D]" />นโยบายค่าธรรมเนียม
+            </span>
+          </ModalHeader>
+          <ModalBody className="py-6 space-y-4 text-gray-700">
+            <p>
+              สำหรับการสร้างค่ายผ่านแพลตฟอร์ม SkillScout ทางเราจะมีการหักค่าธรรมเนียมแพลตฟอร์มในอัตรา <strong className="text-[#F2B33D]">{platformFeePercent}%</strong> จากยอดรายได้ของการสมัครค่ายของคุณ
+            </p>
+            <div className="bg-orange-50 p-4 rounded-xl text-sm border border-orange-100">
+              <p className="font-semibold text-orange-800 mb-2">ตัวอย่างการคำนวณ:</p>
+              <ul className="list-inside list-disc text-orange-700 space-y-1 ml-2">
+                <li>สมมติคุณตั้งราคาค่าย 1,000 บาท</li>
+                <li>
+                  แพลตฟอร์มหัก <strong>{platformFeePercent}%</strong> ({(1000 * platformFeePercent / 100).toFixed(0)} บาท)
+                </li>
+                <li>
+                  รายได้สุทธิที่คุณจะได้รับ: <strong>{(1000 - (1000 * platformFeePercent / 100)).toFixed(0)} บาท</strong>
+                </li>
+              </ul>
+            </div>
+            <p className="text-xs text-gray-500">
+              หมายเหตุ: อัตราค่าธรรมเนียมแพลตฟอร์มสามารถเปลี่ยนแปลงได้ตามประกาศของเว็บ คุณสามารถตรวจสอบยอดรายได้หลังหักค่าธรรมเนียมได้ที่หน้า Dashboard พาร์ทเนอร์
+            </p>
+
+            <div className="pt-2">
+              <Checkbox
+                isSelected={hideFeeInfoNextTime}
+                onValueChange={setHideFeeInfoNextTime}
+                size="sm"
+                color="warning"
+              >
+                ไม่ต้องแสดงข้อความนี้อีก
+              </Checkbox>
+            </div>
+          </ModalBody>
+          <ModalFooter className="border-t border-gray-100">
+            <Button variant="light" onPress={onFeeInfoModalClose}>
+              ยกเลิก
+            </Button>
+            <Button color="warning" onPress={handleProceedCreateCamp} className="text-white font-semibold">
+              รับทราบและดำเนินการต่อ
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       <CampFormModal
         isOpen={isFormModalOpen}
         onClose={onFormModalClose}
