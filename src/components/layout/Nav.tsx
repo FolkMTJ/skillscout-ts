@@ -151,7 +151,7 @@ export default function NavBar(props: NavbarProps) {
                     {/* {mounted && <ToggleTheme />} */}
 
                     <NavbarItem className="ml-2 flex! gap-2">
-                        {status === 'loading' ? (
+                        {!mounted || status === 'loading' ? (
                             <div className="w-8 h-8 rounded-full bg-default-200 animate-pulse" />
                         ) : session ? (
                             <div className="flex items-center gap-3">

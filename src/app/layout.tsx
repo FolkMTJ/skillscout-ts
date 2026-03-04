@@ -4,6 +4,8 @@ import { Providers as UIProviders } from "./provider";
 import { Providers } from "@/components/Providers";
 import { ThemeProvider } from "next-themes";
 import type { Metadata, Viewport } from "next";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import GlobalDisclaimerModal from "@/components/GlobalDisclaimerModal";
 
 const notoSansTH = Noto_Sans_Thai({
@@ -59,15 +61,16 @@ export const metadata: Metadata = {
   }
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getServerSession(authOptions);
   return (
     <html lang="th" suppressHydrationWarning>
       <body className={`${notoSansTH.variable} antialiased`}>
-        <Providers>
+        <Providers session={session}>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} forcedTheme="light">
             <UIProviders>
               <GlobalDisclaimerModal />

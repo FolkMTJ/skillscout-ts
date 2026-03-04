@@ -44,8 +44,10 @@ export interface Payment {
   platformFee?: number;
   organizerNet?: number;
   payoutStatus?: 'pending' | 'paid_out';
+  payoutAmountPaid?: number;
   paidOutAt?: Date;
   payoutNote?: string;
+  payoutSlipUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -8,5 +8,3 @@ export * from './registration';
 export * from './promo-code';
 export * from './next';
 export * from './path-finder';
-
-

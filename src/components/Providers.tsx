@@ -6,9 +6,11 @@ import { HeroUIProvider } from '@heroui/react';
 import { Toaster } from 'react-hot-toast';
 import { BookmarkProvider } from '@/contexts/BookmarkContext';
 
-export function Providers({ children }: { children: React.ReactNode }) {
+import type { Session } from 'next-auth';
+
+export function Providers({ children, session }: { children: React.ReactNode, session?: Session | null }) {
   return (
-    <SessionProvider>
+    <SessionProvider session={session}>
       <BookmarkProvider>
         <HeroUIProvider>
           <Toaster position="top-center" />
