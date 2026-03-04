@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { Button, Link } from "@heroui/react";
 import { FaSearch, FaChevronRight } from "react-icons/fa";
 
@@ -44,10 +45,16 @@ export default function HeroBanner({
           md–xl  (768–1535px) = MacBook & laptop → left-[55%]
           2xl+   (1536px+)    = large desktop    → left-[45%]
       */}
-      <div
-        className="absolute top-[10%] left-[55%] 2xl:left-[45%] w-[42%] h-[80%] bg-contain bg-no-repeat bg-right opacity-100 pointer-events-none hidden md:block"
-        style={{ backgroundImage: "url('/logo-banner.png')" }}
-      />
+      <div className="absolute top-[10%] left-[55%] 2xl:left-[45%] w-[42%] h-[80%] opacity-100 pointer-events-none hidden md:block">
+        <Image
+          src="/logo-banner.png"
+          alt="SkillScout Brand Logo"
+          fill
+          priority
+          sizes="(min-width: 768px) 42vw, 0vw"
+          className="object-contain object-right"
+        />
+      </div>
 
       {/* Content */}
       <div className={`container mx-auto px-6 py-10 md:py-16 relative z-10 ${centered ? 'flex justify-center' : ''}`}>

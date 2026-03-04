@@ -52,7 +52,10 @@ export async function generateMetadata(
       title: camp.name,
       description: camp.description?.substring(0, 160),
       images: [ogImage],
-    }
+    },
+    alternates: {
+      canonical: `/camps/${id}`,
+    },
   };
 }
 

@@ -12,11 +12,12 @@ import {
   Input,
   Textarea,
   Divider,
-  Image,
+  Image as HeroUIImage, // Alias HeroUI's Image to avoid conflict
   Progress,
 } from '@heroui/react';
 import { FiCheckCircle, FiTag, FiUpload, FiImage, FiSmartphone, FiX, FiCheck, FiZap, FiLink, FiClock } from 'react-icons/fi';
 import jsQR from 'jsqr';
+import Image from 'next/image'; // This is the next/image component
 import toast from 'react-hot-toast';
 
 interface CampData {
@@ -174,8 +175,8 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
           setPromoCode('');
         }
       })
-      .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+      .catch(() => { });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const handleValidatePromo = async () => {
@@ -780,7 +781,7 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
                   {/* Camp Info (Small Card) */}
                   <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
                     {camp.image ? (
-                      <Image src={camp.image} alt="camp" className="w-14 h-14 rounded-xl object-cover" />
+                      <HeroUIImage src={camp.image} alt="camp" className="w-14 h-14 rounded-xl object-cover" />
                     ) : (
                       <div className="w-14 h-14 rounded-xl bg-white flex items-center justify-center shadow-sm">
                         <FiTag className="text-[#F2B33D]" />
@@ -966,10 +967,11 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
                     <>
                       <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-xl shadow-gray-200/50 dark:shadow-none dark:border-gray-700 w-[252px]">
                         {/* PromptPay logo */}
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/promptpay-logo.png" alt="PromptPay" className="w-full object-cover" />
+                        <div className="w-full h-auto flex-shrink-0">
+                          <Image src="/promptpay-logo.png" alt="PromptPay" width={252} height={60} className="w-full object-cover" />
+                        </div>
                         <div className="p-4 bg-white dark:bg-gray-800 flex justify-center">
-                          <Image src={qrCodeUrl} alt="QR Code" width={200} height={200} />
+                          <HeroUIImage src={qrCodeUrl} alt="QR Code" width={200} height={200} />
                         </div>
                       </div>
 

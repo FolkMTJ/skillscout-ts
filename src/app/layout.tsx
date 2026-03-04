@@ -12,6 +12,10 @@ const notoSansTH = Noto_Sans_Thai({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://skillscout.com"),
+  alternates: {
+    canonical: "/",
+  },
   title: {
     template: "%s | SkillScout",
     default: "SkillScout - ค้นหาค่ายพัฒนาทักษะและพอร์ตโฟลิโอ",

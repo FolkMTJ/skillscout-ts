@@ -28,6 +28,7 @@ import { FiUsers, FiCalendar, FiShield, FiTrash2, FiEye, FiSearch, FiAlertCircle
 import toast from 'react-hot-toast';
 import { StatCard } from '@/components/common';
 import jsQR from 'jsqr';
+import Image from 'next/image';
 import { TAG_CATEGORIES } from '@/data/tags';
 
 interface RoadmapStepForm {
@@ -2314,9 +2315,9 @@ export default function AdminDashboard() {
                     {payoutQrUrl ? (
                       <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-xl shadow-gray-200/50 w-[252px]">
                         {/* PromptPay logo banner */}
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/promptpay-logo.png" alt="PromptPay" className="w-full object-cover" />
-                        {/* QR code */}
+                        <div className="w-16 h-auto flex-shrink-0">
+                          <Image src="/promptpay-logo.png" alt="PromptPay" width={64} height={24} className="w-full object-cover" />
+                        </div>  {/* QR code */}
                         <div className="p-4 bg-white flex justify-center">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={payoutQrUrl} alt="PromptPay QR" className="w-[200px] h-[200px]" />

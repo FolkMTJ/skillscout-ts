@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { Button } from "@heroui/react";
 import { useRouter } from "next/navigation";
 import {
@@ -379,8 +380,7 @@ export default function HomePage() {
                     {/* author */}
                     <div className="flex items-center gap-3">
                       {review.avatar && review.avatar.startsWith('http') ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={review.avatar} alt={review.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                        <Image src={review.avatar} alt={review.name || "User Avatar"} width={40} height={40} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
                       ) : (
                         <div
                           className="w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-base flex-shrink-0"

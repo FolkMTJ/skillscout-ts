@@ -13,8 +13,13 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@heroui/react";
 import BookingModal from '@/components/camps/BookingModal';
 import TicketModal from '@/components/ticket/TicketModal';
-import LocationMap from '@/components/maps/LocationMap';
+import dynamic from 'next/dynamic';
+const LocationMap = dynamic(() => import('@/components/maps/LocationMap'), {
+    loading: () => <div className="animate-pulse w-full bg-gray-200 dark:bg-gray-800 rounded-2xl h-52 md:h-64" />,
+    ssr: false
+});
 import { ReviewForm, ReviewList } from '@/components/reviews';
+import Script from 'next/script';
 
 interface TicketData {
     _id: string;
@@ -294,8 +299,46 @@ export default function CampDetailView({ camp }: { camp: Camp }) {
         cancelExpired();
     }, [timeLeft, pendingPaymentId, pendingRegistrationId]);
 
+    // Construct JSON-LD Schema
+    const jsonLd = {
+        "@context": "https://schema.org",
+        "@type": "Event",
+        "name": camp.name,
+        "description": camp.description,
+        "image": camp.image,
+        "organizer": {
+            "@type": "Organization",
+            "name": camp.organizerId ? camp.organizers?.[0]?.name || "SkillScout Organizer" : "SkillScout Organizer",
+            "url": camp.organizerId ? `https://skillscout.com/organizer/${camp.organizerId}` : "https://skillscout.com"
+        },
+        "location": {
+            "@type": "Place",
+            "name": camp.location,
+            "address": {
+                "@type": "PostalAddress",
+                "addressCountry": "TH"
+            }
+        },
+        "eventAttendanceMode": camp.activityFormat === "Online" ? "https://schema.org/OnlineEventAttendanceMode" : "https://schema.org/OfflineEventAttendanceMode",
+        "eventStatus": isCampEnded ? "https://schema.org/EventScheduled" : "https://schema.org/EventScheduled",
+        "offers": {
+            "@type": "Offer",
+            "price": camp.fee || 0,
+            "priceCurrency": "THB",
+            "availability": isDeadlinePassed || isCampEnded ? "https://schema.org/SoldOut" : "https://schema.org/InStock",
+            "url": `https://skillscout.com/camps/${camp._id}`
+        }
+    };
+
     return (
         <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
+            {/* Inject JSON-LD Schema securely */}
+            <Script
+                id={`json-ld-${camp._id}`}
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
+
             <div className="container mx-auto px-3 sm:px-4 py-4 md:py-12">
                 <section>
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden max-w-10xl mx-auto">
