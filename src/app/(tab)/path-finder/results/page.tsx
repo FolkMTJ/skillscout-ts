@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Card, CardBody, Button, Progress, Spinner, Chip } from '@heroui/react';
-import { FiArrowRight, FiChevronDown, FiChevronUp, FiBriefcase, FiTrendingUp } from 'react-icons/fi';
+import { FiArrowRight, FiChevronDown, FiChevronUp, FiBriefcase, FiTrendingUp, FiSave, FiRepeat } from 'react-icons/fi';
 import { FaArrowRight, FaLightbulb, FaStar } from 'react-icons/fa';
 import ShareResultButton from '@/components/common/ShareResultButton';
 import HeroBanner from '@/components/HeroBanner';
@@ -13,6 +13,11 @@ import { PathFinderResultWithDetails } from '@/types';
 import { RIASEC_TYPES } from '@/data/riasec';
 import CampCard from '@/components/(card)/CampCard';
 import { Camp } from '@/types/camp';
+import {
+  loadGuestResult,
+  clearGuestResult,
+  GuestResult,
+} from '@/lib/path-finder-utils';
 
 interface CareerDetails {
   id: string;
@@ -34,10 +39,13 @@ interface CareerDetails {
   demandLevel?: 'high' | 'medium' | 'low';
 }
 
+// ประเภทผลลัพธ์รวม (DB result หรือ Guest result)
+type AnyResult = (PathFinderResultWithDetails & { isGuest?: false }) | (GuestResult & { recommendedCareerDetails: CareerDetails[] });
+
 export default function PathFinderResultsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [result, setResult] = useState<PathFinderResultWithDetails | null>(null);
+  const [result, setResult] = useState<AnyResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [recommendedCamps, setRecommendedCamps] = useState<Camp[]>([]);
   const [campsLoading, setCampsLoading] = useState(false);
@@ -82,15 +90,27 @@ export default function PathFinderResultsPage() {
 
   const fetchResults = useCallback(async () => {
     try {
-      const res = await fetch('/api/path-finder/results');
-      if (res.ok) {
-        const data = await res.json();
-        setResult(data.result);
-        if (data.result?.topRIASECCodes) {
-          fetchRecommendedCamps();
+      if (status === 'authenticated') {
+        // ─── User: โหลดจาก DB ────────────────────────────────────────────
+        const res = await fetch('/api/path-finder/results');
+        if (res.ok) {
+          const data = await res.json();
+          setResult(data.result);
+          if (data.result?.topRIASECCodes) {
+            fetchRecommendedCamps();
+          }
+        } else {
+          router.push('/path-finder');
         }
-      } else {
-        router.push('/path-finder');
+      } else if (status === 'unauthenticated') {
+        // ─── Guest: โหลดจาก localStorage ────────────────────────────────
+        const guestResult = loadGuestResult();
+        if (guestResult) {
+          setResult(guestResult as AnyResult);
+          fetchRecommendedCamps();
+        } else {
+          router.push('/path-finder');
+        }
       }
     } catch (error) {
       console.error('Error fetching results:', error);
@@ -98,17 +118,12 @@ export default function PathFinderResultsPage() {
     } finally {
       setLoading(false);
     }
-  }, [router, fetchRecommendedCamps]);
+  }, [status, router, fetchRecommendedCamps]);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-      return;
-    }
-    if (status === 'authenticated') {
-      fetchResults();
-    }
-  }, [status, router, fetchResults]);
+    if (status === 'loading') return;
+    fetchResults();
+  }, [status, fetchResults]);
 
   const calculateDaysLeft = (camp: Camp) => {
     if (!camp.deadline) return 0;
@@ -126,6 +141,8 @@ export default function PathFinderResultsPage() {
       return 0;
     }
   };
+
+  const isGuest = result && (result as GuestResult).isGuest === true;
 
   if (loading) {
     return (
@@ -157,19 +174,6 @@ export default function PathFinderResultsPage() {
                   </div>
                 ))}
               </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="bg-white rounded-xl border border-gray-200 p-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
-                        <div className="h-5 bg-gray-200 rounded w-20"></div>
-                      </div>
-                      <div className="h-3 bg-gray-200 rounded-full w-full"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         </div>
@@ -180,10 +184,10 @@ export default function PathFinderResultsPage() {
   if (!result) return null;
 
   const sortedRIASEC = Object.entries(result.riasecScores)
-    .sort(([, a], [, b]) => b - a)
+    .sort(([, a], [, b]) => (b as number) - (a as number))
     .map(([code, score]) => ({
       code: code as keyof typeof RIASEC_TYPES,
-      score,
+      score: score as number,
       info: RIASEC_TYPES[code as keyof typeof RIASEC_TYPES],
     }));
 
@@ -208,20 +212,58 @@ export default function PathFinderResultsPage() {
           <Button
             size="lg"
             className="bg-[#2C2C2C] text-white font-black px-8 rounded-2xl h-14 text-base hover:bg-black transition-all"
-            onPress={() => router.push('/path-finder/quiz')}
+            onPress={() => {
+              if (isGuest) clearGuestResult();
+              router.push('/path-finder/quiz');
+            }}
           >
-            ทำแบบทดสอบอีกครั้ง
+            <FiRepeat className="mr-2" /> ทำแบบทดสอบอีกครั้ง
           </Button>
-          <ShareResultButton
-            result={result}
-            filename={`skillscout-pathfinder-${result?.topRIASECCodes?.join('') ?? 'result'}`}
-            title="ผลลัพธ์ Path Finder - SkillScout"
-            userName={session?.user?.name ?? undefined}
-          />
+          {/* ปุ่ม Share เฉพาะ user ที่ login แล้ว */}
+          {!isGuest && (
+            <ShareResultButton
+              result={result as PathFinderResultWithDetails}
+              filename={`skillscout-pathfinder-${result?.topRIASECCodes?.join('') ?? 'result'}`}
+              title="ผลลัพธ์ Path Finder - SkillScout"
+              userName={session?.user?.name ?? undefined}
+            />
+          )}
         </div>
       </HeroBanner>
 
       <div className="container mx-auto px-4 max-w-8xl py-12">
+
+        {/* ── Guest CTA Banner ── */}
+        {isGuest && (
+          <div className="mb-8 rounded-3xl overflow-hidden border border-[#F2B33D]/30 shadow-sm">
+            <div className="h-1 w-full bg-gradient-to-r from-[#F2B33D] to-orange-400" />
+            <div className="bg-[#FFFBF0] px-5 py-4 md:px-8 md:py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#F2B33D]/20 flex items-center justify-center flex-shrink-0">
+                  <FiSave className="text-[#F2B33D]" size={16} />
+                </div>
+                <div>
+                  <p className="font-bold text-[#2C2C2C] text-sm">ผลลัพธ์นี้เก็บไว้บนเครื่องของคุณชั่วคราว</p>
+                  <p className="text-gray-500 text-xs mt-0.5">สมัครสมาชิกฟรีเพื่อบันทึกผลถาวรและรับค่ายแนะนำส่วนตัว</p>
+                </div>
+              </div>
+              <div className="flex gap-2 flex-shrink-0 w-full sm:w-auto">
+                <button
+                  onClick={() => router.push('/register')}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-[#F2B33D] hover:bg-[#e0a530] text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all"
+                >
+                  สมัครฟรี <FiArrowRight size={12} />
+                </button>
+                <button
+                  onClick={() => router.push('/login')}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-white hover:bg-gray-50 text-[#2C2C2C] font-semibold text-xs px-4 py-2.5 rounded-xl border border-gray-200 transition-all"
+                >
+                  เข้าสู่ระบบ
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── RIASEC + Personality Summary (unified card) ── */}
         <Card className="mb-8 overflow-hidden shadow-sm border border-gray-100">

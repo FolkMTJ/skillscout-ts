@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { Card, Chip, Button } from '@heroui/react';
+import { Card, Chip, Button, useDisclosure } from '@heroui/react';
 import { FiCheckCircle, FiClock, FiXCircle, FiZap } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { ConfirmModal } from '@/components/common';
 
 interface Registration {
   id: string;
@@ -30,6 +31,7 @@ export default function MyRegistrationsDebugPage() {
   const [data, setData] = useState<DebugData | null>(null);
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState(false);
+  const { isOpen: isApproveAllModalOpen, onOpen: onApproveAllModalOpen, onClose: onApproveAllModalClose } = useDisclosure();
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -51,9 +53,7 @@ export default function MyRegistrationsDebugPage() {
     }
   };
 
-  const handleApproveAll = async () => {
-    if (!confirm('ต้องการอนุมัติค่ายที่ pending ทั้งหมดใช่หรือไม่?')) return;
-
+  const confirmApproveAll = async () => {
     setApproving(true);
     try {
       const res = await fetch('/api/debug/approve-all', {
@@ -64,6 +64,7 @@ export default function MyRegistrationsDebugPage() {
 
       if (res.ok) {
         toast.success(`อนุมัติสำเร็จ! ${result.approvedCount} ค่าย`);
+        onApproveAllModalClose();
         // Refresh data
         fetchData();
       } else {
@@ -76,6 +77,11 @@ export default function MyRegistrationsDebugPage() {
       setApproving(false);
     }
   };
+
+  const handleApproveAll = () => {
+    onApproveAllModalOpen();
+  };
+
 
   if (loading) {
     return (
@@ -174,6 +180,16 @@ export default function MyRegistrationsDebugPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={isApproveAllModalOpen}
+        onClose={onApproveAllModalClose}
+        onConfirm={confirmApproveAll}
+        title="อนุมัติทั้งหมด"
+        description={`ต้องการอนุมัติค่ายที่รอตรวจสอบทั้งหมด ${data.pendingCount} รายการ ใช่หรือไม่?`}
+        confirmLabel="ยืนยันการอนุมัติ"
+        variant="info"
+      />
     </div>
   );
 }

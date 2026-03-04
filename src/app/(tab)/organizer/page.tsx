@@ -11,6 +11,7 @@ import {
   CampFormModal, CampCardWithImage, EmptyState
 } from '@/components/organizer';
 import PromoCodeManager from '@/components/organizer/PromoCodeManager';
+import { ConfirmModal } from '@/components/common';
 import toast from 'react-hot-toast';
 import { isAdminRole } from '@/lib/auth-check';
 
@@ -34,6 +35,11 @@ export default function OrganizerDashboard() {
   const { isOpen: isFormModalOpen, onOpen: onFormModalOpen, onClose: onFormModalClose } = useDisclosure();
   const { isOpen: isPromoModalOpen, onOpen: onPromoModalOpen, onClose: onPromoModalClose } = useDisclosure();
   const { isOpen: isFeeInfoModalOpen, onOpen: onFeeInfoModalOpen, onClose: onFeeInfoModalClose } = useDisclosure();
+  const { isOpen: isDeleteModalOpen, onOpen: onDeleteModalOpen, onClose: onDeleteModalClose } = useDisclosure();
+  const { isOpen: isCompleteModalOpen, onOpen: onCompleteModalOpen, onClose: onCompleteModalClose } = useDisclosure();
+
+  const [targetCampId, setTargetCampId] = useState<string | null>(null);
+  const [targetCampName, setTargetCampName] = useState<string>('');
 
   const [platformFeePercent, setPlatformFeePercent] = useState<number>(0);
   const [hideFeeInfoNextTime, setHideFeeInfoNextTime] = useState(false);
@@ -266,28 +272,32 @@ export default function OrganizerDashboard() {
     }
   };
 
-  const handleDeleteCamp = async (campId: string) => {
-    if (!confirm('คุณต้องการลบค่ายนี้หรือไม่?')) return;
+  const confirmDeleteCamp = async () => {
+    if (!targetCampId) return;
     try {
-      const response = await fetch(`/api/camps/${campId}`, { method: 'DELETE' });
+      const response = await fetch(`/api/camps/${targetCampId}`, { method: 'DELETE' });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
         toast.error(data.error || 'เกิดข้อผิดพลาดในการลบค่าย');
         return;
       }
       toast.success('ลบค่ายสำเร็จ!');
+      onDeleteModalClose();
       fetchData();
     } catch {
       toast.error('เกิดข้อผิดพลาดในการลบค่าย');
     }
   };
 
-  const handleCompleteCamp = async (campId: string, campName: string) => {
-    const message = 'ยืนยันจบค่าย "' + campName + '" หรือไม่?\n\nหมายเหตุ: ค่ายจะถูกตั้งเป็นสถานะ "จบแล้ว" และไม่สามารถรับสมัครเพิ่มได้';
-    if (!confirm(message)) return;
+  const handleDeleteCamp = (campId: string) => {
+    setTargetCampId(campId);
+    onDeleteModalOpen();
+  };
 
+  const confirmCompleteCamp = async () => {
+    if (!targetCampId) return;
     try {
-      const response = await fetch('/api/camps/' + campId, {
+      const response = await fetch('/api/camps/' + targetCampId, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -299,11 +309,18 @@ export default function OrganizerDashboard() {
       if (!response.ok) throw new Error('Failed to complete camp');
 
       toast.success('จบค่ายสำเร็จ!');
+      onCompleteModalClose();
       fetchData();
     } catch (completeError) {
       console.error('Error completing camp:', completeError);
       toast.error('เกิดข้อผิดพลาดในการจบค่าย');
     }
+  };
+
+  const handleCompleteCamp = (campId: string, campName: string) => {
+    setTargetCampId(campId);
+    setTargetCampName(campName);
+    onCompleteModalOpen();
   };
 
   const handleEditCamp = (camp: Camp) => {
@@ -914,6 +931,28 @@ export default function OrganizerDashboard() {
           </ModalBody>
         </ModalContent>
       </Modal>
+
+      {/* Delete Camp Confirm Modal */}
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={onDeleteModalClose}
+        onConfirm={confirmDeleteCamp}
+        title="ยืนยันการลบ"
+        description="คุณต้องการลบค่ายนี้หรือไม่? ข้อมูลทั้งหมดที่เกี่ยวข้องจะถูกลบและไม่สามารถกู้คืนได้"
+        confirmLabel="ลบค่าย"
+        variant="danger"
+      />
+
+      {/* Complete Camp Confirm Modal */}
+      <ConfirmModal
+        isOpen={isCompleteModalOpen}
+        onClose={onCompleteModalClose}
+        onConfirm={confirmCompleteCamp}
+        title="ปิดรับสมัครและจบค่าย"
+        description={`ยืนยันจบค่าย "${targetCampName}" หรือไม่? ค่ายจะถูกตั้งเป็นสถานะ "จบแล้ว" และไม่สามารถรับสมัครเพิ่มได้`}
+        confirmLabel="ยืนยันจบค่าย"
+        variant="info"
+      />
     </div>
   );
 }

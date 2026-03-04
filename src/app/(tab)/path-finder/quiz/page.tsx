@@ -8,6 +8,7 @@ import { Card, CardBody, Button, Progress, Spinner } from '@heroui/react';
 import { FiArrowLeft, FiCheck } from 'react-icons/fi';
 import { Question } from '@/data/path-finder';
 import { PathFinderAnswer } from '@/types';
+import { buildGuestResult, saveGuestResult, GuestAnswer } from '@/lib/path-finder-utils';
 
 export default function PathFinderQuizPage() {
   const { status } = useSession();
@@ -18,15 +19,9 @@ export default function PathFinderQuizPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-      return;
-    }
-
-    if (status === 'authenticated') {
-      fetchQuestions();
-    }
-  }, [status, router]);
+    // Guest ก็เข้าได้ ไม่ต้อง redirect ไป login
+    fetchQuestions();
+  }, []);
 
   const fetchQuestions = async () => {
     try {
@@ -54,26 +49,30 @@ export default function PathFinderQuizPage() {
 
   const handleSubmit = async () => {
     if (!isAllComplete()) return;
-
     setSubmitting(true);
+
+    const answersArray = Array.from(answers.entries()).map(([questionId, rating]) => ({ questionId, rating }));
+
     try {
-      const answersArray: PathFinderAnswer[] = Array.from(answers.entries()).map(
-        ([questionId, rating]) => ({
-          questionId,
-          rating,
-        })
-      );
+      if (status === 'authenticated') {
+        // ─── Logged-in: บันทึกลง DB ───────────────────────────────────────
+        const res = await fetch('/api/path-finder/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ answers: answersArray as PathFinderAnswer[] }),
+        });
 
-      const res = await fetch('/api/path-finder/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers: answersArray }),
-      });
-
-      if (res.ok) {
-        router.push('/path-finder/results');
+        if (res.ok) {
+          router.push('/path-finder/results');
+        } else {
+          alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+        }
       } else {
-        alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+        // ─── Guest: คำนวณ client-side + บันทึกใน localStorage ──────────
+        const guestAnswers: GuestAnswer[] = answersArray;
+        const result = buildGuestResult(guestAnswers);
+        saveGuestResult(result);
+        router.push('/path-finder/results');
       }
     } catch (error) {
       console.error('Error submitting quiz:', error);
@@ -202,8 +201,8 @@ export default function PathFinderQuizPage() {
                             >
                               <div
                                 className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 flex items-center justify-center text-sm font-bold transition-all duration-300 ${isSelected
-                                    ? option.selectedStyle
-                                    : `${option.color} text-gray-400 hover:scale-105 hover:shadow-md`
+                                  ? option.selectedStyle
+                                  : `${option.color} text-gray-400 hover:scale-105 hover:shadow-md`
                                   } ${isAnswered && !isSelected ? 'opacity-30 grayscale' : ''}`}
                               >
                                 {option.value}
@@ -233,8 +232,8 @@ export default function PathFinderQuizPage() {
             <Button
               size="md"
               className={`shrink-0 px-6 md:px-10 h-11 md:h-14 font-black text-sm md:text-base shadow-lg transition-transform ${isAllComplete()
-                  ? 'bg-[#F2B33D] text-[#2C2C2C] hover:scale-105 hover:bg-[#e0a331]'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                ? 'bg-[#F2B33D] text-[#2C2C2C] hover:scale-105 hover:bg-[#e0a331]'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 }`}
               endContent={isAllComplete() && <FiCheck className="w-4 h-4" />}
               onClick={handleSubmit}

@@ -25,7 +25,7 @@ export function calculateCampRIASEC(tags: string[], allTags: SimplifiedTag[]): R
     if (!tag) return;
 
     tag.riasecMapping.forEach(mapping => {
-      scores[mapping.code as RIASECCode] += mapping.weight * 10;
+      scores[mapping.code as RIASECCode] += mapping.weight;
     });
   });
 

@@ -10,7 +10,7 @@ export interface TagDoc {
     category: 'frontend' | 'backend' | 'data' | 'design' | 'mobile' | 'devops' | 'other';
     riasecMapping: {
         code: RIASECCode;
-        weight: number; // 0-1
+        weight: number; // 1-10 (integer)
     }[];
     isCore: boolean;
     isActive: boolean; // เผื่อต้องการซ่อนไม่ให้ใช้งาน

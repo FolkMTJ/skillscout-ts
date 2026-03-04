@@ -3,13 +3,17 @@ import "@/styles/globals.css";
 import { Providers as UIProviders } from "./provider";
 import { Providers } from "@/components/Providers";
 import { ThemeProvider } from "next-themes";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import GlobalDisclaimerModal from "@/components/GlobalDisclaimerModal";
 
 const notoSansTH = Noto_Sans_Thai({
   variable: "--font-noto-sans-thai",
   subsets: ["latin"],
 });
+
+export const viewport: Viewport = {
+  themeColor: "#F2B33D",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://skillscout.com"),
@@ -47,6 +51,11 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "SkillScout - ค้นหาค่ายพัฒนาทักษะ",
     description: "ค้นพบแคมป์ กิจกรรม และเส้นทางอาชีพที่ใช่สำหรับคุณ",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "SkillScout",
   }
 };
 

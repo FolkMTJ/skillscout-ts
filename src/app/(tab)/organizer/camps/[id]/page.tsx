@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import {
   Button, Chip, Input, Select, SelectItem, Modal, ModalContent,
   ModalHeader, ModalBody, ModalFooter, Textarea, Progress,
-  Pagination, Tabs, Tab, Card, Tooltip,
+  Pagination, Tabs, Tab, Card, Tooltip, useDisclosure,
 } from '@heroui/react';
 import {
   FiArrowLeft, FiDownload, FiSearch, FiUser, FiCheckCircle,
@@ -17,6 +17,7 @@ import {
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 import CampFormModal from '@/components/organizer/CampFormModal';
+import { ConfirmModal } from '@/components/common';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -150,6 +151,10 @@ export default function CampManagePage() {
   const [rejectReason, setRejectReason] = useState('');
   const [isActioning, setIsActioning] = useState(false);
 
+  const { isOpen: isRemoveModalOpen, onOpen: onRemoveModalOpen, onClose: onRemoveModalClose } = useDisclosure();
+  const [removeTargetRegId, setRemoveTargetRegId] = useState<string | null>(null);
+  const [removeTargetUserName, setRemoveTargetUserName] = useState<string>('');
+
   // ── Edit Modal ─────────────────────────────────────────────────────────────
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({
@@ -275,17 +280,24 @@ export default function CampManagePage() {
     finally { setIsActioning(false); }
   };
 
-  const handleRemoveRegistration = async (regId: string, userName: string) => {
-    if (!confirm(`ลบ "${userName}" ออกจากค่ายนี้หรือไม่?\n\nการดำเนินการนี้ไม่สามารถย้อนกลับได้`)) return;
+  const confirmRemoveRegistration = async () => {
+    if (!removeTargetRegId) return;
     try {
-      const res = await fetch(`/api/registrations/${regId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/registrations/${removeTargetRegId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed');
       toast.success('ลบผู้สมัครออกแล้ว');
       setViewingReg(null);
+      onRemoveModalClose();
       fetchAll();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด');
     }
+  };
+
+  const handleRemoveRegistration = (regId: string, userName: string) => {
+    setRemoveTargetRegId(regId);
+    setRemoveTargetUserName(userName);
+    onRemoveModalOpen();
   };
 
 
@@ -1057,6 +1069,17 @@ export default function CampManagePage() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* ── Remove Registration Confirm Modal ─────────────────────────────── */}
+      <ConfirmModal
+        isOpen={isRemoveModalOpen}
+        onClose={onRemoveModalClose}
+        onConfirm={confirmRemoveRegistration}
+        title="ยืนยันการลบผู้สมัคร"
+        description={`คุณแน่ใจหรือไม่ที่จะลบ "${removeTargetUserName}" ออกจากค่ายนี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้`}
+        confirmLabel="ยืนยันลบผู้สมัคร"
+        variant="danger"
+      />
     </div>
   );
 }

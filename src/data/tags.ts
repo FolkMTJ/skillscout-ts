@@ -7,7 +7,7 @@ export interface TechnicalTag {
   category: 'frontend' | 'backend' | 'data' | 'design' | 'mobile' | 'devops' | 'other';
   riasecMapping: {
     code: RIASECCode;
-    weight: number; // 0-1
+    weight: number; // 1-10
   }[];
   isCore: boolean;
 }
@@ -20,8 +20,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'HTML/CSS',
     category: 'frontend',
     riasecMapping: [
-      { code: 'A', weight: 0.6 },
-      { code: 'C', weight: 0.4 }
+      { code: 'A', weight: 6 },
+      { code: 'C', weight: 4 }
     ],
     isCore: true
   },
@@ -31,8 +31,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'JavaScript',
     category: 'frontend',
     riasecMapping: [
-      { code: 'I', weight: 0.7 },
-      { code: 'C', weight: 0.3 }
+      { code: 'I', weight: 7 },
+      { code: 'C', weight: 3 }
     ],
     isCore: true
   },
@@ -42,8 +42,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'React',
     category: 'frontend',
     riasecMapping: [
-      { code: 'I', weight: 0.6 },
-      { code: 'A', weight: 0.4 }
+      { code: 'I', weight: 6 },
+      { code: 'A', weight: 4 }
     ],
     isCore: true
   },
@@ -53,8 +53,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'Vue.js',
     category: 'frontend',
     riasecMapping: [
-      { code: 'I', weight: 0.6 },
-      { code: 'A', weight: 0.4 }
+      { code: 'I', weight: 6 },
+      { code: 'A', weight: 4 }
     ],
     isCore: true
   },
@@ -66,8 +66,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'Node.js',
     category: 'backend',
     riasecMapping: [
-      { code: 'I', weight: 0.7 },
-      { code: 'C', weight: 0.3 }
+      { code: 'I', weight: 7 },
+      { code: 'C', weight: 3 }
     ],
     isCore: true
   },
@@ -77,8 +77,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'Python',
     category: 'backend',
     riasecMapping: [
-      { code: 'I', weight: 0.8 },
-      { code: 'C', weight: 0.2 }
+      { code: 'I', weight: 8 },
+      { code: 'C', weight: 2 }
     ],
     isCore: true
   },
@@ -88,8 +88,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'การพัฒนา API',
     category: 'backend',
     riasecMapping: [
-      { code: 'I', weight: 0.6 },
-      { code: 'C', weight: 0.4 }
+      { code: 'I', weight: 6 },
+      { code: 'C', weight: 4 }
     ],
     isCore: true
   },
@@ -99,8 +99,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'ฐานข้อมูล',
     category: 'backend',
     riasecMapping: [
-      { code: 'C', weight: 0.7 },
-      { code: 'I', weight: 0.3 }
+      { code: 'C', weight: 7 },
+      { code: 'I', weight: 3 }
     ],
     isCore: true
   },
@@ -112,8 +112,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'วิทยาศาสตร์ข้อมูล',
     category: 'data',
     riasecMapping: [
-      { code: 'I', weight: 0.9 },
-      { code: 'C', weight: 0.1 }
+      { code: 'I', weight: 9 },
+      { code: 'C', weight: 1 }
     ],
     isCore: true
   },
@@ -123,7 +123,7 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'การเรียนรู้ของเครื่อง',
     category: 'data',
     riasecMapping: [
-      { code: 'I', weight: 1.0 }
+      { code: 'I', weight: 10 }
     ],
     isCore: true
   },
@@ -133,8 +133,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'ปัญญาประดิษฐ์',
     category: 'data',
     riasecMapping: [
-      { code: 'I', weight: 0.9 },
-      { code: 'R', weight: 0.1 }
+      { code: 'I', weight: 9 },
+      { code: 'R', weight: 1 }
     ],
     isCore: true
   },
@@ -144,8 +144,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'การแสดงผลข้อมูล',
     category: 'data',
     riasecMapping: [
-      { code: 'I', weight: 0.5 },
-      { code: 'A', weight: 0.5 }
+      { code: 'I', weight: 5 },
+      { code: 'A', weight: 5 }
     ],
     isCore: true
   },
@@ -157,8 +157,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'การออกแบบ UI/UX',
     category: 'design',
     riasecMapping: [
-      { code: 'A', weight: 0.8 },
-      { code: 'S', weight: 0.2 }
+      { code: 'A', weight: 8 },
+      { code: 'S', weight: 2 }
     ],
     isCore: true
   },
@@ -168,8 +168,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'การออกแบบกราฟิก',
     category: 'design',
     riasecMapping: [
-      { code: 'A', weight: 0.9 },
-      { code: 'I', weight: 0.1 }
+      { code: 'A', weight: 9 },
+      { code: 'I', weight: 1 }
     ],
     isCore: true
   },
@@ -179,8 +179,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'Figma',
     category: 'design',
     riasecMapping: [
-      { code: 'A', weight: 0.7 },
-      { code: 'C', weight: 0.3 }
+      { code: 'A', weight: 7 },
+      { code: 'C', weight: 3 }
     ],
     isCore: true
   },
@@ -192,8 +192,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'การพัฒนาแอปมือถือ',
     category: 'mobile',
     riasecMapping: [
-      { code: 'I', weight: 0.6 },
-      { code: 'A', weight: 0.4 }
+      { code: 'I', weight: 6 },
+      { code: 'A', weight: 4 }
     ],
     isCore: true
   },
@@ -203,8 +203,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'React Native',
     category: 'mobile',
     riasecMapping: [
-      { code: 'I', weight: 0.6 },
-      { code: 'A', weight: 0.4 }
+      { code: 'I', weight: 6 },
+      { code: 'A', weight: 4 }
     ],
     isCore: true
   },
@@ -214,8 +214,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'Flutter',
     category: 'mobile',
     riasecMapping: [
-      { code: 'I', weight: 0.6 },
-      { code: 'A', weight: 0.4 }
+      { code: 'I', weight: 6 },
+      { code: 'A', weight: 4 }
     ],
     isCore: true
   },
@@ -226,9 +226,9 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'DevOps',
     category: 'devops',
     riasecMapping: [
-      { code: 'C', weight: 0.5 },
-      { code: 'I', weight: 0.4 },
-      { code: 'E', weight: 0.1 }
+      { code: 'C', weight: 5 },
+      { code: 'I', weight: 4 },
+      { code: 'E', weight: 1 }
     ],
     isCore: true
   },
@@ -238,8 +238,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'Docker',
     category: 'devops',
     riasecMapping: [
-      { code: 'C', weight: 0.5 },
-      { code: 'I', weight: 0.5 }
+      { code: 'C', weight: 5 },
+      { code: 'I', weight: 5 }
     ],
     isCore: true
   },
@@ -249,8 +249,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'Kubernetes',
     category: 'devops',
     riasecMapping: [
-      { code: 'C', weight: 0.6 },
-      { code: 'I', weight: 0.4 }
+      { code: 'C', weight: 6 },
+      { code: 'I', weight: 4 }
     ],
     isCore: true
   },
@@ -260,8 +260,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'คลาวด์คอมพิวติ้ง',
     category: 'devops',
     riasecMapping: [
-      { code: 'C', weight: 0.5 },
-      { code: 'I', weight: 0.5 }
+      { code: 'C', weight: 5 },
+      { code: 'I', weight: 5 }
     ],
     isCore: true
   },
@@ -273,8 +273,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'ความปลอดภัยไซเบอร์',
     category: 'other',
     riasecMapping: [
-      { code: 'I', weight: 0.8 },
-      { code: 'C', weight: 0.2 }
+      { code: 'I', weight: 8 },
+      { code: 'C', weight: 2 }
     ],
     isCore: true
   },
@@ -284,8 +284,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'การพัฒนาเกม',
     category: 'other',
     riasecMapping: [
-      { code: 'A', weight: 0.6 },
-      { code: 'I', weight: 0.4 }
+      { code: 'A', weight: 6 },
+      { code: 'I', weight: 4 }
     ],
     isCore: true
   },
@@ -295,8 +295,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'อินเทอร์เน็ตของสรรพสิ่ง',
     category: 'other',
     riasecMapping: [
-      { code: 'R', weight: 0.6 },
-      { code: 'I', weight: 0.4 }
+      { code: 'R', weight: 6 },
+      { code: 'I', weight: 4 }
     ],
     isCore: true
   },
@@ -306,8 +306,8 @@ export const STANDARD_TAGS: TechnicalTag[] = [
     nameTh: 'บล็อกเชน',
     category: 'other',
     riasecMapping: [
-      { code: 'I', weight: 0.7 },
-      { code: 'C', weight: 0.3 }
+      { code: 'I', weight: 7 },
+      { code: 'C', weight: 3 }
     ],
     isCore: true
   }

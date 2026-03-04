@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { Card, Button, Chip, Tabs, Tab, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, useDisclosure } from '@heroui/react';
 import {
   FiArrowLeft, FiDollarSign, FiClock, FiCheckCircle, FiSmartphone,
-  FiTrendingUp, FiUser, FiCheck, FiMaximize
+  FiTrendingUp, FiUser, FiCheck, FiMaximize, FiChevronDown, FiChevronUp
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { StatCard } from '@/components/common';
@@ -33,11 +33,19 @@ interface PayoutPayment {
   payoutNote?: string;
   status: string;
   createdAt: string;
-  // enriched
   organizerPromptpay?: string;
   organizerAccountName?: string;
-  // from camp (joined manually via campId if available)
   campName?: string;
+}
+
+interface OrganizerGroup {
+  organizerId: string;
+  organizerAccountName: string;
+  organizerPromptpay: string;
+  totalNet: number;
+  totalPlatformFee: number;
+  totalFinalAmount: number;
+  payments: PayoutPayment[];
 }
 
 interface Summary {
@@ -54,28 +62,27 @@ export default function AdminPayoutsPage() {
   const { data: session, status } = useSession();
 
   const [summary, setSummary] = useState<Summary | null>(null);
-  const [pending, setPending] = useState<PayoutPayment[]>([]);
+  const [pendingGrouped, setPendingGrouped] = useState<OrganizerGroup[]>([]);
   const [history, setHistory] = useState<PayoutPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('pending');
 
-  const [markingId, setMarkingId] = useState<string | null>(null);
-  const [confirmPayment, setConfirmPayment] = useState<PayoutPayment | null>(null);
+  const [confirmGroup, setConfirmGroup] = useState<OrganizerGroup | null>(null);
   const [payoutNote, setPayoutNote] = useState('');
   const [isMarking, setIsMarking] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   useEffect(() => {
-    if (confirmPayment?.organizerPromptpay && confirmPayment.organizerNet) {
-      const payload = generatePayload(confirmPayment.organizerPromptpay, { amount: confirmPayment.organizerNet });
+    if (confirmGroup?.organizerPromptpay && confirmGroup.totalNet) {
+      const payload = generatePayload(confirmGroup.organizerPromptpay, { amount: confirmGroup.totalNet });
       QRCode.toDataURL(payload, { width: 200, margin: 2, color: { dark: '#000000', light: '#ffffff' } }, (err, url) => {
         if (!err) setQrCodeUrl(url);
       });
     } else {
       setQrCodeUrl(null);
     }
-  }, [confirmPayment]);
+  }, [confirmGroup]);
 
   // Slip scan states
   const [slipFile, setSlipFile] = useState<File | null>(null);
@@ -84,7 +91,7 @@ export default function AdminPayoutsPage() {
   const [slipQrDetected, setSlipQrDetected] = useState(false);
 
   const resetSlipModal = () => {
-    setConfirmPayment(null);
+    setConfirmGroup(null);
     setSlipFile(null);
     setSlipPreview('');
     setSlipQrPayload('');
@@ -106,7 +113,6 @@ export default function AdminPayoutsPage() {
     reader.onloadend = () => setSlipPreview(reader.result as string);
     reader.readAsDataURL(file);
 
-    // Detect QR from slip image (client-side)
     const objectUrl = URL.createObjectURL(file);
     const img = document.createElement('img') as HTMLImageElement;
     img.onload = () => {
@@ -135,7 +141,7 @@ export default function AdminPayoutsPage() {
       }
       const data = await res.json();
       setSummary(data.summary);
-      setPending(data.pending);
+      setPendingGrouped(data.pendingGrouped ?? []);
       setHistory(data.history);
     } catch {
       toast.error('ไม่สามารถโหลดข้อมูลได้');
@@ -164,31 +170,25 @@ export default function AdminPayoutsPage() {
     );
   }
 
+  // Mark paid — send all payment IDs in the group
   const handleMarkPaidOut = async () => {
-    if (!confirmPayment) return;
+    if (!confirmGroup) return;
     setIsMarking(true);
     try {
-      if (slipFile && !slipQrPayload) {
-        toast.error('ไม่พบ QR Code ในสลิป กรุณาลองสลิปอื่น หรือดำเนินการต่อโดยไม่ใช้สลิป', { duration: 4000 });
-        // Allowing them to proceed if they choose to explicitly bypass slip reading, but normally we'd force it.
-      }
-
-      // We use the existing verified status endpoint for single payment marks
-      // Consider integrating the /verify-slip endpoint from admin page if we need strong server verification
+      const paymentIds = confirmGroup.payments.map(p => p._id);
       const res = await fetch('/api/admin/payouts', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paymentId: confirmPayment._id, note: payoutNote }),
+        body: JSON.stringify({ paymentIds, note: payoutNote }),
       });
       if (!res.ok) throw new Error('Failed');
-      toast.success(`โอนเงินให้ ${confirmPayment.organizerAccountName || 'Organizer'} สำเร็จ`);
+      toast.success(`โอนเงินให้ ${confirmGroup.organizerAccountName || 'Organizer'} สำเร็จ (${paymentIds.length} รายการ)`);
       resetSlipModal();
       await fetchData();
     } catch {
       toast.error('เกิดข้อผิดพลาด กรุณาลองใหม่');
     } finally {
       setIsMarking(false);
-      setMarkingId(null);
     }
   };
 
@@ -223,7 +223,7 @@ export default function AdminPayoutsPage() {
             />
             <StatCard
               icon={<FiClock />}
-              title={`รอโอน · ${summary.pendingCount} รายการ`}
+              title={`รอโอน · ${pendingGrouped.length} ค่าย`}
               value={fmt(summary.pendingTotal)}
               color="warning"
             />
@@ -250,6 +250,7 @@ export default function AdminPayoutsPage() {
             tabList: 'bg-white shadow-sm rounded-2xl p-1',
             tab: 'rounded-xl',
             cursor: 'bg-[#F2B33D]',
+            panel: 'pt-0',
           }}
         >
           <Tab
@@ -257,24 +258,24 @@ export default function AdminPayoutsPage() {
             title={
               <div className="flex items-center gap-1.5 text-sm">
                 <FiClock size={13} />
-                <span>รอโอน ({pending.length})</span>
+                <span>รอโอน ({pendingGrouped.length})</span>
               </div>
             }
           >
-            <div className="mt-4 space-y-3">
-              {pending.length === 0 ? (
+            <div className="mt-2 space-y-3">
+              {pendingGrouped.length === 0 ? (
                 <Card className="border-none shadow-sm bg-white p-10 text-center">
                   <FiCheckCircle className="w-10 h-10 mx-auto text-green-400 mb-3" />
                   <p className="text-gray-500 text-sm font-medium">ไม่มีรายการรอโอน</p>
                   <p className="text-gray-400 text-xs mt-1">Organizer ทุกคนได้รับเงินแล้ว</p>
                 </Card>
               ) : (
-                pending.map((p) => (
-                  <PayoutCard
-                    key={p._id}
-                    payment={p}
-                    onMark={() => { setConfirmPayment(p); setMarkingId(p._id); setPayoutNote(''); onOpen(); }}
-                    isMarking={markingId === p._id && isMarking}
+                pendingGrouped.map((g) => (
+                  <OrganizerGroupCard
+                    key={g.organizerId}
+                    group={g}
+                    onMark={() => { setConfirmGroup(g); setPayoutNote(''); onOpen(); }}
+                    isMarking={isMarking && confirmGroup?.organizerId === g.organizerId}
                   />
                 ))
               )}
@@ -290,7 +291,7 @@ export default function AdminPayoutsPage() {
               </div>
             }
           >
-            <div className="mt-4 space-y-3">
+            <div className="mt-2 space-y-3">
               {history.length === 0 ? (
                 <Card className="border-none shadow-sm bg-white p-8 text-center">
                   <p className="text-gray-400 text-sm">ยังไม่มีประวัติการโอน</p>
@@ -309,99 +310,121 @@ export default function AdminPayoutsPage() {
       <Modal
         isOpen={isOpen}
         onOpenChange={(open) => { if (!open) resetSlipModal(); }}
-        size="sm"
-        classNames={{ base: 'bg-white rounded-3xl', header: 'border-b border-gray-100 px-5 py-4', body: 'p-5', footer: 'border-t border-gray-100 px-5 py-4 bg-gray-50' }}
+        size="md"
+        classNames={{ base: 'bg-white rounded-3xl', header: 'px-6 py-4 border-b border-gray-100', body: 'p-6', footer: 'border-t border-gray-100 px-6 py-4' }}
       >
         <ModalContent>
           <ModalHeader>
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-[#F2B33D]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <h3 className="text-base font-bold text-gray-900">สแกนสลิปการโอนเงิน</h3>
+            <div className="flex items-center gap-2.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/promptpay-logo.png" alt="PromptPay" className="h-6 object-contain" />
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 leading-tight">สแกนสลิปการโอนเงิน</h3>
+                <p className="text-[11px] text-gray-400 font-normal">อัปโหลดสลิปเพื่อยืนยันการโอน</p>
+              </div>
             </div>
           </ModalHeader>
           <ModalBody>
-            {confirmPayment && (
+            {confirmGroup && (
               <div className="space-y-4">
-                <div className="bg-green-50 rounded-2xl p-4 text-center border border-green-100">
-                  <p className="text-xs text-gray-500 mb-1">ยอดที่ต้องโอนให้ Organizer</p>
-                  <p className="text-3xl font-black text-green-600">
-                    ฿{(confirmPayment.organizerNet ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1 mb-4">
-                    {confirmPayment.organizerAccountName || '—'} · {confirmPayment.organizerPromptpay || '—'}
-                  </p>
-                  {qrCodeUrl && (
-                    <div className="bg-white p-3 rounded-2xl inline-block shadow-sm border border-gray-100 mb-2">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={qrCodeUrl} alt="PromptPay QR" width={160} height={160} className="mx-auto" />
-                      <div className="flex items-center justify-center gap-1.5 mt-2 text-xs font-semibold text-[#1B365D]">
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 4H10V10H4V4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M14 4H20V10H14V4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M4 14H10V20H4V14Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M14 14H17V17H14V14Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M17 17H20V20H17V17Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M14 17H17V20H14V17Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M17 14H20V17H17V14Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                        สแกนด้วยแอปธนาคาร
-                      </div>
+
+                {/* QR + Amount Card */}
+                <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
+                  {/* Top accent bar */}
+                  <div className="bg-gradient-to-r from-[#003f88] to-[#005bbd] px-4 py-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] text-blue-200 font-medium">โอนให้</p>
+                      <p className="text-sm font-bold text-white leading-tight">{confirmGroup.organizerAccountName || 'Organizer'}</p>
+                      <p className="text-[10px] text-blue-300 font-mono mt-0.5">{confirmGroup.organizerPromptpay || '—'}</p>
                     </div>
-                  )}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/promptpay-logo.png" alt="PromptPay" className="h-7 object-contain opacity-90 invert brightness-200" />
+                  </div>
+
+                  {/* Amount + QR body */}
+                  <div className="bg-white p-4 flex flex-col items-center gap-3">
+                    <div className="text-center">
+                      <p className="text-xs text-gray-400 mb-0.5">{confirmGroup.payments.length} รายการ</p>
+                      <p className="text-3xl font-black text-emerald-600 tracking-tight">
+                        ฿{confirmGroup.totalNet.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+
+                    {qrCodeUrl && (
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="bg-white p-3 rounded-2xl border-2 border-gray-100 shadow-inner">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={qrCodeUrl} alt="PromptPay QR" width={160} height={160} />
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[11px] text-gray-500 font-medium">
+                          <svg className="w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="8" height="8" rx="1" stroke="currentColor" strokeWidth="2" /><rect x="13" y="3" width="8" height="8" rx="1" stroke="currentColor" strokeWidth="2" /><rect x="3" y="13" width="8" height="8" rx="1" stroke="currentColor" strokeWidth="2" /><rect x="13" y="16" width="3" height="3" fill="currentColor" /><rect x="18" y="16" width="3" height="3" fill="currentColor" /><rect x="13" y="13" width="3" height="3" fill="currentColor" /><rect x="18" y="13" width="3" height="3" fill="currentColor" /></svg>
+                          สแกนด้วยแอปธนาคาร
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Upload area */}
                 <div>
-                  <label className={`flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed cursor-pointer transition-colors ${slipPreview ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white hover:border-[#F2B33D]/60'}`}>
+                  <p className="text-xs font-semibold text-gray-600 mb-2">📎 อัปโหลดสลิปการโอน</p>
+                  <label className={`flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed cursor-pointer transition-all ${slipPreview ? 'border-emerald-300 bg-emerald-50/50' : 'border-gray-200 bg-gray-50 hover:border-[#F2B33D] hover:bg-[#F2B33D]/5'}`}>
                     {slipPreview ? (
                       <div className="relative w-full p-2">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={slipPreview} alt="slip" className="w-full rounded-xl object-contain h-40" />
-                        {slipQrDetected && (
-                          <div className="absolute top-4 right-4 flex items-center gap-1 bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">
-                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                            พบ QR Code
+                        <img src={slipPreview} alt="slip" className="w-full rounded-xl object-contain max-h-44" />
+                        {slipQrDetected ? (
+                          <div className="absolute top-4 right-4 flex items-center gap-1 bg-emerald-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md">
+                            <FiCheck size={10} /> พบ QR Code แล้ว
                           </div>
-                        )}
-                        {!slipQrDetected && slipFile && (
-                          <div className="absolute top-4 right-4 flex items-center gap-1 bg-orange-400 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">
+                        ) : slipFile && (
+                          <div className="absolute top-4 right-4 flex items-center gap-1 bg-orange-400 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md">
                             ไม่พบ QR Code
                           </div>
                         )}
                       </div>
                     ) : (
-                      <div className="py-8 flex flex-col items-center gap-2 text-gray-400">
-                        <svg className="w-8 h-8 text-gray-300" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
-                          <path d="M3 16L8 11C8.39782 10.6022 8.93913 10.3787 9.5 10.3787C10.0609 10.3787 10.6022 10.6022 11 11L21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
-                        </svg>
-                        <p className="text-sm font-medium">แตะเพื่อเลือกสลิป</p>
-                        <p className="text-xs">ระบบจะอ่าน QR Code อัตโนมัติ</p>
+                      <div className="py-8 flex flex-col items-center gap-2">
+                        <div className="w-12 h-12 rounded-2xl bg-white border border-gray-200 flex items-center justify-center shadow-sm">
+                          <FiSmartphone size={20} className="text-gray-400" />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-semibold text-gray-600">แตะเพื่อเลือกสลิป</p>
+                          <p className="text-xs text-gray-400 mt-0.5">ระบบจะอ่าน QR Code อัตโนมัติ · สูงสุด 5MB</p>
+                        </div>
                       </div>
                     )}
                     <input type="file" accept="image/*" className="hidden" onChange={handleSlipFileChange} />
                   </label>
                   {slipFile && (
-                    <div className="text-right mt-1">
-                      <button onClick={(e) => { e.preventDefault(); setSlipFile(null); setSlipPreview(''); setSlipQrPayload(''); setSlipQrDetected(false); }}
-                        className="text-[11px] text-gray-400 hover:text-red-400 transition-colors">
-                        ลบรูปภาพ
-                      </button>
-                    </div>
+                    <button
+                      onClick={(e) => { e.preventDefault(); setSlipFile(null); setSlipPreview(''); setSlipQrPayload(''); setSlipQrDetected(false); }}
+                      className="mt-1.5 text-[11px] text-gray-400 hover:text-red-400 transition-colors float-right"
+                    >
+                      ลบรูปภาพ
+                    </button>
                   )}
                 </div>
 
-                <Input
-                  label="หมายเหตุ (ไม่บังคับ)"
-                  placeholder="เช่น โอนผ่าน SCB"
-                  value={payoutNote}
-                  onValueChange={setPayoutNote}
-                  classNames={{ inputWrapper: 'bg-gray-50 border-none rounded-xl' }}
-                />
+                <div className="clear-both">
+                  <Input
+                    label="หมายเหตุ (ไม่บังคับ)"
+                    placeholder="เช่น โอนผ่าน SCB Mobile"
+                    value={payoutNote}
+                    onValueChange={setPayoutNote}
+                    classNames={{ inputWrapper: 'bg-gray-50 border border-gray-100 rounded-xl shadow-none' }}
+                    size="sm"
+                  />
+                </div>
               </div>
             )}
           </ModalBody>
           <ModalFooter className="flex gap-2">
-            <Button variant="light" className="text-gray-500 font-medium flex-1 text-sm bg-gray-100" onPress={resetSlipModal}>
+            <Button variant="light" className="text-gray-500 font-medium flex-1 text-sm bg-gray-100 rounded-xl" onPress={resetSlipModal}>
               ยกเลิก
             </Button>
             <Button
-              className="bg-[#F2B33D] text-white font-semibold flex-[2] shadow-sm text-sm"
+              className="bg-[#F2B33D] text-white font-bold flex-[2] shadow-sm shadow-[#F2B33D]/30 text-sm rounded-xl"
               onPress={handleMarkPaidOut}
               isLoading={isMarking}
               startContent={!isMarking && <FiCheck size={16} />}
@@ -416,67 +439,93 @@ export default function AdminPayoutsPage() {
 }
 
 
-function PayoutCard({ payment: p, onMark, isMarking }: {
-  payment: PayoutPayment; onMark: () => void; isMarking: boolean;
+function OrganizerGroupCard({ group: g, onMark, isMarking }: {
+  group: OrganizerGroup; onMark: () => void; isMarking: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
+
   return (
     <Card className="border-none shadow-sm bg-white overflow-hidden">
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            {/* Organizer info */}
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-full bg-[#F2B33D]/10 flex items-center justify-center shrink-0">
-                <FiUser size={14} className="text-[#F2B33D]" />
+      <div className="p-4 space-y-3">
+        {/* Header row: avatar + name + chip | QR button */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-[#F2B33D]/10 flex items-center justify-center shrink-0">
+              <FiUser size={14} className="text-[#F2B33D]" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="font-semibold text-sm text-gray-900 truncate">{g.organizerAccountName || 'Organizer'}</p>
+                <Chip size="sm" color="warning" variant="flat" className="text-[10px] h-5">รอโอน</Chip>
               </div>
-              <div>
-                <p className="font-semibold text-sm text-gray-900">{p.organizerAccountName || 'Organizer'}</p>
-                <div className="flex items-center gap-1 text-xs text-gray-500">
-                  <FiSmartphone size={10} />
-                  <span className="font-mono">{p.organizerPromptpay || '—'}</span>
-                </div>
+              <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+                <FiSmartphone size={10} />
+                <span className="font-mono">{g.organizerPromptpay || '—'}</span>
               </div>
             </div>
-
-            {/* Payment breakdown */}
-            <div className="bg-gray-50 rounded-xl p-3 space-y-1.5 text-xs">
-              <div className="flex justify-between text-gray-500">
-                <span>ผู้จ่าย</span>
-                <span className="font-medium text-gray-700">{p.userName}</span>
-              </div>
-              <div className="flex justify-between text-gray-500">
-                <span>ยอดที่รับมา</span>
-                <span className="font-semibold text-gray-800">฿{p.finalAmount.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between text-gray-500">
-                <span>Platform fee ({p.platformFeePercent}%)</span>
-                <span className="text-[#F2B33D] font-semibold">-฿{(p.platformFee ?? 0).toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between border-t border-gray-200 pt-1.5">
-                <span className="font-semibold text-gray-700">ต้องโอนให้ Organizer</span>
-                <span className="font-black text-green-600 text-sm">฿{(p.organizerNet ?? 0).toLocaleString()}</span>
-              </div>
-            </div>
-
-            <p className="text-[10px] text-gray-400 mt-2">
-              ชำระเมื่อ {new Date(p.createdAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}
-            </p>
           </div>
+          <Button
+            size="sm"
+            className="bg-[#F2B33D] text-gray-900 font-semibold text-xs shrink-0"
+            onPress={onMark}
+            isLoading={isMarking}
+            startContent={!isMarking && <FiMaximize size={13} />}
+          >
+            สแกน QR
+          </Button>
+        </div>
 
-          {/* Action */}
-          <div className="shrink-0 flex flex-col items-end gap-2">
-            <Chip size="sm" color="warning" variant="flat" className="text-[10px] h-5">รอโอน</Chip>
-            <Button
-              size="sm"
-              className="bg-[#F2B33D] text-gray-900 font-semibold text-xs"
-              onPress={onMark}
-              isLoading={isMarking}
-              startContent={!isMarking && <FiMaximize size={13} />}
-            >
-              สแกน QR
-            </Button>
+        {/* Breakdown rows — borderless, flat */}
+        <div className="space-y-1.5 text-xs">
+          <div className="flex justify-between text-gray-500">
+            <span>จำนวนรายการ</span>
+            <span className="font-semibold text-gray-700">{g.payments.length} รายการ</span>
+          </div>
+          <div className="flex justify-between text-gray-500">
+            <span>ยอดที่รับมา (รวม)</span>
+            <span className="font-semibold text-gray-800">฿{g.totalFinalAmount.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between text-gray-500">
+            <span>Platform fee (รวม)</span>
+            <span className="text-[#F2B33D] font-semibold">-฿{g.totalPlatformFee.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between border-t border-gray-100 pt-1.5">
+            <span className="font-bold text-gray-800">ต้องโอนให้ Organizer</span>
+            <span className="font-black text-green-600 text-sm">฿{g.totalNet.toLocaleString()}</span>
           </div>
         </div>
+
+        {/* Expandable bill list */}
+        {g.payments.length > 0 && (
+          <div>
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              {expanded ? <FiChevronUp size={12} /> : <FiChevronDown size={12} />}
+              {expanded ? 'ซ่อนรายบิล' : `ดูรายบิล (${g.payments.length})`}
+            </button>
+            {expanded && (
+              <div className="mt-2 space-y-1.5">
+                {g.payments.map((p, i) => (
+                  <div key={p._id} className="bg-gray-50 rounded-xl px-3 py-2 text-xs">
+                    <div className="flex justify-between text-gray-500 mb-0.5">
+                      <span className="text-gray-400">#{i + 1} · {p.userName || 'ผู้ใช้'}</span>
+                      <span className="font-mono text-[10px] text-gray-300">{p._id.slice(-6)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">ยอดโอน</span>
+                      <span className="font-semibold text-green-600">฿{(p.organizerNet ?? 0).toLocaleString()}</span>
+                    </div>
+                    <div className="text-[10px] text-gray-400 mt-0.5">
+                      {new Date(p.createdAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </Card>
   );
