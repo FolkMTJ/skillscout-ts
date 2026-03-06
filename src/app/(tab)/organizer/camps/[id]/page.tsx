@@ -149,7 +149,7 @@ export default function CampManagePage() {
   const [viewingReg, setViewingReg] = useState<RegWithPayment | null>(null);
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
-  const [isActioning, setIsActioning] = useState(false);
+  const [actioningId, setActioningId] = useState<string | null>(null);
 
   const { isOpen: isRemoveModalOpen, onOpen: onRemoveModalOpen, onClose: onRemoveModalClose } = useDisclosure();
   const [removeTargetRegId, setRemoveTargetRegId] = useState<string | null>(null);
@@ -237,47 +237,47 @@ export default function CampManagePage() {
   };
 
   const handleApprove = async (regId: string) => {
-    setIsActioning(true);
+    setActioningId(`approve-${regId}`);
     try {
       await updateStatus(regId, 'approved');
       toast.success('อนุมัติสำเร็จ');
       fetchAll();
     } catch { toast.error('เกิดข้อผิดพลาด'); }
-    finally { setIsActioning(false); }
+    finally { setActioningId(null); }
   };
 
   const handleReject = async () => {
     if (!rejectTarget || !rejectReason.trim()) {
       toast.error('กรุณาระบุเหตุผล'); return;
     }
-    setIsActioning(true);
+    setActioningId('reject');
     try {
       await updateStatus(rejectTarget, 'rejected', rejectReason);
       toast.success('ปฏิเสธแล้ว');
       setRejectTarget(null); setRejectReason('');
       fetchAll();
     } catch { toast.error('เกิดข้อผิดพลาด'); }
-    finally { setIsActioning(false); }
+    finally { setActioningId(null); }
   };
 
   const handleMarkAttended = async (regId: string) => {
-    setIsActioning(true);
+    setActioningId(`attend-${regId}`);
     try {
       await updateStatus(regId, 'attended');
       toast.success('บันทึกการเข้าร่วมแล้ว');
       fetchAll();
     } catch { toast.error('เกิดข้อผิดพลาด'); }
-    finally { setIsActioning(false); }
+    finally { setActioningId(null); }
   };
 
   const handleMarkCompleted = async (regId: string) => {
-    setIsActioning(true);
+    setActioningId(`complete-${regId}`);
     try {
       await updateStatus(regId, 'completed');
       toast.success('บันทึกจบค่ายแล้ว');
       fetchAll();
     } catch { toast.error('เกิดข้อผิดพลาด'); }
-    finally { setIsActioning(false); }
+    finally { setActioningId(null); }
   };
 
   const confirmRemoveRegistration = async () => {
@@ -375,14 +375,14 @@ export default function CampManagePage() {
 
   const handleBulkApprove = async () => {
     if (selected.size === 0) return;
-    setIsActioning(true);
+    setActioningId('bulk-approve');
     let ok = 0;
     for (const rid of selected) {
       try { await updateStatus(rid, 'approved'); ok++; } catch { }
     }
     toast.success(`อนุมัติ ${ok}/${selected.size} คน`);
     setSelected(new Set());
-    setIsActioning(false);
+    setActioningId(null);
     fetchAll();
   };
 
@@ -629,7 +629,7 @@ export default function CampManagePage() {
                   <span className="text-sm font-bold text-[#B8860B]">เลือก {selected.size} คน</span>
                   <Button className="bg-[#F2B33D] text-white font-bold shadow-md shadow-orange-100"
                     startContent={<FiCheck size={14} />}
-                    onPress={handleBulkApprove} isLoading={isActioning}>
+                    onPress={handleBulkApprove} isLoading={actioningId === 'bulk-approve'}>
                     อนุมัติทั้งหมดที่เลือก
                   </Button>
                   <Button variant="flat" className="text-gray-600 bg-white"
@@ -642,7 +642,7 @@ export default function CampManagePage() {
               {/* Table */}
               <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
                 {/* Table header */}
-                <div className="grid grid-cols-[2rem_1fr_1fr_8rem_8rem_7rem_4rem] gap-2 px-5 py-3 bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wide items-center">
+                <div className="grid grid-cols-[2rem_1fr_1fr_8rem_8rem_7rem_11rem] gap-2 px-5 py-3 bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wide items-center">
                   <input
                     type="checkbox"
                     className="rounded"
@@ -668,7 +668,7 @@ export default function CampManagePage() {
                   paginated.map(r => (
                     <div
                       key={r._id}
-                      className={`grid grid-cols-[2rem_1fr_1fr_8rem_8rem_7rem_4rem] gap-2 px-5 py-3.5 border-b border-gray-50 items-center transition-colors hover:bg-gray-50/50 ${selected.has(r._id) ? 'bg-[#F2B33D]/5' : ''}`}
+                      className={`grid grid-cols-[2rem_1fr_1fr_8rem_8rem_7rem_11rem] gap-2 px-5 py-3.5 border-b border-gray-50 items-center transition-colors hover:bg-gray-50/50 ${selected.has(r._id) ? 'bg-[#F2B33D]/5' : ''}`}
                     >
                       {/* Checkbox */}
                       <input
@@ -709,7 +709,7 @@ export default function CampManagePage() {
                             <Button size="sm" variant="flat"
                               className="bg-green-50 text-green-700 font-semibold px-3"
                               startContent={<FiCheck size={14} />}
-                              onPress={() => handleApprove(r._id)} isLoading={isActioning}>
+                              onPress={() => handleApprove(r._id)} isLoading={actioningId === `approve-${r._id}`}>
                               อนุมัติ
                             </Button>
                             <Button size="sm" variant="flat"
@@ -724,7 +724,7 @@ export default function CampManagePage() {
                           <Button size="sm" variant="flat"
                             className="bg-blue-50 text-blue-600 font-semibold px-3"
                             startContent={<FiUserCheck size={14} />}
-                            onPress={() => handleMarkAttended(r._id)}>
+                            onPress={() => handleMarkAttended(r._id)} isLoading={actioningId === `attend-${r._id}`}>
                             เข้าร่วม
                           </Button>
                         )}
@@ -732,7 +732,7 @@ export default function CampManagePage() {
                           <Button size="sm" variant="flat"
                             className="bg-purple-50 text-purple-600 font-semibold px-3"
                             startContent={<FiCheckCircle size={14} />}
-                            onPress={() => handleMarkCompleted(r._id)}>
+                            onPress={() => handleMarkCompleted(r._id)} isLoading={actioningId === `complete-${r._id}`}>
                             จบค่าย
                           </Button>
                         )}
@@ -920,7 +920,7 @@ export default function CampManagePage() {
                 </div>
 
                 {/* Portfolio */}
-                {camp?.requiresPortfolio && (viewingReg.portfolioText || viewingReg.portfolioLinks?.some(l => l) || viewingReg.portfolioFileUrl) && (
+                {(viewingReg.portfolioText || viewingReg.portfolioLinks?.some(l => l) || viewingReg.portfolioFileUrl) && (
                   <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 space-y-3">
                     <p className="text-xs font-semibold text-orange-700">Portfolio ที่ส่งมา</p>
                     {viewingReg.portfolioText && (
@@ -1063,7 +1063,7 @@ export default function CampManagePage() {
             <Button variant="light" className="text-gray-500" onPress={() => setRejectTarget(null)}>ยกเลิก</Button>
             <Button className="bg-red-500 text-white font-semibold"
               startContent={<FiX size={14} />}
-              onPress={handleReject} isLoading={isActioning}>
+              onPress={handleReject} isLoading={actioningId === 'reject'}>
               ยืนยันปฏิเสธ
             </Button>
           </ModalFooter>
