@@ -112,8 +112,8 @@ export default function AllCampsContent() {
     async function fetchData() {
       try {
         const [campsRes, tagsRes] = await Promise.all([
-          fetch('/api/camps'),
-          fetch('/api/tags')
+          fetch('/api/camps', { cache: 'no-store' }),
+          fetch('/api/tags', { cache: 'no-store' })
         ]);
         const data = await campsRes.json();
         const tagsData = await tagsRes.json();
@@ -293,8 +293,8 @@ export default function AllCampsContent() {
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all relative ${showFilters || hasActiveFilters
-                  ? 'bg-[#F2B33D] text-white shadow-md'
-                  : 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500'
+                ? 'bg-[#F2B33D] text-white shadow-md'
+                : 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500'
                 }`}
             >
               <FaFilter size={13} />
@@ -313,8 +313,8 @@ export default function AllCampsContent() {
               <button
                 onClick={() => { setSelectedGroup("all"); setSelectedTags([]); }}
                 className={`flex-shrink-0 text-xs font-semibold px-3 py-1 rounded-full border transition-all ${selectedGroup === "all"
-                    ? 'bg-[#F2B33D] border-[#F2B33D] text-[#1a1a1a]'
-                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
+                  ? 'bg-[#F2B33D] border-[#F2B33D] text-[#1a1a1a]'
+                  : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
                   }`}
               >
                 ทั้งหมด
@@ -328,8 +328,8 @@ export default function AllCampsContent() {
                     key={key}
                     onClick={() => { setSelectedGroup(key); setSelectedTags([]); }}
                     className={`flex-shrink-0 flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full border transition-all ${selectedGroup === key
-                        ? 'bg-[#F2B33D] border-[#F2B33D] text-[#1a1a1a]'
-                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
+                      ? 'bg-[#F2B33D] border-[#F2B33D] text-[#1a1a1a]'
+                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
                       }`}
                   >
                     <span>{label}</span>
@@ -354,8 +354,8 @@ export default function AllCampsContent() {
                       else setSelectedTags([...selectedTags, tag.id]);
                     }}
                     className={`flex-shrink-0 text-[10px] md:text-xs font-semibold px-2.5 py-1 rounded-full border transition-all ${selectedTags.includes(tag.id)
-                        ? 'bg-[#F97316] border-[#F97316] text-white'
-                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-[#F97316]'
+                      ? 'bg-[#F97316] border-[#F97316] text-white'
+                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-[#F97316]'
                       }`}
                   >
                     {tag.nameTh}

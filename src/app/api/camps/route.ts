@@ -1,4 +1,6 @@
 // src/app/api/camps/route.ts
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { CampModel } from '@/lib/db/models/Camp';
 import { createCampSchema } from '@/lib/validation/schemas';
@@ -58,7 +60,7 @@ export async function POST(request: NextRequest) {
   // Rate limiting: 3 camps per 5 minutes
   const rateLimitKey = getRateLimitKey(request);
   const { allowed } = rateLimit(rateLimitKey, 3, 300000);
-  
+
   if (!allowed) {
     return NextResponse.json(
       { error: 'Too many camp creation requests. Please try again later.' },

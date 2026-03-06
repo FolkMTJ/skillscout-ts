@@ -52,7 +52,7 @@ export default function AdminCamps() {
     const fetchCamps = async () => {
         try {
             setLoading(true);
-            const res = await fetch('/api/camps?includeAll=true');
+            const res = await fetch('/api/camps?includeAll=true', { cache: 'no-store' });
             const data = await res.json();
             setCamps(Array.isArray(data) ? data : data.camps || []);
         } catch {

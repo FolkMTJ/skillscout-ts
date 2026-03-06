@@ -93,8 +93,8 @@ export default function HomePage() {
 
         // Fetch only what we need — server does filtering + sorting + limiting
         const [urgentRes, trendingRes] = await Promise.all([
-          fetch('/api/camps?type=urgent&limit=6'),
-          fetch('/api/camps?type=trending&limit=6'),
+          fetch('/api/camps?type=urgent&limit=6', { cache: 'no-store' }),
+          fetch('/api/camps?type=trending&limit=6', { cache: 'no-store' }),
         ]);
 
         if (urgentRes.ok) {

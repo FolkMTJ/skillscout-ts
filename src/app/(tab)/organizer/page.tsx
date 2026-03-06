@@ -65,8 +65,8 @@ export default function OrganizerDashboard() {
     try {
       setLoading(true);
       const [campsRes, payoutRes, settingsRes] = await Promise.all([
-        fetch('/api/camps?includeAll=true'),
-        fetch('/api/organizer/payout'),
+        fetch('/api/camps?includeAll=true', { cache: 'no-store' }),
+        fetch('/api/organizer/payout', { cache: 'no-store' }),
         fetch('/api/admin/settings'),
       ]);
       if (!campsRes.ok) throw new Error('Failed to fetch camps');
