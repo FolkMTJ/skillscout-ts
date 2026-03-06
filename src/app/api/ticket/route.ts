@@ -116,6 +116,7 @@ export async function GET(request: NextRequest) {
             'system',
             'Auto-approved: ใช้ส่วนลด 100% ราคาสุทธิ ฿0'
           );
+          registration.status = 'approved' as RegistrationStatus;
           console.log('Auto-approved registration for 100% discount');
         }
         // Skip ทั้ง payment check และ registration check → ให้ ticket ทันที
