@@ -460,22 +460,61 @@ export default function BookingModal({ isOpen, onClose, camp, onRegistrationSucc
       reader.onloadend = () => setSlipPreview(reader.result as string);
       reader.readAsDataURL(file);
 
-      // Try to decode QR code from slip image (client-side)
+      // Try multi-pass QR decoding for better success rates on high-res bank slips
+      const decodeQR = (image: HTMLImageElement): string | null => {
+        const attempts = [
+          { width: image.naturalWidth, height: image.naturalHeight },
+          { width: 800, height: 800 * (image.naturalHeight / image.naturalWidth) },
+          { width: 400, height: 400 * (image.naturalHeight / image.naturalWidth) },
+        ];
+
+        for (const size of attempts) {
+          // Skip upscaling
+          if (size.width > image.naturalWidth && size.width !== image.naturalWidth) continue;
+
+          const canvas = document.createElement('canvas');
+          canvas.width = size.width;
+          canvas.height = size.height;
+          // willReadFrequently optimizes for multiple getImageData calls
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          if (!ctx) continue;
+
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+          let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+          // 1. Try default
+          let code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+          if (code?.data) return code.data;
+
+          // 2. Try invert (good for dark slips)
+          code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
+          if (code?.data) return code.data;
+
+          // 3. Try high-contrast binarization (good for noisy backgrounds)
+          const data = imageData.data;
+          for (let i = 0; i < data.length; i += 4) {
+            const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+            // threshold at 150 (slightly biased toward white to clear backgrounds)
+            const v = avg > 150 ? 255 : 0;
+            data[i] = data[i + 1] = data[i + 2] = v;
+          }
+          ctx.putImageData(imageData, 0, 0);
+          code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+          if (code?.data) return code.data;
+        }
+
+        return null;
+      };
+
       const objectUrl = URL.createObjectURL(file);
       const img = document.createElement('img') as HTMLImageElement;
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0);
-        const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
-        if (imageData) {
-          const code = jsQR(imageData.data, imageData.width, imageData.height);
-          if (code?.data) {
-            setSlipQrPayload(code.data);
-            setQrDetected(true);
-          }
+        const decodedPayload = decodeQR(img);
+        if (decodedPayload) {
+          setSlipQrPayload(decodedPayload);
+          setQrDetected(true);
         }
         URL.revokeObjectURL(objectUrl);
       };
