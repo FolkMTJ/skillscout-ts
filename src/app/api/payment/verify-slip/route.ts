@@ -1,9 +1,10 @@
 // src/app/api/payment/verify-slip/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'crypto';
-import { PaymentModel, RegistrationModel } from '@/lib/db/models';
+import { PaymentModel, RegistrationModel, UserModel } from '@/lib/db/models';
 import { NotificationModel } from '@/lib/db/models/Notification';
 import { PaymentStatus, RegistrationStatus } from '@/types';
+import { getPlatformSettings } from '@/lib/platformSettings';
 
 
 const RDCW_API = 'https://suba.rdcw.co.th/v1/inquiry';
@@ -20,6 +21,13 @@ interface RdcwData {
   transTime?: string;
   sendingBank?: string;
   sender?: { name?: string };
+  receiver?: {
+    name?: string;
+    proxy?: {
+      type?: string;
+      value?: string;
+    };
+  };
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -64,6 +72,21 @@ function parseSlipAmount(raw: string | number | undefined, expectedBaht: number)
     if (Math.abs(asBaht - expectedBaht) <= asBaht * 0.02 + 1) return asBaht;
   }
   return n;
+}
+
+// Strip common Thai titles for looser name matching
+function stripTitles(name: string): string {
+  if (!name) return '';
+  let str = name.replace(/\s+/g, ' ').trim().toLowerCase();
+  const titles = ['นาย ', 'นางสาว ', 'นาง ', 'ด.ช. ', 'ด.ญ. ', 'mr. ', 'ms. ', 'mrs. ', 'miss '];
+  for (const t of titles) {
+    if (str.startsWith(t)) {
+      str = str.substring(t.length);
+    } else if (str.startsWith(t.trim())) {
+      str = str.substring(t.trim().length);
+    }
+  }
+  return str.trim();
 }
 
 // ── Route ──────────────────────────────────────────────────────────────────────
@@ -143,6 +166,71 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         error: 'ไม่สามารถเชื่อมต่อระบบตรวจสอบสลิปได้ กรุณาลองใหม่อีกครั้ง',
+      });
+    }
+
+    // ── 1.5. Receiver Validation ─────────────────────────────────────────────
+    let expectedPromptpay = '';
+    let expectedAccountName = '';
+    const platform = await getPlatformSettings();
+
+    if (platform.enabled) {
+      expectedPromptpay = platform.promptpayId;
+      expectedAccountName = platform.accountName;
+    } else {
+      const organizer = await UserModel.findById(payment.organizerId);
+      if (organizer?.payoutInfo?.promptpayId) {
+        expectedPromptpay = organizer.payoutInfo.promptpayId;
+        expectedAccountName = organizer.payoutInfo.accountName;
+      }
+    }
+
+    const receiverMatch = () => {
+      if (!expectedPromptpay && !expectedAccountName) return true; // No expectation set, allow bypass
+
+      const rName = rdcwData.receiver?.name || '';
+      const rProxy = rdcwData.receiver?.proxy?.value || ''; // usually account number or promptpay
+
+      // 1. Check account / promptpay number match. RDCW might mask like xxx-x-1234.
+      // We check if the last 4 visible digits match.
+      const cleanExpectedProxy = expectedPromptpay.replace(/\D/g, '');
+      const cleanReceivedProxy = rProxy.replace(/\D/g, '');
+
+      if (cleanExpectedProxy && cleanReceivedProxy.length >= 4) {
+        if (cleanExpectedProxy.endsWith(cleanReceivedProxy.slice(-4))) {
+          return true;
+        }
+      } else if (cleanExpectedProxy === cleanReceivedProxy && cleanExpectedProxy.length > 0) {
+        return true;
+      }
+
+      // 2. Check name match (loose)
+      if (expectedAccountName && rName) {
+        const cleanExpected = stripTitles(expectedAccountName);
+        const cleanReceived = stripTitles(rName);
+
+        // Exact match or partial match (one contains another)
+        if (cleanExpected === cleanReceived ||
+          cleanExpected.includes(cleanReceived) ||
+          cleanReceived.includes(cleanExpected)) {
+          return true;
+        }
+
+        // Check if at least the first name matches tightly
+        const expectedFirst = cleanExpected.split(' ')[0];
+        const receivedFirst = cleanReceived.split(' ')[0];
+        if (expectedFirst && receivedFirst && expectedFirst === receivedFirst) {
+          return true;
+        }
+      }
+
+      return false; // Neither number nor name matched
+    };
+
+    if (!receiverMatch()) {
+      return NextResponse.json({
+        success: false,
+        error: `สลิปนี้โอนไปผิดบัญชี (รับโอน: ${rdcwData.receiver?.name || 'ไม่ทราบชื่อ'}) กรุณาโอนเงินให้ถูกต้องตรงตามบัญชีที่กำหนด`,
       });
     }
 
