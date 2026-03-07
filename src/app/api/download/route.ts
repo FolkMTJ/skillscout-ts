@@ -19,7 +19,8 @@ export async function GET(request: NextRequest) {
   if (!match) return NextResponse.json({ error: 'Cannot parse URL' }, { status: 400 });
 
   const publicId = match[1];
-  const filename = publicId.split('/').pop() || 'portfolio.pdf';
+  const rawName = publicId.split('/').pop() || 'portfolio';
+  const filename = rawName.toLowerCase().endsWith('.pdf') ? rawName : `${rawName}.pdf`;
 
   // Approach 1: private_download_url — goes through API endpoint, not CDN
   // so CDN auth/access_mode restrictions don't apply

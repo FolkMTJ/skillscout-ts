@@ -4,6 +4,7 @@ import { CampModel } from '@/lib/db/models/Camp';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCollection } from '@/lib/mongodb';
+import { isAdminRole } from '@/lib/auth-check';
 
 interface RouteParams {
   params: Promise<{
@@ -21,7 +22,7 @@ export async function GET(
     const incrementView = searchParams.get('incrementView') === 'true';
 
     let camp = await CampModel.findById(id, incrementView);
-    
+
     if (!camp) {
       camp = await CampModel.findBySlug(id, incrementView);
     }
@@ -106,13 +107,30 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    // Check session — only admin (super_admin) can delete a camp that has registrations
     const session = await getServerSession(authOptions);
-    const role = (session?.user as { role?: string })?.role;
-    const isSuperAdmin = role === 'super_admin';
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    // If the requester is NOT super_admin, block deletion when registrations exist
-    if (!isSuperAdmin) {
+    const userId = session.user.id;
+    const role = (session.user as { role?: string })?.role;
+    const isAdmin = isAdminRole(role);
+
+    const camp = await CampModel.findById(id);
+    if (!camp) {
+      return NextResponse.json(
+        { error: 'Camp not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if user is organizer or admin
+    if (!isAdmin && camp.organizerId !== userId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // If the requester is NOT an admin, block deletion when registrations exist
+    if (!isAdmin) {
       const regCollection = await getCollection('registrations');
       const regCount = await regCollection.countDocuments({ campId: id });
       if (regCount > 0) {
@@ -123,12 +141,13 @@ export async function DELETE(
       }
     }
 
+    // Admins bypass the registration count check and force delete
     const success = await CampModel.delete(id);
 
     if (!success) {
       return NextResponse.json(
-        { error: 'Camp not found' },
-        { status: 404 }
+        { error: 'Failed to delete camp from database' },
+        { status: 500 }
       );
     }
 

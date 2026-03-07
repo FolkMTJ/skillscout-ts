@@ -948,7 +948,7 @@ export default function CampManagePage() {
                           const isPdf = url.includes('/raw/upload/') || url.toLowerCase().endsWith('.pdf');
                           return isPdf ? (
                             <a
-                              href={url}
+                              href={`/api/download?url=${encodeURIComponent(url)}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-2 text-sm text-red-600 underline font-medium hover:text-red-700">
