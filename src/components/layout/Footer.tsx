@@ -1,23 +1,26 @@
 "use client";
-
-import React from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
-import { Chip, Link } from "@heroui/react";
+import { Link } from "@heroui/react";
 import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn, FaGithub, FaEnvelope, FaPhone } from "react-icons/fa";
 import { BsFillPeopleFill } from "react-icons/bs";
+import { FiActivity } from "react-icons/fi";
+
+// สร้าง sessionId ใหม่ทุก tab/session (sessionStorage หายเมื่อปิด tab)
+function getOrCreateSessionId(): string {
+  if (typeof window === 'undefined') return '';
+  const key = 'skillscout_sid';
+  let id = sessionStorage.getItem(key);
+  if (!id) {
+    id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    sessionStorage.setItem(key, id);
+  }
+  return id;
+}
 
 export default function Footer() {
   return (
-    <footer className="w-full relative overflow-hidden">
-      {/* Decorative Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black dark:from-black dark:via-gray-900 dark:to-black">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl" />
-      </div>
-      
-      {/* Top Border Accent */}
-      <div className="w-full h-1 bg-gradient-to-r from-transparent via-orange-500 to-transparent" />
-      
+    <footer className="w-full relative overflow-hidden bg-[#2C2C2C]">
       <div className="relative">
         <FooterBody />
         <FooterBottom />
@@ -27,33 +30,120 @@ export default function Footer() {
 }
 
 const FooterBody = () => {
+  const [visitorCount, setVisitorCount] = useState<number | null>(null);
+  const [visitorOffset, setVisitorOffset] = useState(59);
+
+  // Dynamic Contact & Social Settings State
+  const [contactEmail, setContactEmail] = useState('contact@skillscout.com');
+  const [contactPhone, setContactPhone] = useState('02-xxx-xxxx');
+  const [socials, setSocials] = useState<{
+    socialFacebook: string;
+    socialTwitter: string;
+    socialInstagram: string;
+    socialLinkedin: string;
+    socialGithub: string;
+  }>({
+    socialFacebook: '#',
+    socialTwitter: '#',
+    socialInstagram: '#',
+    socialLinkedin: '#',
+    socialGithub: '#',
+  });
+
+  const trackAndFetchVisitors = useCallback(async (offset: number) => {
+    const sessionId = getOrCreateSessionId();
+    if (!sessionId) return;
+
+    // เช็คว่า session นี้นับแล้วหรือยัง
+    const counted = sessionStorage.getItem('skillscout_counted');
+    if (counted) {
+      // นับแล้ว → แค่ GET ยอดรวม
+      try {
+        const res = await fetch('/api/visitors');
+        if (res.ok) {
+          const data = await res.json() as { total: number };
+          setVisitorCount(data.total + offset);
+        }
+      } catch { /* silent */ }
+      return;
+    }
+
+    // ยังไม่นับ → POST เพื่อ +1
+    try {
+      const res = await fetch('/api/visitors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      });
+      if (res.ok) {
+        const data = await res.json() as { total: number };
+        setVisitorCount(data.total + offset);
+        sessionStorage.setItem('skillscout_counted', '1');
+      }
+    } catch {
+      try {
+        const res = await fetch('/api/visitors');
+        if (res.ok) {
+          const data = await res.json() as { total: number };
+          setVisitorCount(data.total + offset);
+        }
+      } catch { /* silent */ }
+    }
+  }, []);
+
+  useEffect(() => {
+    // ดึง visitorOffset จาก admin settings ก่อน แล้วค่อย track
+    fetch('/api/admin/settings')
+      .then(r => r.ok ? r.json() : null)
+      .then((data: any) => {
+        const offset = data?.visitorOffset ?? 59;
+        setVisitorOffset(offset);
+
+        // Load contact & social
+        if (data?.contactEmail) setContactEmail(data.contactEmail);
+        if (data?.contactPhone) setContactPhone(data.contactPhone);
+
+        setSocials({
+          socialFacebook: data?.socialFacebook ?? '#',
+          socialTwitter: data?.socialTwitter ?? '#',
+          socialInstagram: data?.socialInstagram ?? '#',
+          socialLinkedin: data?.socialLinkedin ?? '#',
+          socialGithub: data?.socialGithub ?? '#',
+        });
+
+        trackAndFetchVisitors(offset);
+      })
+      .catch(() => trackAndFetchVisitors(visitorOffset));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trackAndFetchVisitors]);
+
   const quickLinks = [
     { label: 'หน้าแรก', href: "/" },
     { label: 'ค่ายทั้งหมด', href: "/allcamps" },
-    { label: 'แบบทดสอบ', href: "#" },
-    { label: 'Discovery Path', href: "#" },
-    { label: 'Path Finder', href: "#" },
+    { label: 'แบบทดสอบ', href: "/path-finder" },
+    { label: 'Discovery Path', href: "/discovery" },
+    { label: 'Path Finder', href: "/path-finder" },
   ];
 
   const supportLinks = [
-    { label: 'เกี่ยวกับเรา', href: "/about" },
-    { label: 'ติดต่อเรา', href: "/contact" },
-    { label: 'คำถามที่พบบ่อย', href: "/faq" },
-    { label: 'ช่วยเหลือ', href: "/help" },
+    { label: 'เกี่ยวกับเรา', href: "https://about.skillscout.site" },
+    { label: 'ติดต่อเรา', href: "https://about.skillscout.site" },
+    { label: 'คำถามที่พบบ่อย', href: "https://about.skillscout.site" },
+    { label: 'ช่วยเหลือ', href: "https://about.skillscout.site" },
   ];
 
-  const socialLinks = [
-    { icon: FaFacebookF, href: "#", label: "Facebook", gradient: "from-blue-600 to-blue-500" },
-    { icon: FaTwitter, href: "#", label: "Twitter", gradient: "from-sky-500 to-sky-400" },
-    { icon: FaInstagram, href: "#", label: "Instagram", gradient: "from-pink-600 to-orange-500" },
-    { icon: FaLinkedinIn, href: "#", label: "LinkedIn", gradient: "from-blue-700 to-blue-600" },
-    { icon: FaGithub, href: "#", label: "GitHub", gradient: "from-gray-700 to-gray-600" },
-  ];
+  const socialLinksConfig = [
+    { icon: FaFacebookF, href: socials.socialFacebook, label: "Facebook", gradient: "from-blue-600 to-blue-500" },
+    { icon: FaTwitter, href: socials.socialTwitter, label: "Twitter", gradient: "from-sky-500 to-sky-400" },
+    { icon: FaInstagram, href: socials.socialInstagram, label: "Instagram", gradient: "from-pink-600 to-orange-500" },
+    { icon: FaLinkedinIn, href: socials.socialLinkedin, label: "LinkedIn", gradient: "from-blue-700 to-blue-600" },
+    { icon: FaGithub, href: socials.socialGithub, label: "GitHub", gradient: "from-gray-700 to-gray-600" },
+  ].filter(link => link.href && link.href !== '' && link.href !== ' ' && link.href !== '-');
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-12">
+    <div className="mx-auto max-w-[1536px] px-6 py-12">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        
+
         {/* Column 1 - Brand */}
         <div className="lg:col-span-1">
           <Link href="/" className="inline-block mb-4">
@@ -69,14 +159,14 @@ const FooterBody = () => {
           <p className="text-sm text-gray-300 dark:text-gray-400 leading-relaxed mb-6">
             แพลตฟอร์มค้นหาค่ายไอทีที่ใหญ่ที่สุด พัฒนาทักษะและสร้างอนาคตที่สดใสไปกับเรา
           </p>
-          
-          {/* Social Media */}
+
           <div className="flex gap-2">
-            {socialLinks.map((social, idx) => (
+            {socialLinksConfig.map((social, idx) => (
               <Link
                 key={idx}
                 href={social.href}
                 className="group relative"
+                aria-label={social.label}
               >
                 <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${social.gradient} flex items-center justify-center text-white shadow-lg group-hover:shadow-xl transition-all group-hover:scale-110`}>
                   <social.icon size={16} />
@@ -141,7 +231,7 @@ const FooterBody = () => {
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-0.5">อีเมล</p>
-                <p>contact@skillscout.com</p>
+                <p>{contactEmail}</p>
               </div>
             </li>
             <li className="flex items-start gap-3 text-sm text-gray-300">
@@ -150,38 +240,45 @@ const FooterBody = () => {
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-0.5">โทรศัพท์</p>
-                <p>02-xxx-xxxx</p>
+                <p>{contactPhone}</p>
               </div>
             </li>
           </ul>
 
-          {/* System Status */}
+          {/* Live Visitor Count */}
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <BsFillPeopleFill size={16} className="text-orange-400" />
-                <span className="text-sm font-semibold text-white">1,234</span>
+                <span className="text-xs text-gray-400 font-medium">ผู้เข้าชมเว็บไซต์</span>
               </div>
-              <span className="text-xs text-gray-400">ออนไลน์</span>
+              <FiActivity size={14} className="text-orange-400 animate-pulse" />
             </div>
-            <Chip
-              size="sm"
-              color="success"
-              variant="flat"
-              className="w-full justify-center"
-              classNames={{
-                base: "bg-green-500/20 border-green-500/30",
-                content: "text-green-400 font-semibold"
-              }}
-              startContent={
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+
+            <div className="flex items-center gap-3 mb-3">
+              {visitorCount === null ? (
+                <div className="h-8 w-16 bg-white/10 rounded animate-pulse" />
+              ) : (
+                <span className="text-2xl font-black text-white">
+                  {visitorCount.toLocaleString()}
                 </span>
-              }
-            >
-              ระบบทำงานปกติ
-            </Chip>
+              )}
+              <div className="flex items-center gap-1.5">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                </span>
+                <span className="text-xs text-green-400 font-semibold">ออนไลน์</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+              </span>
+              <span className="text-xs text-green-400 font-semibold">ระบบทำงานปกติ</span>
+            </div>
           </div>
         </div>
       </div>
@@ -192,7 +289,7 @@ const FooterBody = () => {
 const FooterBottom = () => {
   return (
     <div className="border-t border-white/10">
-      <div className="mx-auto max-w-7xl px-6 py-6">
+      <div className="mx-auto max-w-[1536px] px-6 py-6">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-gray-400 text-center md:text-left">
             &copy; 2024 <span className="text-orange-400 font-semibold">SkillScout</span>. สงวนลิขสิทธิ์ทั้งหมด

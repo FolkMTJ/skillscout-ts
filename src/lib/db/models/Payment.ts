@@ -21,6 +21,9 @@ interface PaymentDoc {
   slipVerified?: boolean;
   requiresManualReview?: boolean;
   slipUploadedAt?: Date;
+  slipSenderName?: string;
+  slipReceivedAmount?: number;
+  slipQrHash?: string;
   verifiedAt?: Date;
   verifiedBy?: string;
   rejectedAt?: Date;
@@ -30,6 +33,15 @@ interface PaymentDoc {
   confirmedAt?: Date;
   releasedAt?: Date;
   autoReleaseDate?: Date;
+  // Platform fee
+  platformFeePercent?: number;
+  platformFee?: number;
+  organizerNet?: number;
+  payoutStatus?: 'pending' | 'paid_out';
+  payoutAmountPaid?: number;
+  paidOutAt?: Date;
+  payoutNote?: string;
+  payoutSlipUrl?: string; // Added this line
   createdAt: Date;
   updatedAt: Date;
 }
@@ -39,15 +51,20 @@ export class PaymentModel {
 
   private static toPublic(doc: PaymentDoc): Payment {
     const { _id, ...rest } = doc;
+
+    // For older records where payout slip was saved to slipUrl instead of payoutSlipUrl
+    const payoutSlipUrl = doc.payoutSlipUrl || (doc.payoutStatus === 'paid_out' ? doc.slipUrl : undefined);
+
     return {
       ...rest,
+      payoutSlipUrl,
       _id: _id?.toString() || '',
     };
   }
 
   static async create(paymentData: Omit<Payment, '_id' | 'createdAt' | 'updatedAt' | 'status'>): Promise<Payment> {
     const collection = await getCollection<PaymentDoc>(this.collectionName);
-    
+
     const now = new Date();
     const paymentDoc: Omit<PaymentDoc, '_id'> = {
       ...paymentData,
@@ -57,7 +74,7 @@ export class PaymentModel {
     };
 
     const result = await collection.insertOne(paymentDoc as PaymentDoc);
-    
+
     return {
       _id: result.insertedId.toString(),
       ...paymentDoc,
@@ -69,7 +86,7 @@ export class PaymentModel {
     const collection = await getCollection<PaymentDoc>(this.collectionName);
     const filter: Filter<PaymentDoc> = { _id: new ObjectId(id) } as Filter<PaymentDoc>;
     const payment = await collection.findOne(filter);
-    
+
     if (!payment) return null;
     return this.toPublic(payment);
   }
@@ -78,15 +95,77 @@ export class PaymentModel {
     const collection = await getCollection<PaymentDoc>(this.collectionName);
     const filter: Filter<PaymentDoc> = { registrationId } as Filter<PaymentDoc>;
     const payment = await collection.findOne(filter);
-    
+
     if (!payment) return null;
     return this.toPublic(payment);
+  }
+
+  // Alias for consistency
+  static async findByRegistrationId(registrationId: string): Promise<Payment | null> {
+    return this.findByRegistration(registrationId);
+  }
+
+  static async addPayout(
+    id: string,
+    amountToAdd: number,
+    note?: string,
+    slipData?: {
+      slipUrl: string;
+      slipQrHash: string;
+      slipSenderName: string;
+      slipReceivedAmount: number;
+    }
+  ): Promise<boolean> {
+    const collection = await getCollection<PaymentDoc>(this.collectionName);
+    const filter: Filter<PaymentDoc> = { _id: new ObjectId(id) } as Filter<PaymentDoc>;
+    const payment = await collection.findOne(filter);
+
+    if (!payment) return false;
+
+    const currentPaid = payment.payoutAmountPaid || 0;
+    const newPaid = currentPaid + amountToAdd;
+    const targetNet = payment.organizerNet || 0;
+
+    const isFullyPaid = newPaid >= targetNet - 0.01; // Allow 1 satang floating point tolerance
+
+    const updateFields: any = {
+      payoutAmountPaid: newPaid,
+      updatedAt: new Date(),
+    };
+
+    if (note) {
+      updateFields.payoutNote = payment.payoutNote ? `${payment.payoutNote}\n${note}` : note;
+    }
+
+    if (isFullyPaid) {
+      updateFields.payoutStatus = 'paid_out';
+      updateFields.paidOutAt = new Date();
+    }
+
+    // Save/overwrite the latest slip details
+    if (slipData) {
+      updateFields.payoutSlipUrl = slipData.slipUrl;
+      updateFields.slipUrl = slipData.slipUrl;
+      updateFields.slipQrHash = slipData.slipQrHash;
+      updateFields.slipSenderName = slipData.slipSenderName;
+      updateFields.slipReceivedAmount = slipData.slipReceivedAmount;
+      updateFields.slipUploadedAt = new Date();
+      updateFields.verifiedAt = new Date();
+      updateFields.verifiedBy = 'rdcw-auto-payout';
+      updateFields.slipVerified = true;
+    }
+
+    const update: UpdateFilter<PaymentDoc> = {
+      $set: updateFields,
+    };
+    const result = await collection.updateOne(filter, update);
+    return result.modifiedCount > 0;
   }
 
   static async updateStatus(id: string, status: PaymentStatus, additionalData?: Partial<Omit<PaymentDoc, '_id'>>): Promise<boolean> {
     const collection = await getCollection<PaymentDoc>(this.collectionName);
     const filter: Filter<PaymentDoc> = { _id: new ObjectId(id) } as Filter<PaymentDoc>;
-    
+
     const updateFields: Partial<PaymentDoc> = {
       status,
       updatedAt: new Date(),
@@ -111,7 +190,7 @@ export class PaymentModel {
     const update: UpdateFilter<PaymentDoc> = {
       $set: updateFields,
     };
-    
+
     const result = await collection.updateOne(filter, update);
     return result.modifiedCount > 0;
   }
@@ -119,12 +198,12 @@ export class PaymentModel {
   static async findPendingAutoRelease(): Promise<Payment[]> {
     const collection = await getCollection<PaymentDoc>(this.collectionName);
     const now = new Date();
-    
+
     const filter: Filter<PaymentDoc> = {
       status: PaymentStatus.COMPLETED,
       autoReleaseDate: { $lte: now }
     } as Filter<PaymentDoc>;
-    
+
     const payments = await collection.find(filter).toArray();
     return payments.map(doc => this.toPublic(doc));
   }
@@ -132,23 +211,56 @@ export class PaymentModel {
   static async findByOrganizer(organizerId: string): Promise<Payment[]> {
     const collection = await getCollection<PaymentDoc>(this.collectionName);
     const filter: Filter<PaymentDoc> = { organizerId } as Filter<PaymentDoc>;
-    
+
     const payments = await collection
       .find(filter)
       .sort({ createdAt: -1 })
       .toArray();
-    
+
     return payments.map(doc => this.toPublic(doc));
   }
 
   static async find(filter: Filter<PaymentDoc>): Promise<Payment[]> {
     const collection = await getCollection<PaymentDoc>(this.collectionName);
-    
+
     const payments = await collection
       .find(filter)
       .sort({ createdAt: -1 })
       .toArray();
-    
+
     return payments.map(doc => this.toPublic(doc));
+  }
+
+  // Check if any OTHER payment already used this slip QR hash (prevent slip reuse)
+  static async findBySlipQrHash(hash: string, excludePaymentIds: string | string[]): Promise<Payment | null> {
+    const collection = await getCollection<PaymentDoc>(this.collectionName);
+    const excludeIds = Array.isArray(excludePaymentIds)
+      ? excludePaymentIds.map(id => new ObjectId(id))
+      : [new ObjectId(excludePaymentIds)];
+
+    const filter: Filter<PaymentDoc> = {
+      slipQrHash: hash,
+      _id: { $nin: excludeIds },
+    } as Filter<PaymentDoc>;
+    const doc = await collection.findOne(filter);
+    return doc ? this.toPublic(doc) : null;
+  }
+
+  static async findAllForAdmin(): Promise<Payment[]> {
+    const collection = await getCollection<PaymentDoc>(this.collectionName);
+    const payments = await collection
+      .find({} as Filter<PaymentDoc>)
+      .sort({ createdAt: -1 })
+      .toArray();
+    return payments.map(doc => this.toPublic(doc));
+  }
+
+
+  static async deleteById(id: string): Promise<boolean> {
+    const collection = await getCollection<PaymentDoc>(this.collectionName);
+    const filter: Filter<PaymentDoc> = { _id: new ObjectId(id) } as Filter<PaymentDoc>;
+
+    const result = await collection.deleteOne(filter);
+    return result.deletedCount > 0;
   }
 }

@@ -19,4 +19,5 @@ export interface PromoCode {
   applicableCamps?: string[];
   createdBy: string;
   createdAt: Date;
+  description?: string;
 }

@@ -4,14 +4,21 @@ import React from 'react';
 import {
   Modal,
   ModalContent,
-  ModalHeader,
   ModalBody,
   ModalFooter,
   Button,
   Image,
-  Divider,
 } from '@heroui/react';
-import { FaQrcode, FaDownload, FaCheckCircle, FaClock } from 'react-icons/fa';
+import {
+  FiDownload,
+  FiMapPin,
+  FiCalendar,
+  FiMail,
+  FiUser,
+  FiCheckCircle,
+  FiClock,
+  FiHash,
+} from 'react-icons/fi';
 
 interface TicketModalProps {
   isOpen: boolean;
@@ -30,163 +37,130 @@ interface TicketModalProps {
 }
 
 export default function TicketModal({ isOpen, onClose, ticket }: TicketModalProps) {
-  
+
   const handleDownload = () => {
-    // Create a download link for the ticket
     const link = document.createElement('a');
     link.href = ticket.qrCode;
-    link.download = `ticket-${ticket.registrationId}.png`;
+    link.download = `eticket-${ticket.registrationId.slice(-8)}.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  const getStatusBadge = () => {
-    switch (ticket.status) {
-      case 'approved':
-        return (
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-100 dark:bg-green-900/30 border-2 border-green-500">
-            <FaCheckCircle className="text-green-600" />
-            <span className="font-bold text-green-700 dark:text-green-400">ยืนยันแล้ว</span>
-          </div>
-        );
-      case 'pending':
-        return (
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-500">
-            <FaClock className="text-yellow-600 animate-pulse" />
-            <span className="font-bold text-yellow-700 dark:text-yellow-400">รอการยืนยัน</span>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
+  const isApproved = ticket.status === 'approved' || ticket.status === 'confirmed';
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      size="2xl"
+      size="sm"
+      scrollBehavior="normal"
+      backdrop="opaque"
       classNames={{
-        base: "bg-gradient-to-br from-orange-50 to-amber-50 dark:from-gray-900 dark:to-gray-800",
-        header: "border-b-2 border-orange-300 dark:border-gray-700",
-        body: "py-6",
-        footer: "border-t-2 border-orange-300 dark:border-gray-700",
+        base: "bg-white rounded-3xl shadow-2xl overflow-hidden",
+        wrapper: "items-center",
+        body: "p-0",
+        closeButton: "z-50 text-gray-900 hover:bg-black/10 top-2 right-2",
       }}
     >
       <ModalContent>
-        <ModalHeader className="flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center">
-              <FaQrcode className="text-white text-xl" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-black text-gray-900 dark:text-white">
-                Ticket เข้าค่าย
-              </h2>
-              <p className="text-sm font-normal text-gray-600 dark:text-gray-400">
-                {ticket.campName}
-              </p>
+        <ModalBody>
+          {/* ── Header ── */}
+          <div className="bg-[#F2B33D] px-6 pt-7 pb-5 text-center">
+            <p className="text-white text-[10px] font-bold tracking-[0.2em] uppercase mb-1">E-Ticket</p>
+            <h2 className="text-gray-900 text-base font-black leading-tight line-clamp-2 px-2">
+              {ticket.campName}
+            </h2>
+            <div className="mt-3">
+              {isApproved ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/40 text-gray-900 text-[11px] font-bold">
+                  <FiCheckCircle size={11} />
+                  ยืนยันแล้ว
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/40 text-gray-900 text-[11px] font-bold">
+                  <FiClock size={11} className="animate-pulse" />
+                  รอการยืนยัน
+                </span>
+              )}
             </div>
           </div>
-        </ModalHeader>
 
-        <ModalBody>
-          <div className="space-y-6">
-            {/* Status Badge */}
-            <div className="text-center">
-              {getStatusBadge()}
+          {/* ── QR Code ── */}
+          <div className="flex justify-center bg-white pt-4 pb-2">
+            <div className="bg-white rounded-xl p-3 shadow-md border border-gray-100">
+              <Image
+                src={ticket.qrCode}
+                alt="Ticket QR Code"
+                width={160}
+                height={160}
+                className="rounded-lg"
+              />
             </div>
+          </div>
+          <p className="text-center text-[11px] text-gray-400 pb-3 bg-white">
+            สแกน QR Code ที่จุดลงทะเบียน
+          </p>
 
-            {/* Ticket Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden border-4 border-orange-300 dark:border-orange-700">
-              {/* Header */}
-              <div className="bg-gradient-to-r from-orange-500 to-amber-500 p-6 text-white">
-                <h3 className="text-2xl font-black mb-2">🎫 E-Ticket</h3>
-                <p className="text-sm opacity-90">Registration ID: {ticket.registrationId.slice(-8)}</p>
-              </div>
-
-              {/* QR Code */}
-              <div className="p-8 text-center bg-white dark:bg-gray-900">
-                <div className="inline-block p-6 bg-white rounded-2xl shadow-xl">
-                  <Image
-                    src={ticket.qrCode}
-                    alt="Ticket QR Code"
-                    width={250}
-                    height={250}
-                    className="mx-auto"
-                  />
-                </div>
-                <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                  แสดง QR Code นี้ที่จุดลงทะเบียน
-                </p>
-              </div>
-
-              <Divider />
-
-              {/* Details */}
-              <div className="p-6 space-y-3 bg-gradient-to-b from-orange-50/50 to-amber-50/50 dark:from-gray-800/50 dark:to-gray-900/50">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">ชื่อผู้เข้าร่วม</span>
-                  <span className="font-bold text-gray-900 dark:text-white">{ticket.userName}</span>
-                </div>
-                <Divider />
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">อีเมล</span>
-                  <span className="font-semibold text-gray-800 dark:text-gray-200">{ticket.userEmail}</span>
-                </div>
-                <Divider />
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">วันที่จัด</span>
-                  <span className="font-semibold text-gray-800 dark:text-gray-200">{ticket.campDate}</span>
-                </div>
-                <Divider />
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">สถานที่</span>
-                  <span className="font-semibold text-gray-800 dark:text-gray-200">{ticket.campLocation}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Instructions */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border-2 border-blue-200 dark:border-blue-800">
-              <h4 className="font-bold text-blue-900 dark:text-blue-200 mb-2">📋 วิธีใช้งาน:</h4>
-              <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1 list-disc list-inside">
-                <li>นำ QR Code นี้ไปแสดงที่จุดลงทะเบียน</li>
-                <li>เจ้าหน้าที่จะสแกน QR เพื่อยืนยันการเข้าร่วม</li>
-                <li>สามารถบันทึกหน้าจอหรือดาวน์โหลดได้</li>
-                <li>ห้ามแชร์ QR Code ให้ผู้อื่น</li>
-              </ul>
-            </div>
-
-            {/* Warning */}
-            {ticket.status === 'pending' && (
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 border-2 border-yellow-300 dark:border-yellow-700">
-                <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                  ⚠️ <strong>หมายเหตุ:</strong> การสมัครของคุณยังรอการยืนยัน กรุณารอจนกว่าจะได้รับการอนุมัติก่อนเข้าร่วมค่าย
-                </p>
-              </div>
-            )}
+          {/* ── Info Rows ── */}
+          <div className="px-5 bg-white">
+            <InfoRow icon={<FiUser size={13} />} label="ชื่อ" value={ticket.userName} />
+            <InfoRow icon={<FiMail size={13} />} label="อีเมล" value={ticket.userEmail} truncate />
+            <InfoRow icon={<FiCalendar size={13} />} label="วันที่" value={ticket.campDate} />
+            <InfoRow icon={<FiMapPin size={13} />} label="สถานที่" value={ticket.campLocation} />
+            <InfoRow
+              icon={<FiHash size={13} />}
+              label="Ref ID"
+              value={`#${ticket.registrationId.slice(-8).toUpperCase()}`}
+              mono
+              noBorder
+            />
           </div>
         </ModalBody>
 
-        <ModalFooter>
+        {/* ── Footer ── */}
+        <ModalFooter className="bg-white border-t border-gray-100 gap-2 px-5 py-3">
           <Button
-            color="warning"
-            variant="flat"
+            variant="bordered"
+            size="sm"
+            startContent={<FiDownload size={13} />}
             onPress={handleDownload}
-            startContent={<FaDownload />}
+            className="flex-1 border-gray-300 text-gray-700 font-semibold text-xs"
           >
-            ดาวน์โหลด Ticket
+            ดาวน์โหลด QR
           </Button>
           <Button
-            className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold"
+            size="sm"
             onPress={onClose}
+            className="flex-1 bg-[#F2B33D] text-gray-900 font-bold shadow-md shadow-[#F2B33D]/30 text-xs"
           >
             ปิด
           </Button>
         </ModalFooter>
       </ModalContent>
     </Modal>
+  );
+}
+
+function InfoRow({
+  icon, label, value, truncate = false, mono = false, noBorder = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  truncate?: boolean;
+  mono?: boolean;
+  noBorder?: boolean;
+}) {
+  return (
+    <div className={`flex items-center gap-2.5 py-2.5 ${!noBorder ? 'border-b border-gray-100' : ''}`}>
+      <div className="w-6 h-6 rounded-md bg-[#F2B33D]/10 flex items-center justify-center text-[#F2B33D] shrink-0">
+        {icon}
+      </div>
+      <span className="text-[11px] text-gray-500 w-14 shrink-0">{label}</span>
+      <span className={`text-xs font-semibold text-gray-800 flex-1 text-right ${truncate ? 'truncate' : ''} ${mono ? 'font-mono text-[#F2B33D]' : ''}`}>
+        {value}
+      </span>
+    </div>
   );
 }

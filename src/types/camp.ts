@@ -22,7 +22,9 @@ export interface Qualifications {
 
 export interface Review {
   id: string;
-  author: string;
+  author: string;       // ชื่อที่แสดงใน UI
+  authorEmail?: string; // email สำหรับ ownership check (ไม่แสดงใน UI)
+  authorImage?: string; // รูป profile
   rating: number;
   comment: string;
   date: string;
@@ -62,7 +64,10 @@ export interface Camp {
   capacity?: number;
   enrolled?: number;
   fee?: number;
+  originalFee?: number;
   tags?: string[];
   status?: CampStatus;
   views?: number;
+  requiresPortfolio?: boolean;
+  portfolioInstructions?: string;
 }

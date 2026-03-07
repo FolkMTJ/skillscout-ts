@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { connectDB } from '@/lib/mongodb';
 import { PaymentModel } from '@/lib/db/models/Payment';
 import { CampModel } from '@/lib/db/models/Camp';
+import { isAdminRole } from '@/lib/auth-check';
 
 export async function GET() {
   try {
@@ -20,8 +21,8 @@ export async function GET() {
 
     // Admin สามารถดูค่ายทั้งหมด
     const camps = await CampModel.findAll();
-    const myCamps = session.user.role === 'admin' 
-      ? camps 
+    const myCamps = isAdminRole(session.user.role)
+      ? camps
       : camps.filter(camp => camp.organizerEmail === session.user.email);
     const campIds = myCamps.map(camp => camp._id);
 

@@ -2,7 +2,15 @@
 export enum UserRole {
   USER = 'user',
   ORGANIZER = 'organizer',
-  ADMIN = 'admin'
+  ADMIN = 'admin',
+  SUPER_ADMIN = 'super_admin'
+}
+
+export interface PayoutInfo {
+  promptpayId: string; // เบอร์โทร 10 หลัก หรือ เลขบัตรประชาชน 13 หลัก
+  accountName: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface User {
@@ -20,6 +28,7 @@ export interface User {
   province?: string;
   district?: string;
   isBanned?: boolean;
+  payoutInfo?: PayoutInfo;
   createdAt: Date;
   updatedAt: Date;
 }

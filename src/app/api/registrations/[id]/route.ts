@@ -1,0 +1,105 @@
+// src/app/api/registrations/[id]/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { RegistrationModel } from '@/lib/db/models/Registration';
+import { CampModel } from '@/lib/db/models/Camp';
+import { RegistrationStatus } from '@/types';
+import { sendPortfolioApprovalEmail, sendPortfolioRejectionEmail } from '@/lib/email';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+
+// PATCH /api/registrations/[id] - Update registration status
+export async function PATCH(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params;
+        const body = await request.json();
+
+        if (!id) {
+            return NextResponse.json(
+                { error: 'Missing registration ID' },
+                { status: 400 }
+            );
+        }
+
+        const registration = await RegistrationModel.findById(id);
+        if (!registration) {
+            return NextResponse.json(
+                { error: 'Registration not found' },
+                { status: 404 }
+            );
+        }
+
+        const newStatus = body.status as RegistrationStatus;
+        const reviewedBy = body.reviewedBy || 'system';
+        const notes = body.notes || '';
+
+        const updated = await RegistrationModel.updateStatus(id, newStatus, reviewedBy, notes);
+
+        // Send portfolio review email if camp requires portfolio
+        if (newStatus === RegistrationStatus.APPROVED || newStatus === RegistrationStatus.REJECTED) {
+            try {
+                const camp = await CampModel.findById(registration.campId);
+                if (camp?.requiresPortfolio) {
+                    const campUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/camps/${camp.slug}`;
+                    if (newStatus === RegistrationStatus.APPROVED) {
+                        await sendPortfolioApprovalEmail(
+                            registration.userEmail,
+                            registration.userName,
+                            camp.name,
+                            campUrl,
+                            (camp.fee ?? 0) > 0,
+                        );
+                    } else {
+                        await sendPortfolioRejectionEmail(
+                            registration.userEmail,
+                            registration.userName,
+                            camp.name,
+                            notes,
+                        );
+                    }
+                }
+            } catch (emailErr) {
+                console.warn('Could not send portfolio review email:', emailErr);
+            }
+        }
+
+        return NextResponse.json({
+            success: true,
+            registration: updated,
+            message: 'Registration status updated successfully',
+        });
+    } catch (error) {
+        console.error('Error updating registration:', error);
+        return NextResponse.json(
+            { error: 'Failed to update registration' },
+            { status: 500 }
+        );
+    }
+}
+
+// DELETE /api/registrations/[id] - Remove registration (super_admin only)
+export async function DELETE(
+    _request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const session = await getServerSession(authOptions);
+        const role = (session?.user as { role?: string })?.role;
+        if (role !== 'super_admin') {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        const { id } = await params;
+        const deleted = await RegistrationModel.delete(id);
+        if (!deleted) {
+            return NextResponse.json({ error: 'Registration not found' }, { status: 404 });
+        }
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error('Error deleting registration:', error);
+        return NextResponse.json({ error: 'Failed to delete registration' }, { status: 500 });
+    }
+}

@@ -1,10 +1,13 @@
 "use client";
 
-import React from "react";
-import { Card, CardBody, Chip } from "@heroui/react";
-import { FaMapMarkerAlt, FaCalendarAlt, FaClock } from "react-icons/fa";
-
+import React, { useState } from "react";
+import { Card, CardBody } from "@heroui/react";
+import { FaMapMarkerAlt, FaCalendarAlt, FaClock, FaUsers, FaBookmark, FaRegBookmark } from "react-icons/fa";
+import { Review } from "@/types/camp";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
+import toast from "react-hot-toast";
+import { useBookmarks } from "@/contexts/BookmarkContext";
 
 export interface CampData {
     id: string;
@@ -17,6 +20,11 @@ export interface CampData {
     daysLeft: number;
     description: string;
     category: string;
+    avgRating?: number;
+    reviews?: Review[];
+    capacity?: number;
+    enrolled?: number;
+    initialBookmarked?: boolean;
 }
 
 interface CampCardProps {
@@ -26,260 +34,205 @@ interface CampCardProps {
 }
 
 export default function CampCard({ camp, variant = "compact", className = "" }: CampCardProps) {
+    const { data: session } = useSession();
+    const { bookmarkedCamps, toggleBookmark } = useBookmarks();
+
+    const isBookmarked = bookmarkedCamps.includes(camp.id) || (camp.initialBookmarked && bookmarkedCamps.length === 0);
+    const [localBookmarked, setLocalBookmarked] = useState(isBookmarked);
+    const [bookmarkLoading, setBookmarkLoading] = useState(false);
+
+    React.useEffect(() => {
+        if (bookmarkedCamps.length > 0) {
+            setLocalBookmarked(bookmarkedCamps.includes(camp.id));
+        }
+    }, [bookmarkedCamps, camp.id]);
+
+    const handleBookmark = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!session?.user) {
+            toast.error('กรุณาเข้าสู่ระบบก่อน');
+            return;
+        }
+
+        setBookmarkLoading(true);
+        try {
+            const newState = await toggleBookmark(camp.id);
+            setLocalBookmarked(newState);
+            toast.success(newState ? 'บันทึกแล้ว' : 'ยกเลิก Bookmark แล้ว');
+        } catch {
+            toast.error('เกิดข้อผิดพลาด');
+        } finally {
+            setBookmarkLoading(false);
+        }
+    };
+
     if (variant === "detailed") {
         return (
             <Link href={`/camps/${camp.id}`} className="block">
                 <Card
                     isPressable
-                    className={`w-full bg-white dark:bg-[#1a1a1a] backdrop-blur-md border-2 border-zinc-200 dark:border-zinc-800 hover:border-[#F2B33D] hover:shadow-xl hover:shadow-[#F2B33D]/20 transition-all duration-300 hover:-translate-y-1 ${className}`}
+                    className={`group w-full overflow-hidden rounded-2xl hover:shadow-2xl hover:shadow-[#F2B33D]/20 hover:-translate-y-1 transition-all duration-300 ${className}`}
                 >
-                    <CardBody className="p-0 overflow-hidden">
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-0">
-                            {/* Image Section - ลดขนาด */}
-                            <div className="relative col-span-2 h-[200px] md:h-full overflow-hidden group">
-                                <div
-                                    className="w-full h-full bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
-                                    style={{ backgroundImage: `url(${camp.image})` }}
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-[#2C2C2C]/80 via-transparent to-transparent" />
+                    <CardBody className="p-0">
+                        {/* Full-image 16:9 */}
+                        <div className="relative w-full aspect-video overflow-hidden">
+                            {/* รูปพื้นหลัง */}
+                            <div
+                                className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+                                style={{ backgroundImage: `url(${camp.image})` }}
+                            />
 
-                                {/* Category Badge */}
-                                <Chip
-                                    size="sm"
-                                    variant="flat"
-                                    className="absolute top-3 left-3 bg-[#F2B33D] backdrop-blur-sm font-bold shadow-lg"
-                                    classNames={{
-                                        content: "text-[#2C2C2C] text-xs"
-                                    }}
-                                >
+                            {/* Gradient overlay — เข้มด้านล่างสำหรับอ่านข้อความ */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/10" />
+
+                            {/* ── TOP ROW ── */}
+                            <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+                                {/* Category — ซ้ายบน */}
+                                <span className="bg-[#F2B33D] text-[#1a1a1a] text-xs font-extrabold px-3 py-1 rounded-full shadow-lg">
                                     {camp.category}
-                                </Chip>
+                                </span>
 
-                                {/* Deadline Badge */}
-                                {camp.daysLeft <= 2 && (
-                                    <Chip
-                                        size="sm"
-                                        variant="solid"
-                                        className="absolute top-3 right-3 font-semibold bg-red-500 text-white animate-pulse shadow-lg text-xs"
-                                    >
-                                        ปิดรับเร็วๆนี้
-                                    </Chip>
+                                {/* หมดเขตในกี่วัน — ขวาบน */}
+                                {camp.daysLeft > 0 ? (
+                                    <span className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full shadow-lg ${camp.daysLeft <= 3
+                                        ? 'bg-red-500 text-white animate-pulse'
+                                        : 'bg-white/90 text-[#1a1a1a]'
+                                        }`}>
+                                        <FaClock size={10} />
+                                        หมดเขตใน {camp.daysLeft} วัน
+                                    </span>
+                                ) : (
+                                    <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-red-600 text-white shadow-lg">
+                                        <FaClock size={10} />
+                                        ปิดรับสมัครแล้ว
+                                    </span>
                                 )}
                             </div>
 
-                            {/* Content Section - กระทัดรัด */}
-                            <div className="col-span-3 p-4 md:p-5 flex flex-col justify-between bg-gradient-to-br from-white to-zinc-50 dark:from-[#1a1a1a] dark:to-[#2C2C2C]">
-                                <div>
-                                    <h3 className="text-lg md:text-xl font-bold text-[#2C2C2C] dark:text-white mb-2 line-clamp-2 hover:text-[#F2B33D] transition-colors">
-                                        {camp.name}
-                                    </h3>
+                            {/* Bookmark — บนขวาซ้อนกับ daysLeft ไม่ได้ → วางใต้ row บน */}
+                            <div
+                                role="button"
+                                aria-label={localBookmarked ? 'ยกเลิก Bookmark' : 'Bookmark ค่าย'}
+                                onClick={handleBookmark}
+                                aria-disabled={bookmarkLoading}
+                                className="absolute top-10 right-3 w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/40 transition-all z-10 cursor-pointer select-none"
+                            >
+                                {localBookmarked
+                                    ? <FaBookmark className="text-[#F2B33D] text-sm" />
+                                    : <FaRegBookmark className="text-white text-sm" />
+                                }
+                            </div>
 
-                                    <p className="text-zinc-700 dark:text-zinc-300 mb-3 line-clamp-2 leading-relaxed text-sm">
-                                        {camp.description}
-                                    </p>
+                            {/* ── BOTTOM ROW ── */}
+                            <div className="absolute bottom-3 left-3 right-3">
+                                {/* ชื่อค่าย */}
+                                <h3 className="text-white font-bold text-base md:text-lg leading-snug line-clamp-1 mb-2 drop-shadow-md">
+                                    {camp.name}
+                                </h3>
 
-                                    {/* Info - Compact */}
-                                    <div className="flex flex-wrap items-center gap-3 mb-3 pb-3 border-b border-zinc-200 dark:border-zinc-800">
-                                        <div className="flex items-center gap-1.5">
-                                            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-[#F2B33D] to-[#FFD700] flex items-center justify-center">
-                                                <FaCalendarAlt className="text-[#2C2C2C]" size={11} />
-                                            </div>
-                                            <span className="text-xs font-medium text-[#2C2C2C] dark:text-white">{camp.date}</span>
-                                        </div>
+                                <div className="flex items-center justify-between">
+                                    {/* สถานที่ — ซ้ายล่าง */}
+                                    <span className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm text-white text-xs font-medium px-3 py-1 rounded-full max-w-[55%] truncate">
+                                        <FaMapMarkerAlt size={10} className="text-[#F2B33D] flex-shrink-0" />
+                                        <span className="truncate">{camp.location}</span>
+                                    </span>
 
-                                        <div className="w-px h-4 bg-zinc-300 dark:bg-zinc-700" />
-
-                                        <div className="flex items-center gap-1.5">
-                                            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-[#F2B33D] to-[#FFD700] flex items-center justify-center">
-                                                <FaMapMarkerAlt className="text-[#2C2C2C]" size={11} />
-                                            </div>
-                                            <span className="text-xs font-medium text-[#2C2C2C] dark:text-white">{camp.location}</span>
-                                        </div>
-
-                                        <div className="w-px h-4 bg-zinc-300 dark:bg-zinc-700" />
-
-                                        <div className="flex items-center gap-1.5">
-                                            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
-                                                <FaClock className="text-white" size={11} />
-                                            </div>
-                                            <span className="text-xs font-medium text-red-600 dark:text-red-400">หมดเขต: {camp.deadline}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Price Section - เล็กลง */}
-                                <div className="flex items-center justify-between pt-2">
-                                    <div>
-                                        <p className="text-xs text-zinc-500 mb-0.5">ราคา</p>
-                                        <p className="text-2xl md:text-3xl font-black bg-gradient-to-r from-[#F2B33D] to-[#FFD700] bg-clip-text text-transparent">
-                                            {camp.price === '฿0' ? 'ฟรี' : camp.price}
-                                        </p>
-                                    </div>
+                                    {/* ราคา — ขวาล่าง */}
+                                    <span className="bg-[#F2B33D] text-[#1a1a1a] text-sm font-black px-3 py-1 rounded-full shadow-lg">
+                                        {camp.price === '฿0' ? 'ฟรี' : camp.price}
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </CardBody>
                 </Card>
             </Link>
-
         );
     }
 
-    // Compact Card - Mobile Optimized
     return (
-        <div className="w-full h-[320px] sm:h-[380px]">
+        <div className="w-full h-full">
             <Link href={`/camps/${camp.id}`} className="block w-full h-full">
                 <Card
                     isPressable
-                    className={`group relative w-full h-full overflow-hidden bg-white dark:bg-[#2C2C2C] border-2 border-zinc-200 dark:border-zinc-800 hover:border-[#F2B33D] transition-all duration-300 ${className}`}
+                    className={`group w-full h-full overflow-hidden bg-white dark:bg-[#1a1a1a] border border-zinc-200 dark:border-zinc-800 hover:border-[#F2B33D] hover:shadow-xl hover:shadow-[#F2B33D]/10 transition-all duration-300 ${className}`}
                 >
-                    <CardBody className="p-0 overflow-hidden">
-                        {/* Background Image */}
-                        <div
-                            className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                            style={{ backgroundImage: `url(${camp.image})` }}
-                        />
-
-                        {/* Overlays - Mobile แสดง dark overlay ค้างไว้ */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#2C2C2C]/95 via-[#2C2C2C]/50 to-transparent md:via-[#2C2C2C]/40" />
-                        <div className="absolute inset-0 bg-[#2C2C2C]/80 md:bg-[#2C2C2C]/0 md:group-hover:bg-[#2C2C2C]/70 transition-all duration-300 md:backdrop-brightness-70 md:group-hover:backdrop-blur-sm z-10" />
-                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#F2B33D] to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 z-20" />
-
-                        {/* Badges - Mobile Optimized */}
-                        <Chip
-                            size="sm"
-                            variant="flat"
-                            className="absolute top-2 left-2 z-30 bg-[#F2B33D] backdrop-blur-sm font-bold shadow-lg"
-                            classNames={{
-                                content: "text-[#2C2C2C] text-[10px] px-1"
-                            }}
-                        >
-                            {camp.category}
-                        </Chip>
-
-                        {camp.daysLeft <= 2 && (
-                            <Chip
-                                size="sm"
-                                variant="solid"
-                                className="absolute top-2 right-2 z-30 font-semibold bg-red-500 text-white animate-pulse shadow-lg"
-                                classNames={{
-                                    content: "text-[10px] px-1"
-                                }}
+                    <CardBody className="p-0">
+                        {/* Image 16:9 */}
+                        <div className="relative w-full aspect-video overflow-hidden">
+                            <div
+                                className="w-full h-full bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+                                style={{ backgroundImage: `url(${camp.image})` }}
+                            />
+                            <span className="absolute top-1.5 left-1.5 md:top-3 md:left-3 bg-[#F2B33D] text-[#1a1a1a] text-[10px] md:text-xs font-extrabold px-2 py-0.5 md:px-3 md:py-1 rounded-full shadow-lg">
+                                {camp.category}
+                            </span>
+                            <div
+                                role="button"
+                                aria-label={localBookmarked ? 'ยกเลิก Bookmark' : 'Bookmark ค่าย'}
+                                onClick={handleBookmark}
+                                aria-disabled={bookmarkLoading}
+                                className="absolute top-1.5 right-1.5 md:top-3 md:right-3 w-6 h-6 md:w-8 md:h-8 bg-white/90 dark:bg-black/70 rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-all z-10 cursor-pointer select-none"
                             >
-                                เหลือ {camp.daysLeft} วัน
-                            </Chip>
-                        )}
-
-                        {/* Content - Mobile: แสดง hover state ค้างไว้ */}
-                        <div className="md:hidden absolute inset-0 p-3 sm:p-4 z-20 flex flex-col justify-center">
-                            <div className="space-y-2">
-                                <h3 className="text-base font-bold text-white drop-shadow-lg line-clamp-2 leading-tight">
-                                    {camp.name}
-                                </h3>
-
-                                <p className="text-white/90 text-[11px] line-clamp-2 leading-relaxed drop-shadow">
-                                    {camp.description}
-                                </p>
-
-                                <div className="space-y-1.5 pt-1">
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                        <div className="flex items-center gap-1.5 p-1 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
-                                            <div className="w-5 h-5 rounded-md bg-[#F2B33D] flex items-center justify-center flex-shrink-0">
-                                                <FaCalendarAlt size={9} className="text-[#2C2C2C]" />
-                                            </div>
-                                            <span className="text-[10px] font-medium text-white truncate">{camp.date}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 p-1 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
-                                            <div className="w-5 h-5 rounded-md bg-[#F2B33D] flex items-center justify-center flex-shrink-0">
-                                                <FaMapMarkerAlt size={9} className="text-[#2C2C2C]" />
-                                            </div>
-                                            <span className="text-[10px] font-medium text-white truncate">{camp.location}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-1.5 p-1 rounded-lg bg-red-500/20 backdrop-blur-sm border border-red-500/30">
-                                        <div className="w-5 h-5 rounded-md bg-red-500 flex items-center justify-center flex-shrink-0">
-                                            <FaClock size={9} className="text-white" />
-                                        </div>
-                                        <span className="text-[10px] font-medium text-white truncate">หมดเขต: {camp.deadline}</span>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center justify-between pt-2 border-t-2 border-[#F2B33D]/50">
-                                    <span className="text-white font-medium text-xs">ราคา</span>
-                                    <span className="text-xl font-black text-[#F2B33D] drop-shadow-[0_0_10px_rgba(242,179,61,0.5)]">
-                                        {camp.price}
-                                    </span>
-                                </div>
+                                {localBookmarked
+                                    ? <FaBookmark className="text-[#F2B33D] text-[10px] md:text-sm" />
+                                    : <FaRegBookmark className="text-gray-500 text-[10px] md:text-sm" />
+                                }
                             </div>
+                            {camp.daysLeft > 0 && (
+                                <span className={`absolute bottom-1.5 right-1.5 md:bottom-3 md:right-3 flex items-center gap-1 text-[10px] md:text-xs font-medium px-1.5 py-0.5 md:px-2.5 md:py-1 rounded-full shadow-lg ${camp.daysLeft <= 3 ? 'bg-red-600 text-white animate-pulse' : 'bg-white text-[#1a1a1a]'
+                                    }`}>
+                                    <FaClock size={8} />
+                                    <span className="hidden sm:inline">หมดเขตใน </span>{camp.daysLeft} วัน
+                                </span>
+                            )}
                         </div>
 
-                        {/* Content - Desktop (ไม่ hover): แสดงแบบเดิม (ด้านล่าง) */}
-                        <div className="hidden md:block absolute inset-x-0 bottom-0 p-5 z-20 opacity-100 group-hover:opacity-0 transition-opacity duration-200">
-                            <h3 className="text-xl font-bold text-white mb-2 line-clamp-2 drop-shadow-lg leading-tight">
+                        {/* Content */}
+                        <div className="p-2 md:p-4 flex flex-col gap-1.5 md:gap-2">
+                            <h3 className="text-xs md:text-sm font-bold text-[#2C2C2C] dark:text-white line-clamp-2 leading-snug group-hover:text-[#F2B33D] transition-colors">
                                 {camp.name}
                             </h3>
-
-                            <div className="space-y-1.5 mb-3">
-                                <div className="flex items-center gap-2 text-white/95">
-                                    <div className="w-5 h-5 rounded-md bg-[#F2B33D] flex items-center justify-center flex-shrink-0">
-                                        <FaCalendarAlt size={10} className="text-[#2C2C2C]" />
-                                    </div>
-                                    <span className="text-xs font-medium drop-shadow">{camp.date}</span>
+                            {/* Mobile: แสดงแค่ราคา */}
+                            <div className="flex md:hidden items-center justify-between">
+                                <div className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400 min-w-0">
+                                    <FaMapMarkerAlt size={9} className="text-[#F2B33D] flex-shrink-0" />
+                                    <span className="text-[10px] truncate">{camp.location}</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-white/95">
-                                    <div className="w-5 h-5 rounded-md bg-[#F2B33D] flex items-center justify-center flex-shrink-0">
-                                        <FaMapMarkerAlt size={10} className="text-[#2C2C2C]" />
-                                    </div>
-                                    <span className="text-xs font-medium drop-shadow">{camp.location}</span>
-                                </div>
+                                <span className="text-xs font-bold text-[#F2B33D] flex-shrink-0 ml-1">
+                                    {camp.price === '฿0' ? 'ฟรี' : camp.price}
+                                </span>
                             </div>
-
-                            <div className="flex items-center justify-between pt-2 border-t border-white/20">
-                                <span className="text-white/90 text-xs font-medium">ราคา</span>
-                                <span className="text-xl font-black text-[#F2B33D] drop-shadow-lg">{camp.price}</span>
-                            </div>
-                        </div>
-
-                        {/* Hover Details - Desktop only (แสดงเมื่อ hover) */}
-                        <div className="hidden md:flex absolute inset-0 p-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
-                            <div className="flex flex-col justify-center h-full space-y-3">
-                                <h3 className="text-xl font-bold text-white drop-shadow-lg line-clamp-2">
-                                    {camp.name}
-                                </h3>
-
-                                <p className="text-white/90 text-sm line-clamp-3 leading-relaxed drop-shadow">
-                                    {camp.description}
-                                </p>
-
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <div className="flex items-center gap-2 p-1.5 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
-                                            <div className="w-6 h-6 rounded-md bg-[#F2B33D] flex items-center justify-center flex-shrink-0">
-                                                <FaCalendarAlt size={11} className="text-[#2C2C2C]" />
-                                            </div>
-                                            <span className="text-xs font-medium text-white">{camp.date}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 p-1.5 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
-                                            <div className="w-6 h-6 rounded-md bg-[#F2B33D] flex items-center justify-center flex-shrink-0">
-                                                <FaMapMarkerAlt size={11} className="text-[#2C2C2C]" />
-                                            </div>
-                                            <span className="text-xs font-medium text-white">{camp.location}</span>
-                                        </div>
+                            {/* Desktop: full details */}
+                            <div className="hidden md:grid grid-cols-2 gap-1 mt-auto">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400">
+                                        <FaCalendarAlt size={10} className="text-[#F2B33D] flex-shrink-0" />
+                                        <span className="text-xs font-medium truncate">{camp.date}</span>
                                     </div>
-
-                                    <div className="flex items-center gap-2 p-1.5 rounded-lg bg-red-500/20 backdrop-blur-sm border border-red-500/30">
-                                        <div className="w-6 h-6 rounded-md bg-red-500 flex items-center justify-center flex-shrink-0">
-                                            <FaClock size={11} className="text-white" />
-                                        </div>
-                                        <span className="text-xs font-medium text-white">หมดเขต: {camp.deadline}</span>
+                                    <div className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400">
+                                        <FaMapMarkerAlt size={10} className="text-[#F2B33D] flex-shrink-0" />
+                                        <span className="text-xs font-medium truncate">{camp.location}</span>
                                     </div>
                                 </div>
-
-                                <div className="flex items-center justify-between pt-2 border-t-2 border-[#F2B33D]/50">
-                                    <span className="text-white font-medium text-sm">ราคา</span>
-                                    <span className="text-2xl font-black text-[#F2B33D] drop-shadow-[0_0_10px_rgba(242,179,61,0.5)]">
-                                        {camp.price}
+                                <div className="space-y-1 text-right">
+                                    {camp.capacity !== undefined && camp.enrolled !== undefined ? (
+                                        <div className="flex items-center gap-1.5 justify-end">
+                                            <FaUsers className="text-[#F97316] flex-shrink-0" size={10} />
+                                            <span className="text-xs font-medium text-[#2C2C2C] dark:text-white">
+                                                เหลือ {camp.capacity - camp.enrolled} ที่
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-1.5 justify-end">
+                                            <FaUsers className="text-zinc-400" size={10} />
+                                            <span className="text-xs text-zinc-400">ไม่ระบุ</span>
+                                        </div>
+                                    )}
+                                    <span className="text-sm font-bold text-[#F2B33D]">
+                                        {camp.price === '฿0' ? 'ฟรี' : camp.price}
                                     </span>
                                 </div>
                             </div>

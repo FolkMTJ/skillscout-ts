@@ -1,6 +1,7 @@
 // src/types/payment.ts
 export enum PaymentStatus {
   PENDING = 'pending',
+  VERIFIED = 'verified',
   COMPLETED = 'completed',
   CONFIRMED = 'confirmed',
   RELEASED = 'released',
@@ -26,6 +27,9 @@ export interface Payment {
   slipVerified?: boolean;
   requiresManualReview?: boolean;
   slipUploadedAt?: Date;
+  slipSenderName?: string;
+  slipReceivedAmount?: number;
+  slipQrHash?: string;
   verifiedAt?: Date;
   verifiedBy?: string;
   rejectedAt?: Date;
@@ -35,6 +39,15 @@ export interface Payment {
   confirmedAt?: Date;
   releasedAt?: Date;
   autoReleaseDate?: Date;
+  // Platform fee
+  platformFeePercent?: number;
+  platformFee?: number;
+  organizerNet?: number;
+  payoutStatus?: 'pending' | 'paid_out';
+  payoutAmountPaid?: number;
+  paidOutAt?: Date;
+  payoutNote?: string;
+  payoutSlipUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }

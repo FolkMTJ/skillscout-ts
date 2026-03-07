@@ -1,6 +1,6 @@
 // src/types/next-auth.d.ts
 import { DefaultSession } from "next-auth";
-import { UserRole } from "./camp";
+import { UserRole } from "./user";
 
 declare module "next-auth" {
   interface Session {

@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Card, CardBody, Spinner } from '@heroui/react';
-import { FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaTicketAlt } from 'react-icons/fa';
+import { FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaTicketAlt, FaLock } from 'react-icons/fa';
 
 interface TicketData {
   success: boolean;
@@ -19,9 +20,12 @@ interface TicketData {
   };
 }
 
+const ALLOWED_ROLES = ['admin', 'super_admin', 'organizer'];
+
 function VerifyContent() {
   const searchParams = useSearchParams();
   const registrationId = searchParams.get('id');
+  const { data: session, status: sessionStatus } = useSession();
 
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<TicketData | null>(null);
@@ -42,20 +46,50 @@ function VerifyContent() {
   }, [registrationId]);
 
   useEffect(() => {
+    if (sessionStatus === 'loading') return;
+
+    // ไม่มีสิทธิ์ → ไม่ต้องเรียก API
+    if (!session || !ALLOWED_ROLES.includes(session.user?.role || '')) {
+      setLoading(false);
+      return;
+    }
+
     if (registrationId) {
       verifyTicket();
     } else {
       setLoading(false);
     }
-  }, [registrationId, verifyTicket]);
+  }, [registrationId, verifyTicket, session, sessionStatus]);
 
-  if (loading) {
+  // Loading session
+  if (sessionStatus === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardBody className="text-center py-12">
             <Spinner size="lg" color="warning" />
             <p className="mt-4 text-gray-600 dark:text-gray-400">กำลังตรวจสอบ...</p>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
+
+  // ไม่ได้ login หรือ role ไม่ถูกต้อง
+  if (!session || !ALLOWED_ROLES.includes(session.user?.role || '')) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border-2 border-red-300">
+          <CardBody className="text-center py-12">
+            <div className="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-6">
+              <FaLock className="text-red-500 text-4xl" />
+            </div>
+            <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-3">
+              ไม่มีสิทธิ์เข้าถึง
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              หน้านี้สำหรับ Admin และ Organizer เท่านั้น
+            </p>
           </CardBody>
         </Card>
       </div>
@@ -97,7 +131,7 @@ function VerifyContent() {
             <p className="text-xl font-bold text-green-600 dark:text-green-400 mb-6">
               ยินดีต้อนรับ {result.registration?.userName}
             </p>
-            
+
             <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-6 space-y-3 text-left">
               <div className="flex items-center gap-3">
                 <FaTicketAlt className="text-green-600 flex-shrink-0" />
@@ -124,7 +158,7 @@ function VerifyContent() {
             </div>
 
             <p className="mt-6 text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center gap-2">
-              ขอให้สนุกกับกิจกรรม! 
+              ขอให้สนุกกับกิจกรรม!
             </p>
           </CardBody>
         </Card>
@@ -147,7 +181,7 @@ function VerifyContent() {
             <p className="text-xl font-bold text-yellow-600 dark:text-yellow-400 mb-6">
               {result.registration?.userName}
             </p>
-            
+
             <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-6 space-y-3 text-left">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">ค่าย</p>
@@ -185,7 +219,7 @@ function VerifyContent() {
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             {result?.message || 'เกิดข้อผิดพลาด'}
           </p>
-          
+
           {result?.registration && (
             <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 text-left">
               <p className="text-sm text-gray-600 dark:text-gray-400">ชื่อ</p>

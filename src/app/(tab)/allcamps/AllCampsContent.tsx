@@ -1,10 +1,14 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Button, Input, Chip, Spinner } from "@heroui/react";
-import { FaSearch, FaTrophy, FaClock, FaFire, FaChevronDown, FaFilter, FaTimes, FaSearchPlus } from "react-icons/fa";
+import { FaSearch, FaFilter, FaTimes } from "react-icons/fa";
 import CampCard from "@/components/(card)/CampCard";
+import Pagination from "@/components/Pagination";
 import { Camp } from "@/types/camp";
 import { useSearchParams } from 'next/navigation';
+import { TAG_CATEGORIES } from "@/data/tags";
+import { Tag } from "@/components/organizer/TagSelector";
+type TagCategoryKey = keyof typeof TAG_CATEGORIES;
+type TagGroupId = TagCategoryKey | "all";
 
 // Helper function to convert Camp to CampData format for CampCard
 function campToCampData(camp: Camp) {
@@ -37,312 +41,448 @@ function campToCampData(camp: Camp) {
     deadline: camp.deadline,
     daysLeft: daysLeft,
     description: camp.description,
-    category: camp.category
+    category: camp.category,
+    avgRating: camp.avgRating,
+    reviews: camp.reviews,
+    capacity: camp.capacity || camp.participantCount,
+    enrolled: camp.enrolled || 0
   };
 }
 
-const categories = [
-  "ทั้งหมด",
-  "Web Development",
-  "Mobile Development",
-  "Data Science & AI",
-  "Cybersecurity",
-  "Cloud & DevOps",
-  "Game Development",
-  "UI/UX Design",
-  "Networking"
-];
+// ─── Tag category config ───────────────────────────────────
+const TAG_CATEGORY_LABELS: Record<TagCategoryKey, { label: string; icon: string }> = {
+  frontend: { label: 'Frontend', icon: '' },
+  backend: { label: 'Backend', icon: '' },
+  data: { label: 'Data & AI', icon: '' },
+  design: { label: 'Design', icon: '' },
+  mobile: { label: 'Mobile', icon: '' },
+  devops: { label: 'DevOps', icon: '' },
+  other: { label: 'อื่นๆ', icon: '' },
+};
+const ALL_CATEGORY_KEYS = Object.keys(TAG_CATEGORY_LABELS) as TagCategoryKey[];
+
+type SortOption =
+  | 'newest'
+  | 'oldest'
+  | 'deadline-near'
+  | 'deadline-far'
+  | 'price-high'
+  | 'price-low'
+  | 'popular';
 
 export default function AllCampsContent() {
   const searchParams = useSearchParams();
   const searchFromUrl = searchParams.get('search') || '';
+  const groupFromUrl = searchParams.get('group') || '';
+  const validGroups = ['frontend', 'backend', 'data', 'design', 'mobile', 'devops', 'other'];
+  const initialGroup: TagGroupId = validGroups.includes(groupFromUrl) ? (groupFromUrl as TagCategoryKey) : "all";
   const [allCamps, setAllCamps] = useState<Camp[]>([]);
   const [filteredCamps, setFilteredCamps] = useState<Camp[]>([]);
   const [loading, setLoading] = useState(true);
+  const [allTags, setAllTags] = useState<Tag[]>([]);
   const [searchQuery, setSearchQuery] = useState(searchFromUrl);
-  const [selectedCategory, setSelectedCategory] = useState("ทั้งหมด");
-  const [showMore, setShowMore] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<TagGroupId>(initialGroup);
   const [showFilters, setShowFilters] = useState(false);
 
+  // Filter & Sort States
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<SortOption>('deadline-near');
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
+
+  function isCampExpired(camp: Camp): boolean {
+    if (!camp.registrationDeadline && !camp.deadline) return false;
+    try {
+      const deadlineDate = camp.registrationDeadline
+        ? new Date(camp.registrationDeadline)
+        : new Date(camp.deadline);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      deadlineDate.setHours(0, 0, 0, 0);
+      return deadlineDate < today;
+    } catch {
+      return false;
+    }
+  }
+
   useEffect(() => {
-    async function fetchCamps() {
+    async function fetchData() {
       try {
-        setLoading(true);
-        const response = await fetch('/api/camps');
-        if (!response.ok) throw new Error('Failed to fetch camps');
-        const camps: Camp[] = await response.json();
+        const [campsRes, tagsRes] = await Promise.all([
+          fetch('/api/camps', { cache: 'no-store' }),
+          fetch('/api/tags', { cache: 'no-store' })
+        ]);
+        const data = await campsRes.json();
+        const tagsData = await tagsRes.json();
+
+        const camps: Camp[] = Array.isArray(data) ? data : data.camps || [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
         const availableCamps = camps.filter(camp => {
           const capacity = camp.capacity || camp.participantCount || 0;
           const enrolled = camp.enrolled || 0;
-          return enrolled < capacity;
+          if (enrolled >= capacity) return false;
+          if (isCampExpired(camp)) return false;
+          return true;
         });
         setAllCamps(availableCamps);
         setFilteredCamps(availableCamps);
+
+        if (tagsData.tags) setAllTags(tagsData.tags);
+
       } catch (error) {
-        console.error('Error fetching camps:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     }
-    fetchCamps();
+    fetchData();
   }, []);
 
+  // Advanced Filtering & Sorting
   useEffect(() => {
     let result = [...allCamps];
-    if (selectedCategory !== "ทั้งหมด") {
-      result = result.filter(camp => camp.category === selectedCategory);
+
+    // Filter by Tag Category (group)
+    if (selectedGroup !== "all") {
+      const tagsInCategory = allTags
+        .filter(t => t.category === selectedGroup)
+        .map(t => t.id);
+      result = result.filter(camp => {
+        const campTags = camp.tags || [];
+        return campTags.some(tag => tagsInCategory.includes(tag));
+      });
     }
+
+    // Filter by Search Query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      result = result.filter(camp => 
+      result = result.filter(camp =>
         camp.name.toLowerCase().includes(query) ||
         camp.description.toLowerCase().includes(query) ||
         camp.category.toLowerCase().includes(query) ||
         camp.location.toLowerCase().includes(query)
       );
     }
+
+    // Filter by selected Tags
+    if (selectedTags.length > 0) {
+      result = result.filter(camp => {
+        const campTags = camp.tags || [];
+        return selectedTags.some(tag => campTags.includes(tag));
+      });
+    }
+
+    // Filter by Price Range
+    result = result.filter(camp => {
+      const price = camp.fee || parseFloat((camp.price || '0').replace(/[^0-9]/g, '')) || 0;
+      return price >= priceRange[0] && price <= priceRange[1];
+    });
+
+    // Sort
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return (b.createdAt ? new Date(b.createdAt).getTime() : 0) -
+            (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+        case 'oldest':
+          return (a.createdAt ? new Date(a.createdAt).getTime() : 0) -
+            (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+        case 'deadline-near': {
+          const getDeadline = (camp: Camp) => {
+            const d = camp.registrationDeadline || camp.deadline;
+            return d ? new Date(d).getTime() : Infinity;
+          };
+          return getDeadline(a) - getDeadline(b);
+        }
+        case 'deadline-far': {
+          const getDeadline = (camp: Camp) => {
+            const d = camp.registrationDeadline || camp.deadline;
+            return d ? new Date(d).getTime() : 0;
+          };
+          return getDeadline(b) - getDeadline(a);
+        }
+        case 'price-low': {
+          const getPrice = (camp: Camp) => camp.fee || parseFloat((camp.price || '0').replace(/[^0-9]/g, '')) || 0;
+          return getPrice(a) - getPrice(b);
+        }
+        case 'price-high': {
+          const getPrice = (camp: Camp) => camp.fee || parseFloat((camp.price || '0').replace(/[^0-9]/g, '')) || 0;
+          return getPrice(b) - getPrice(a);
+        }
+        case 'popular':
+          return (b.enrolled || 0) - (a.enrolled || 0);
+        default:
+          return 0;
+      }
+    });
+
     setFilteredCamps(result);
-  }, [searchQuery, selectedCategory, allCamps]);
+    setCurrentPage(1);
+  }, [searchQuery, selectedGroup, selectedTags, sortBy, priceRange, allCamps]);
 
-  const urgentCamps = [...filteredCamps]
-    .filter(camp => camp.deadline)
-    .sort((a, b) => {
-      const dateA = new Date(a.deadline).getTime();
-      const dateB = new Date(b.deadline).getTime();
-      return dateA - dateB;
-    })
-    .slice(0, 6)
-    .map(campToCampData);
+  const clearFilters = () => {
+    setSelectedGroup("all");
+    setSelectedTags([]);
+    setSortBy('deadline-near');
+    setPriceRange([0, 10000]);
+    setSearchQuery('');
+    setCurrentPage(1);
+  };
 
-  const trendingCamps = [...filteredCamps]
-    .sort((a, b) => {
-      const viewsA = a.views || 0;
-      const viewsB = b.views || 0;
-      return viewsB - viewsA;
-    })
-    .slice(0, 6)
-    .map(campToCampData);
+  const hasActiveFilters =
+    selectedGroup !== "all" ||
+    selectedTags.length > 0 ||
+    sortBy !== 'deadline-near' ||
+    priceRange[0] !== 0 ||
+    priceRange[1] !== 10000 ||
+    searchQuery !== '';
 
-  const sortedAllCamps = [...filteredCamps]
-    .sort((a, b) => {
-      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return dateB - dateA;
-    })
-    .map(campToCampData);
+  // Pagination
+  const totalPages = Math.ceil(filteredCamps.length / itemsPerPage);
+  const displayedCamps = filteredCamps.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  ).map(campToCampData);
 
-  const displayedCamps = showMore ? sortedAllCamps : sortedAllCamps.slice(0, 9);
+  // ── Tags shown in expanded panel: filtered by selectedGroup
+  const visibleTags = selectedGroup === "all"
+    ? allTags
+    : allTags.filter(t => t.category === selectedGroup);
 
   return (
-    <div className="max-w-[1536px] mx-auto px-6 py-12">
-      <section className="mb-12">
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-gray-200/50 dark:border-gray-700/50">
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="flex-1">
-              <Input
-                size="lg"
-                placeholder="ค้นหาค่ายที่คุณสนใจ..."
+    <div className="max-w-[1536px] mx-auto px-3 md:px-6 py-6 md:py-12 mb-30">
+      <section className="mb-8">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+
+          {/* ─── Row 1: Search + Sort + Filter toggle ─── */}
+          <div className="flex items-center gap-2 p-3">
+            <div className="flex-1 flex items-center gap-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 h-10 focus-within:border-[#F2B33D] transition-all">
+              <FaSearch className="text-gray-400 flex-shrink-0" size={13} />
+              <input
+                className="flex-1 bg-transparent text-sm outline-none text-gray-700 dark:text-gray-200 placeholder:text-gray-400"
+                placeholder="ค้นหาค่าย..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                classNames={{
-                  base: "w-full",
-                  inputWrapper: "bg-white dark:bg-gray-900 border-2 border-gray-300/50 dark:border-gray-600/50 hover:border-orange-400 focus-within:border-orange-500 transition-all h-14 rounded-2xl shadow-lg",
-                  input: "text-base"
-                }}
-                startContent={
-                  <div className="flex items-center gap-2">
-                    <FaSearch className="text-orange-500" size={20} />
-                  </div>
-                }
-                endContent={
-                  searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery("")}
-                      className="text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      <FaTimes size={18} />
-                    </button>
-                  )
-                }
               />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery("")} className="text-gray-400 hover:text-gray-600">
+                  <FaTimes size={12} />
+                </button>
+              )}
             </div>
-            <Button
-              size="lg"
-              onPress={() => setShowFilters(!showFilters)}
-              className={`h-14 px-6 rounded-2xl font-bold transition-all shadow-lg ${
-                showFilters 
-                  ? 'bg-orange-500 text-white hover:bg-orange-600' 
-                  : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-2 border-gray-300 dark:border-gray-600 hover:border-orange-400'
-              }`}
-              startContent={<FaFilter size={18} />}
+
+            {/* Sort */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortOption)}
+              className="h-10 px-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-medium text-gray-700 dark:text-gray-300 focus:border-[#F2B33D] focus:outline-none cursor-pointer"
             >
-              {showFilters ? 'ซ่อนตัวกรอง' : 'ตัวกรอง'}
-            </Button>
+              <option value="newest">ใหม่สุด</option>
+              <option value="deadline-near">ใกล้ปิด</option>
+              <option value="popular">ยอดนิยม</option>
+              <option value="price-low">ราคา ↑</option>
+              <option value="price-high">ราคา ↓</option>
+              <option value="oldest">เก่าสุด</option>
+            </select>
+
+            {/* Filter toggle */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all relative ${showFilters || hasActiveFilters
+                ? 'bg-[#F2B33D] text-white shadow-md'
+                : 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500'
+                }`}
+            >
+              <FaFilter size={13} />
+              {hasActiveFilters && !showFilters && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#F97316] rounded-full text-[9px] text-white font-bold flex items-center justify-center">
+                  {(selectedGroup !== 'all' ? 1 : 0) + selectedTags.length + (priceRange[0] !== 0 || priceRange[1] !== 10000 ? 1 : 0)}
+                </span>
+              )}
+            </button>
           </div>
 
-          <div className={`transition-all duration-300 ease-in-out ${showFilters ? 'opacity-100 max-h-96' : 'opacity-0 max-h-0 overflow-hidden'}`}>
-            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-              <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">หมวดหมู่</h3>
-              <div className="flex flex-wrap gap-2">
-                {categories.map((category) => (
-                  <Chip
-                    key={category}
-                    className={`cursor-pointer px-4 py-2 text-sm font-semibold transition-all ${
-                      selectedCategory === category
-                        ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg scale-105'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}
-                    onClick={() => setSelectedCategory(category)}
+          {/* ─── Row 2: Tag Category pills (always visible) ─── */}
+          <div className="px-3 pb-3">
+            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
+              {/* ทั้งหมด */}
+              <button
+                onClick={() => { setSelectedGroup("all"); setSelectedTags([]); }}
+                className={`flex-shrink-0 text-xs font-semibold px-3 py-1 rounded-full border transition-all ${selectedGroup === "all"
+                  ? 'bg-[#F2B33D] border-[#F2B33D] text-[#1a1a1a]'
+                  : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
+                  }`}
+              >
+                ทั้งหมด
+              </button>
+              {/* หมวดหมู่จาก tags ที่ fetch มา */}
+              {ALL_CATEGORY_KEYS.map((key) => {
+                const { label } = TAG_CATEGORY_LABELS[key];
+                const tagCount = allTags.filter(t => t.category === key).length;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => { setSelectedGroup(key); setSelectedTags([]); }}
+                    className={`flex-shrink-0 flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full border transition-all ${selectedGroup === key
+                      ? 'bg-[#F2B33D] border-[#F2B33D] text-[#1a1a1a]'
+                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
+                      }`}
                   >
-                    {category}
-                  </Chip>
+                    <span>{label}</span>
+                    <span className={`text-[10px] ${selectedGroup === key ? 'text-[#1a1a1a]/60' : 'text-gray-400'}`}>
+                      {tagCount}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ─── Row 3: Tags ของหมวดที่เลือก (always visible when group selected) ─── */}
+          {selectedGroup !== "all" && (
+            <div className="px-3 pb-3 border-t border-gray-100 dark:border-gray-800 pt-2">
+              <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
+                {visibleTags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    onClick={() => {
+                      if (selectedTags.includes(tag.id)) setSelectedTags(selectedTags.filter(t => t !== tag.id));
+                      else setSelectedTags([...selectedTags, tag.id]);
+                    }}
+                    className={`flex-shrink-0 text-[10px] md:text-xs font-semibold px-2.5 py-1 rounded-full border transition-all ${selectedTags.includes(tag.id)
+                      ? 'bg-[#F97316] border-[#F97316] text-white'
+                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-[#F97316]'
+                      }`}
+                  >
+                    {tag.nameTh}
+                  </button>
                 ))}
               </div>
             </div>
-          </div>
-
-          {(selectedCategory !== "ทั้งหมด" || searchQuery) && (
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm text-gray-600 dark:text-gray-400">ตัวกรองที่ใช้:</span>
-                {selectedCategory !== "ทั้งหมด" && (
-                  <Chip
-                    onClose={() => setSelectedCategory("ทั้งหมด")}
-                    className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400"
-                  >
-                    {selectedCategory}
-                  </Chip>
-                )}
-                {searchQuery && (
-                  <Chip
-                    onClose={() => setSearchQuery("")}
-                    className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
-                  >
-                    ค้นหา: {searchQuery}
-                  </Chip>
-                )}
-              </div>
-            </div>
           )}
+
+          {/* ─── Expanded filters (price + clear) ─── */}
+          <div className={`transition-all duration-200 ease-in-out overflow-hidden ${showFilters ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'
+            }`}>
+            <div className="px-3 pb-3 space-y-3 border-t border-gray-100 dark:border-gray-800 pt-3">
+
+              {/* Price range */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">ราคา</span>
+                  <span className="text-xs font-bold text-[#F2B33D]">
+                    ฿{priceRange[0].toLocaleString()} – {priceRange[1] >= 10000 ? '฿10k+' : `฿${priceRange[1].toLocaleString()}`}
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  <input
+                    type="range" min="0" max="10000" step="500"
+                    value={priceRange[0]}
+                    onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
+                    className="w-full h-1.5 rounded-full accent-[#F2B33D] cursor-pointer"
+                  />
+                  <input
+                    type="range" min="0" max="10000" step="500"
+                    value={priceRange[1]}
+                    onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
+                    className="w-full h-1.5 rounded-full accent-[#F97316] cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* Clear all */}
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="w-full h-8 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-500 text-xs font-semibold border border-red-100 dark:border-red-800 hover:bg-red-100 transition-all"
+                >
+                  ล้างตัวกรองทั้งหมด
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </section>
 
+      {/* Results Count */}
+      <div className="mb-4 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        <span>
+          พบ <strong className="text-gray-700 dark:text-gray-300">{filteredCamps.length}</strong> ค่าย
+          {hasActiveFilters && ' (มีตัวกรอง)'}
+        </span>
+        {selectedTags.length > 0 && (
+          <button onClick={() => setSelectedTags([])} className="text-red-400 hover:text-red-600 font-semibold">
+            ล้าง tags ({selectedTags.length})
+          </button>
+        )}
+      </div>
+
+      {/* Loading skeleton */}
       {loading && (
-        <div className="text-center py-20">
-          <Spinner size="lg" color="warning" className="mb-4" />
-          <p className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300">กำลังโหลดค่าย...</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">กรุณารอสักครู่</p>
-        </div>
+        <section>
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-8 animate-pulse">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+                <div className="aspect-video bg-gray-200" />
+                <div className="p-3 space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-3/4" />
+                  <div className="h-3 bg-gray-200 rounded w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
+      {/* All Camps */}
+      {!loading && displayedCamps.length > 0 && (
+        <section>
+          <div className="flex items-center gap-3 mb-4 md:mb-8">
+
+            <div>
+              <h2 className="text-lg md:text-2xl font-black text-gray-800 dark:text-white">
+                {selectedGroup !== "all"
+                  ? TAG_CATEGORY_LABELS[selectedGroup as TagCategoryKey]?.label
+                  : "ค่ายทั้งหมด"}
+              </h2>
+              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                สำรวจค่ายที่น่าสนใจทั้งหมด
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-8">
+            {displayedCamps.map((camp) => (
+              <CampCard key={camp.id} camp={camp} />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </section>
+      )}
+
+      {/* Empty state */}
       {!loading && filteredCamps.length === 0 && (
         <div className="text-center py-20">
-          <div className="flex justify-center mb-4">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center">
-              <FaSearchPlus className="text-white" size={48} />
-            </div>
-          </div>
-          <h3 className="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-2">ไม่พบค่ายที่ค้นหา</h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">ลองค้นหาด้วยคำอื่นหรือเปลี่ยนตัวกรอง</p>
-          <Button
-            onPress={() => {
-              setSearchQuery("");
-              setSelectedCategory("ทั้งหมด");
-            }}
-            className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold"
-          >
-            รีเซ็ตตัวกรอง
-          </Button>
+          <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">ไม่พบค่ายที่ตรงกับเงื่อนไข</h3>
+          <p className="text-gray-500 mb-6">ลองปรับตัวกรองหรือคำค้นหาใหม่</p>
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="px-6 py-2.5 bg-[#F2B33D] text-white font-bold rounded-xl hover:bg-[#e6a82e] transition-all"
+            >
+              ล้างตัวกรองทั้งหมด
+            </button>
+          )}
         </div>
-      )}
-
-      {!loading && urgentCamps.length > 0 && (
-        <section className="mb-16">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-red-500/10 border-2 border-red-500/30 backdrop-blur-sm shadow-lg">
-              <FaClock className="text-red-500 animate-pulse" size={20} />
-              <span className="font-bold text-red-600 dark:text-red-400">กำลังจะปิดรับเร็วๆนี้</span>
-            </div>
-            <div className="flex-1 h-px bg-gradient-to-r from-red-500/30 to-transparent" />
-            <span className="text-sm text-gray-500 dark:text-gray-400">{urgentCamps.length} ค่าย</span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {urgentCamps.map((camp) => (
-              <div key={camp.id}>
-                <CampCard camp={camp} />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {!loading && trendingCamps.length > 0 && (
-        <section className="mb-16">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-orange-500/10 border-2 border-orange-500/30 backdrop-blur-sm shadow-lg">
-              <FaFire className="text-orange-500" size={20} />
-              <span className="font-bold text-orange-600 dark:text-orange-400">ค่ายมาแรง</span>
-            </div>
-            <div className="flex-1 h-px bg-gradient-to-r from-orange-500/30 to-transparent" />
-            <span className="text-sm text-gray-500 dark:text-gray-400">{trendingCamps.length} ค่าย</span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {trendingCamps.map((camp) => (
-              <div key={camp.id}>
-                <CampCard camp={camp} />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {!loading && sortedAllCamps.length > 0 && (
-        <section>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-gray-500/10 border-2 border-gray-500/30 backdrop-blur-sm shadow-lg">
-              <FaTrophy className="text-gray-600 dark:text-gray-400" size={20} />
-              <span className="font-bold text-gray-700 dark:text-gray-300">ค่ายทั้งหมด</span>
-            </div>
-            <div className="flex-1 h-px bg-gradient-to-r from-gray-500/30 to-transparent" />
-            <span className="text-sm text-gray-500 dark:text-gray-400">{sortedAllCamps.length} ค่าย</span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {displayedCamps.map((camp) => (
-              <div key={camp.id}>
-                <CampCard camp={camp} />
-              </div>
-            ))}
-          </div>
-
-          {!showMore && sortedAllCamps.length > 9 && (
-            <div className="text-center">
-              <Button
-                size="lg"
-                className="px-12 py-6 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all rounded-2xl"
-                endContent={<FaChevronDown size={20} />}
-                onPress={() => setShowMore(true)}
-              >
-                ดูเพิ่มเติม ({sortedAllCamps.length - 9} ค่าย)
-              </Button>
-            </div>
-          )}
-
-          {showMore && sortedAllCamps.length > 9 && (
-            <div className="text-center">
-              <Button
-                size="lg"
-                variant="bordered"
-                className="px-12 py-6 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold text-lg hover:border-orange-500 hover:text-orange-500 transition-all rounded-2xl"
-                onPress={() => {
-                  setShowMore(false);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-              >
-                แสดงน้อยลง
-              </Button>
-            </div>
-          )}
-        </section>
       )}
     </div>
   );

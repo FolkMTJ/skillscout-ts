@@ -1,62 +1,73 @@
 import {
   IoMdCode,
   IoMdCloud,
-  IoLogoGameControllerA,
 } from "react-icons/io";
 import {
   MdPhoneAndroid,
   MdDataObject,
-  MdSecurity,
   MdDesignServices,
-  MdRouter,
+  MdExtension,
+  MdApps,
 } from "react-icons/md";
+import { FaServer } from "react-icons/fa";
 import { IconType } from "react-icons";
+
+export type TagCategoryKey = 'frontend' | 'backend' | 'data' | 'design' | 'mobile' | 'devops' | 'other';
 
 export interface CategoryData {
   name: string;
+  tagCategory: TagCategoryKey | null;
   icon: IconType;
-  gradient: string;
+  color: string; // hex accent color
 }
 
 export const categories: CategoryData[] = [
   {
-    name: "Web Development",
+    name: "ทั้งหมด",
+    tagCategory: null,
+    icon: MdApps,
+    color: "#F2B33D",
+  },
+  {
+    name: "Frontend",
+    tagCategory: "frontend",
     icon: IoMdCode,
-    gradient: "from-blue-500 to-sky-500",
+    color: "#3B82F6",
   },
   {
-    name: "Mobile Development",
-    icon: MdPhoneAndroid,
-    gradient: "from-green-500 to-emerald-500",
+    name: "Backend",
+    tagCategory: "backend",
+    icon: FaServer,
+    color: "#10B981",
   },
   {
-    name: "Data Science & AI",
+    name: "Data & AI",
+    tagCategory: "data",
     icon: MdDataObject,
-    gradient: "from-purple-500 to-violet-500",
+    color: "#8B5CF6",
   },
   {
-    name: "Cybersecurity",
-    icon: MdSecurity,
-    gradient: "from-red-500 to-rose-500",
-  },
-  {
-    name: "Cloud & DevOps",
-    icon: IoMdCloud,
-    gradient: "from-orange-500 to-amber-500",
-  },
-  {
-    name: "Game Development",
-    icon: IoLogoGameControllerA,
-    gradient: "from-indigo-500 to-fuchsia-500",
-  },
-  {
-    name: "UI/UX Design",
+    name: "Design",
+    tagCategory: "design",
     icon: MdDesignServices,
-    gradient: "from-pink-500 to-cyan-500",
+    color: "#EC4899",
   },
   {
-    name: "Networking",
-    icon: MdRouter,
-    gradient: "from-gray-500 to-slate-500",
+    name: "Mobile",
+    tagCategory: "mobile",
+    icon: MdPhoneAndroid,
+    color: "#F97316",
+  },
+  {
+    name: "DevOps",
+    tagCategory: "devops",
+    icon: IoMdCloud,
+    color: "#06B6D4",
+  },
+  {
+    name: "อื่นๆ",
+    tagCategory: "other",
+    icon: MdExtension,
+    color: "#6366F1",
   },
 ];

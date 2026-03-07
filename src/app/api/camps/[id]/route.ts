@@ -1,6 +1,10 @@
 // src/app/api/camps/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { CampModel } from '@/lib/db/models/Camp';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { getCollection } from '@/lib/mongodb';
+import { isAdminRole } from '@/lib/auth-check';
 
 interface RouteParams {
   params: Promise<{
@@ -18,7 +22,7 @@ export async function GET(
     const incrementView = searchParams.get('incrementView') === 'true';
 
     let camp = await CampModel.findById(id, incrementView);
-    
+
     if (!camp) {
       camp = await CampModel.findBySlug(id, incrementView);
     }
@@ -103,18 +107,53 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    const success = await CampModel.delete(id);
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    if (!success) {
+    const userId = session.user.id;
+    const role = (session.user as { role?: string })?.role;
+    const isAdmin = isAdminRole(role);
+
+    const camp = await CampModel.findById(id);
+    if (!camp) {
       return NextResponse.json(
         { error: 'Camp not found' },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ 
+    // Check if user is organizer or admin
+    if (!isAdmin && camp.organizerId !== userId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // If the requester is NOT an admin, block deletion when registrations exist
+    if (!isAdmin) {
+      const regCollection = await getCollection('registrations');
+      const regCount = await regCollection.countDocuments({ campId: id });
+      if (regCount > 0) {
+        return NextResponse.json(
+          { error: `ไม่สามารถลบค่ายได้ เนื่องจากมีผู้สมัครแล้ว ${regCount} คน` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Admins bypass the registration count check and force delete
+    const success = await CampModel.delete(id);
+
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Failed to delete camp from database' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
       message: 'Camp deleted successfully',
-      deletedId: id 
+      deletedId: id
     });
   } catch (error) {
     console.error('Error deleting camp:', error);

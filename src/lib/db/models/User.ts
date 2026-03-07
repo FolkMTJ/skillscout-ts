@@ -18,6 +18,12 @@ interface UserDoc {
   province?: string;
   district?: string;
   isBanned?: boolean;
+  payoutInfo?: {
+    promptpayId: string;
+    accountName: string;
+    createdAt: Date;
+    updatedAt: Date;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,6 +59,7 @@ export class UserModel {
     address?: string;
     province?: string;
     district?: string;
+    profileImage?: string;
   }): Promise<User> {
     const collection = await getCollection<UserDoc>(this.collectionName);
     
@@ -73,6 +80,7 @@ export class UserModel {
       address: userData.address,
       province: userData.province,
       district: userData.district,
+      profileImage: userData.profileImage,
       isBanned: false,
       createdAt: now,
       updatedAt: now,

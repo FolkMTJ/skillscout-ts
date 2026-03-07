@@ -9,12 +9,12 @@ export const createCampSchema = z.object({
   description: z.string().min(10, 'คำอธิบายต้องมีอย่างน้อย 10 ตัวอักษร'),
   location: z.string().min(3, 'สถานที่ต้องมีอย่างน้อย 3 ตัวอักษร'),
   price: z.string().optional(),
-  fee: z.number().min(0).optional(),
+  fee: z.number().min(0).default(0),
   category: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   registrationDeadline: z.string().optional(),
-  capacity: z.number().int().min(1).optional(),
+  capacity: z.number().int().min(1).default(1),
 });
 
 // Registration Validation

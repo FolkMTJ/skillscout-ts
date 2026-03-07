@@ -19,6 +19,9 @@ interface RegistrationDoc {
     question: string;
     answer: string;
   }[];
+  portfolioText?: string;
+  portfolioLinks?: string[];
+  portfolioFileUrl?: string;
 }
 
 type RegistrationInput = Omit<RegistrationDoc, '_id'>;
@@ -50,6 +53,9 @@ export class RegistrationModel {
       reviewedBy: regData.reviewedBy,
       notes: regData.notes,
       answers: regData.answers || [],
+      portfolioText: regData.portfolioText,
+      portfolioLinks: regData.portfolioLinks,
+      portfolioFileUrl: regData.portfolioFileUrl,
     };
 
     const result = await collection.insertOne(registrationDoc);
@@ -86,13 +92,30 @@ export class RegistrationModel {
       .find(filter)
       .sort({ appliedAt: -1 })
       .toArray();
-    
+
+    return registrations.map(doc => this.toPublic(doc));
+  }
+
+  static async findByCamps(campIds: string[]): Promise<Registration[]> {
+    if (campIds.length === 0) return [];
+    const collection = await getCollection<RegistrationDoc>(this.collectionName);
+    const filter: Filter<RegistrationDoc> = { campId: { $in: campIds } } as Filter<RegistrationDoc>;
+    const registrations = await collection
+      .find(filter)
+      .sort({ appliedAt: -1 })
+      .toArray();
     return registrations.map(doc => this.toPublic(doc));
   }
 
   static async findByUser(userId: string): Promise<Registration[]> {
     const collection = await getCollection<RegistrationDoc>(this.collectionName);
-    const filter: Filter<RegistrationDoc> = { userId } as Filter<RegistrationDoc>;
+    // Search by both userId and userEmail to support both cases
+    const filter: Filter<RegistrationDoc> = { 
+      $or: [
+        { userId },
+        { userEmail: userId }
+      ]
+    } as Filter<RegistrationDoc>;
     const registrations = await collection
       .find(filter)
       .sort({ appliedAt: -1 })
@@ -103,7 +126,14 @@ export class RegistrationModel {
 
   static async checkDuplicate(userId: string, campId: string): Promise<boolean> {
     const collection = await getCollection<RegistrationDoc>(this.collectionName);
-    const filter: Filter<RegistrationDoc> = { userId, campId } as Filter<RegistrationDoc>;
+    // ไม่นับ registration ที่ cancelled (ยอมให้ register ใหม่ได้)
+    const filter: Filter<RegistrationDoc> = {
+      status: { $ne: 'cancelled' as RegistrationStatus },
+      $or: [
+        { userId, campId },
+        { userEmail: userId, campId }
+      ]
+    } as Filter<RegistrationDoc>;
     const count = await collection.countDocuments(filter);
     return count > 0;
   }
